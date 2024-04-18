@@ -11,6 +11,13 @@ from density_estimation import update_kde_grid_multiple_observations
 from metrics import JSDLoss
 
 
+@jax.jit
+def soft_penalty(a, a_max=1):
+    """Computes penalty for the given input. Assumes symmetry in all dimensions."""
+    penalty = jnp.linalg.norm(jax.nn.relu(jnp.abs(a) - a_max), axis=(-2, -1))
+    return jnp.squeeze(penalty)
+
+
 @partial(jax.jit, static_argnums=(1, 4))
 def loss_function(
         actions,
@@ -25,7 +32,6 @@ def loss_function(
         target_distribution
     ):
 
-    actions = jax.nn.tanh(actions)  # TODO: sketchy
     observations = simulate_ahead(
         model=model,
         n_steps=n_steps,
@@ -39,7 +45,12 @@ def loss_function(
         p=p_est,
         q=target_distribution
     )
-    return loss
+
+    rho_obs = 1
+    rho_act = 1
+    penalty_terms = rho_obs * soft_penalty(a=observations, a_max=1) + rho_act * soft_penalty(a=actions, a_max=1)
+
+    return loss + penalty_terms
 
 
 def optimize(
