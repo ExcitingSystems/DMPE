@@ -24,13 +24,13 @@ def plot_sequence(observations, actions, tau, obs_labels, action_labels, ):
     axs[0].set_xlabel(r"time $t$ in seconds")
 
     if observations.shape[-1] == 2:
-        axs[1].scatter(jnp.squeeze(observations[..., 0]), jnp.squeeze(observations[..., 1]), s=0.1)
+        axs[1].scatter(jnp.squeeze(observations[..., 0]), jnp.squeeze(observations[..., 1]), s=1)
         axs[1].title.set_text("observations, together")
 
     for action_idx in range(actions.shape[-1]):
         axs[2].plot(t, jnp.squeeze(actions[..., action_idx]), label=action_labels[action_idx])
     
-    axs[2].title.set_text("observations, timeseries")
+    axs[2].title.set_text("actions, timeseries")
     axs[2].legend()
     axs[2].set_xlabel(r"time $t$ in seconds")
 
