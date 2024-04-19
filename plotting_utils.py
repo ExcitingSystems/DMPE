@@ -117,3 +117,59 @@ def plot_sequence_and_prediction(
     )
 
     return fig, axs
+
+
+### region: 2D only
+
+def plot_2d_kde_as_contourf(
+        p_est,
+        x,
+        observation_labels
+    ):
+
+    fig, axs = plt.subplots(
+        figsize=(6, 6)
+    )
+
+    grid_len_per_dim = int(np.sqrt(x.shape[0]))
+    x_plot = x.reshape((grid_len_per_dim, grid_len_per_dim, 2))
+
+    cax = axs.contourf(
+        x_plot[..., 0],
+        x_plot[..., 1],
+        p_est[0, ...].reshape(x_plot.shape[:-1]),
+        antialiased=False,
+        levels=50,
+        alpha=0.9,
+        cmap=plt.cm.coolwarm
+    )
+    axs.set_xlabel(observation_labels[0])
+    axs.set_ylabel(observation_labels[1])
+
+    return fig, axs
+
+
+def plot_2d_kde_as_surface(
+        p_est,
+        x,
+        observation_labels
+    ):
+
+    fig = plt.figure(figsize=(6, 6))
+    axs = fig.add_subplot(111, projection='3d')
+
+    grid_len_per_dim = int(np.sqrt(x.shape[0]))
+    x_plot = x.reshape((grid_len_per_dim, grid_len_per_dim, 2))
+
+    cax = axs.plot_surface(
+        x_plot[..., 0],
+        x_plot[..., 1],
+        p_est[0, ...].reshape(x_plot.shape[:-1]),
+        antialiased=False,
+        alpha=1,
+        cmap=plt.cm.coolwarm
+    )
+    axs.set_xlabel(observation_labels[0])
+    axs.set_ylabel(observation_labels[1])
+
+    return fig, axs
