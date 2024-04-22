@@ -14,7 +14,7 @@ from metrics import JSDLoss
 @jax.jit
 def soft_penalty(a, a_max=1):
     """Computes penalty for the given input. Assumes symmetry in all dimensions."""
-    penalty = jnp.linalg.norm(jax.nn.relu(jnp.abs(a) - a_max), axis=(-2, -1))
+    penalty = jnp.sum(jax.nn.relu(jnp.abs(a) - a_max), axis=(-2, -1))
     return jnp.squeeze(penalty)
 
 
@@ -46,8 +46,9 @@ def loss_function(
         q=target_distribution
     )
 
-    rho_obs = 1
-    rho_act = 1
+    # TODO: pull this automatically, maybe penalty_kwargs or something
+    rho_obs = 1e4
+    rho_act = 1e4
     penalty_terms = rho_obs * soft_penalty(a=observations, a_max=1) + rho_act * soft_penalty(a=actions, a_max=1)
 
     return loss + penalty_terms
@@ -70,7 +71,7 @@ def optimize(
     solver = optax.adabelief(learning_rate=1e-1)
     opt_state = solver.init(proposed_actions)
 
-    for iter in range(100):
+    for iter in range(5):
         grad = grad_loss_function(
             proposed_actions,
             model,
@@ -86,4 +87,17 @@ def optimize(
         updates, opt_state = solver.update(grad, opt_state, proposed_actions)
         proposed_actions = optax.apply_updates(proposed_actions, updates)
 
-    return proposed_actions
+    final_loss = loss_function(
+            proposed_actions,
+            model,
+            init_obs,
+            init_state,
+            n_steps,
+            p_est,
+            x,
+            start_n_measurments,
+            bandwidth,
+            target_distribution
+    )
+
+    return proposed_actions, final_loss
