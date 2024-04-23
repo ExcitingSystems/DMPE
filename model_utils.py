@@ -40,7 +40,7 @@ def simulate_ahead(
     return observations
 
 
-@partial(jax.jit, static_argnums=(0))
+@eqx.filter_jit
 def simulate_ahead_with_env(
     env,
     init_obs: jnp.ndarray,
