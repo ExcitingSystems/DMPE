@@ -10,8 +10,8 @@ import exciting_environments as excenvs
 def simulate_ahead(
     model: excenvs.core_env.CoreEnvironment,  # typehint for the time being...
     n_steps: int,
-    obs: jnp.ndarray,
-    state: jnp.ndarray,
+    init_obs: jnp.ndarray,
+    init_state: jnp.ndarray,
     actions: jnp.ndarray,
     env_state_normalizer,
     action_normalizer,
@@ -30,19 +30,8 @@ def simulate_ahead(
         observations: The gathered observations
     """
 
-    obs_dim = obs.shape[0]
-    observations = jnp.zeros([n_steps, obs_dim])
-    observations = observations.at[0, :].set(obs)
-
-    # if isinstance(model, excenvs.core_env.CoreEnvironment):
-    #     step = lambda action, state: model.step(action, state)
-    # else:
-    #     step = lambda action, state: model(action, state)
-
-    def body_fun(n, carry):
-        obs, state, observations = carry
-
-        action = actions[n-1, :]
+    def body_fun(carry, action):
+        obs, state = carry
 
         state = model._ode_exp_euler_step(
             state,
@@ -51,13 +40,11 @@ def simulate_ahead(
             action_normalizer,
             static_params
         )
-        obs = model.generate_observation(state)
+        next_obs = model.generate_observation(state)
 
-        # obs, _, _, _, state = step(action, state)
-        observations = observations.at[n, :].set(obs)
+        return (obs, state), next_obs
 
-        return (obs, state, observations)
-
-    obs, state, observations = jax.lax.fori_loop(lower=1, upper=n_steps, body_fun=body_fun, init_val=(obs, state, observations))
+    (obs, state), observations = jax.lax.scan(body_fun, (init_obs, init_state), actions[:-1, :])
+    observations = jnp.concatenate([obs[None, :], observations], axis=0)
 
     return observations
