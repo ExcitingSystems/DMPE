@@ -5,7 +5,9 @@ import numpy as np
 import jax
 import jax.numpy as jnp
 
-from model_utils import simulate_ahead
+import exciting_environments as excenvs
+
+from model_utils import simulate_ahead, simulate_ahead_with_env
 
 
 def plot_sequence(observations, actions, tau, obs_labels, action_labels):
@@ -32,7 +34,7 @@ def plot_sequence(observations, actions, tau, obs_labels, action_labels):
         axs[1].title.set_text("observations, together")
 
     for action_idx in range(actions.shape[-1]):
-        axs[2].plot(t, jnp.squeeze(actions[..., action_idx]), label=action_labels[action_idx])
+        axs[2].plot(t[:-1], jnp.squeeze(actions[..., action_idx]), label=action_labels[action_idx])
     
     axs[2].title.set_text("actions, timeseries")
     axs[2].legend()
@@ -70,7 +72,7 @@ def append_predictions_to_sequence_plot(
 
     colors = list(mcolors.CSS4_COLORS.values())[:pred_observations.shape[-1]]
     for action_idx, color in zip(range(proposed_actions.shape[-1]), colors):
-        axs[2].plot(t, jnp.squeeze(proposed_actions[..., action_idx]), color=color, label="pred " + action_labels[action_idx])
+        axs[2].plot(t[:-1], jnp.squeeze(proposed_actions[..., action_idx]), color=color, label="pred " + action_labels[action_idx])
 
     return fig, axs
 
@@ -97,16 +99,23 @@ def plot_sequence_and_prediction(
         action_labels=actions_labels,
     )
 
-    pred_observations = simulate_ahead(
-        model=model,
-        n_steps=n_prediction_steps,
-        obs=init_obs,
-        state=init_state,
-        actions=proposed_actions,
-        env_state_normalizer=model.env_state_normalizer[0, :],
-        action_normalizer=model.action_normalizer[0, :],
-        static_params={key: value[0, :] for (key, value) in model.static_params.items()}
-    )
+    if isinstance(model, excenvs.core_env.CoreEnvironment):
+        pred_observations = simulate_ahead_with_env(
+            env=model,
+            init_obs=init_obs,
+            init_state=init_state,
+            actions=proposed_actions,
+            env_state_normalizer=model.env_state_normalizer[0, :],
+            action_normalizer=model.action_normalizer[0, :],
+            static_params={key: value[0, :] for (key, value) in model.static_params.items()}
+        )
+    else:
+        pred_observations = simulate_ahead(
+            model=model,
+            init_obs=init_obs,
+            actions=proposed_actions,
+            tau=tau
+        )
 
     fig, axs = append_predictions_to_sequence_plot(
         fig=fig,
