@@ -16,7 +16,7 @@ class MLP(eqx.Module):
             out_size=obs_dim,
             width_size=width_size,
             depth=depth,
-            activation=jnn.softplus,
+            activation=jnn.leaky_relu,
             key=key,
         )
 

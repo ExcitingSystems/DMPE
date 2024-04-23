@@ -18,7 +18,7 @@ def plot_sequence(observations, actions, tau, obs_labels, action_labels):
         sharey=True
     )
 
-    t = jnp.linspace(0, observations.shape[1]-1, observations.shape[1]) * tau
+    t = jnp.linspace(0, observations.shape[0]-1, observations.shape[0]) * tau
 
     for observation_idx in range(observations.shape[-1]):
         axs[0].plot(t, jnp.squeeze(observations[..., observation_idx]), label=obs_labels[observation_idx])
@@ -57,7 +57,7 @@ def append_predictions_to_sequence_plot(
     ):
     """Appends the future predictions to the given plot."""
 
-    t = jnp.linspace(0, pred_observations.shape[1]-1, pred_observations.shape[1]) * tau
+    t = jnp.linspace(0, pred_observations.shape[0]-1, pred_observations.shape[0]) * tau
     t += tau * starting_step  # start where the trajectory left off
 
 
@@ -102,13 +102,16 @@ def plot_sequence_and_prediction(
         n_steps=n_prediction_steps,
         obs=init_obs,
         state=init_state,
-        actions=proposed_actions
+        actions=proposed_actions,
+        env_state_normalizer=model.env_state_normalizer[0, :],
+        action_normalizer=model.action_normalizer[0, :],
+        static_params={key: value[0, :] for (key, value) in model.static_params.items()}
     )
 
     fig, axs = append_predictions_to_sequence_plot(
         fig=fig,
         axs=axs,
-        starting_step=observations.shape[1],
+        starting_step=observations.shape[0],
         pred_observations=pred_observations,
         proposed_actions=proposed_actions,
         tau=tau,
@@ -137,7 +140,7 @@ def plot_2d_kde_as_contourf(
     cax = axs.contourf(
         x_plot[..., 0],
         x_plot[..., 1],
-        p_est[0, ...].reshape(x_plot.shape[:-1]),
+        p_est.reshape(x_plot.shape[:-1]),
         antialiased=False,
         levels=50,
         alpha=0.9,
@@ -146,7 +149,7 @@ def plot_2d_kde_as_contourf(
     axs.set_xlabel(observation_labels[0])
     axs.set_ylabel(observation_labels[1])
 
-    return fig, axs
+    return fig, axs, cax
 
 
 def plot_2d_kde_as_surface(
@@ -164,7 +167,7 @@ def plot_2d_kde_as_surface(
     cax = axs.plot_surface(
         x_plot[..., 0],
         x_plot[..., 1],
-        p_est[0, ...].reshape(x_plot.shape[:-1]),
+        p_est.reshape(x_plot.shape[:-1]),
         antialiased=False,
         alpha=1,
         cmap=plt.cm.coolwarm

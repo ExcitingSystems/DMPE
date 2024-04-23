@@ -12,7 +12,10 @@ def simulate_ahead(
     n_steps: int,
     obs: jnp.ndarray,
     state: jnp.ndarray,
-    actions: jnp.ndarray
+    actions: jnp.ndarray,
+    env_state_normalizer,
+    action_normalizer,
+    static_params
 ) -> jnp.ndarray:
     """Uses the given model to look ahead and simulate future observations.
     
@@ -27,21 +30,31 @@ def simulate_ahead(
         observations: The gathered observations
     """
 
-    batch_size, obs_dim = obs.shape
-    observations = jnp.zeros([batch_size, n_steps, obs_dim])
-    observations = observations.at[:, 0, :].set(obs)
+    obs_dim = obs.shape[0]
+    observations = jnp.zeros([n_steps, obs_dim])
+    observations = observations.at[0, :].set(obs)
 
-    if isinstance(model, excenvs.core_env.CoreEnvironment):
-        step = lambda action, state: model.step(action, state)
-    else:
-        step = lambda action, state: model(action, state)
+    # if isinstance(model, excenvs.core_env.CoreEnvironment):
+    #     step = lambda action, state: model.step(action, state)
+    # else:
+    #     step = lambda action, state: model(action, state)
 
     def body_fun(n, carry):
         obs, state, observations = carry
 
-        action = actions[:, n, :]
-        obs, _, _, _, state = step(action, state)
-        observations = observations.at[:, n, :].set(obs)
+        action = actions[n-1, :]
+
+        state = model._ode_exp_euler_step(
+            state,
+            action,
+            env_state_normalizer,
+            action_normalizer,
+            static_params
+        )
+        obs = model.generate_observation(state)
+
+        # obs, _, _, _, state = step(action, state)
+        observations = observations.at[n, :].set(obs)
 
         return (obs, state, observations)
 

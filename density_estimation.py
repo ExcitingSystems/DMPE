@@ -87,8 +87,8 @@ def update_kde_grid_multiple_observations(
     """
 
     shifted_gaussian_kernel = lambda x, observation, bandwidth : gaussian_kernel(x - observation, bandwidth)
-    new_sum_part = jax.vmap(shifted_gaussian_kernel, in_axes=(None, 1, None))(x_eval, observations, bandwidth)
-    new_sum_part = jnp.sum(new_sum_part, axis=0)[None, ..., None]
-    p_est = 1 / (n_observations + observations.shape[1]) * (n_observations * p_est + new_sum_part)
+    new_sum_part = jax.vmap(shifted_gaussian_kernel, in_axes=(None, 0, None))(x_eval, observations, bandwidth)
+    new_sum_part = jnp.sum(new_sum_part, axis=0)[..., None]
+    p_est = 1 / (n_observations + observations.shape[0]) * (n_observations * p_est + new_sum_part)
 
     return p_est
