@@ -6,7 +6,7 @@ import jax.numpy as jnp
 
 import exciting_environments as excenvs
 
-from model_utils import simulate_ahead, simulate_ahead_with_env
+from exciting_exciting_systems.models.model_utils import simulate_ahead, simulate_ahead_with_env
 
 
 def plot_sequence(observations, actions, tau, obs_labels, action_labels, fig=None, axs=None, dotted=False):

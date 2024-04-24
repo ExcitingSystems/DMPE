@@ -5,9 +5,9 @@ import equinox as eqx
 
 from exciting_environments.core_env import CoreEnvironment
 
-from model_utils import simulate_ahead, simulate_ahead_with_env
-from density_estimation import update_kde_grid_multiple_observations
-from metrics import JSDLoss
+from exciting_exciting_systems.models.model_utils import simulate_ahead, simulate_ahead_with_env
+from exciting_exciting_systems.utils.density_estimation import update_kde_grid_multiple_observations
+from exciting_exciting_systems.utils.metrics import JSDLoss
 
 
 @jax.jit
@@ -68,7 +68,7 @@ def loss_function(
             tau=tau
         )
 
-    p_est = update_kde_grid_multiple_observations(p_est, x, observations, start_n_measurments, bandwidth)    
+    p_est = update_kde_grid_multiple_observations(p_est, x, observations, start_n_measurments, bandwidth)
     loss = JSDLoss(
         p=p_est,
         q=target_distribution

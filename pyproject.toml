@@ -21,4 +21,10 @@ Homepage = "https://github.com/hvater/exciting-exciting-systems"
 Issues = "https://github.com/hvater/exciting-exciting-systems/issues"
 
 [tool.setuptools]
-py-modules = ["exciting_exciting_systems"]
+py-modules = [
+    "exciting_exciting_systems",
+    "evaluation",
+    "optimization",
+    "utils",
+    "models"
+]
