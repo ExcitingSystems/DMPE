@@ -29,8 +29,8 @@ def simulate_ahead(
 
     def body_fun(carry, action):
         obs = carry
-        obs = model.step(obs, action, tau)
-        return obs
+        obs = model(obs, action, tau)
+        return obs, obs
 
     _, observations = jax.lax.scan(body_fun, init_obs, actions)
     observations = jnp.concatenate([init_obs[None, :], observations], axis=0)
