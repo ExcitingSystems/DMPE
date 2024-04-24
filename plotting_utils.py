@@ -9,20 +9,27 @@ import exciting_environments as excenvs
 from model_utils import simulate_ahead, simulate_ahead_with_env
 
 
-def plot_sequence(observations, actions, tau, obs_labels, action_labels):
+def plot_sequence(observations, actions, tau, obs_labels, action_labels, fig=None, axs=None, dotted=False):
     """Plots a given sequence of observations and actions."""
 
-    fig, axs = plt.subplots(
-        nrows=1,
-        ncols=3,
-        figsize=(18, 6),
-        sharey=True
-    )
+    if fig is None or axs is None:
+        fig, axs = plt.subplots(
+            nrows=1,
+            ncols=3,
+            figsize=(18, 6),
+            sharey=True
+        )
 
     t = jnp.linspace(0, observations.shape[0]-1, observations.shape[0]) * tau
 
     for observation_idx in range(observations.shape[-1]):
-        axs[0].plot(t, jnp.squeeze(observations[..., observation_idx]), label=obs_labels[observation_idx])
+        axs[0].plot(
+            t,
+            jnp.squeeze(observations[..., observation_idx]),
+            "." if dotted else "-",
+            markersize=1,
+            label=obs_labels[observation_idx]
+        )
 
     axs[0].title.set_text("observations, timeseries")
     axs[0].legend()
@@ -32,17 +39,43 @@ def plot_sequence(observations, actions, tau, obs_labels, action_labels):
         axs[1].scatter(jnp.squeeze(observations[..., 0]), jnp.squeeze(observations[..., 1]), s=1)
         axs[1].title.set_text("observations, together")
 
-    for action_idx in range(actions.shape[-1]):
-        axs[2].plot(t[:-1], jnp.squeeze(actions[..., action_idx]), label=action_labels[action_idx])
+    if actions is not None:
+        for action_idx in range(actions.shape[-1]):
+            axs[2].plot(t[:-1], jnp.squeeze(actions[..., action_idx]), label=action_labels[action_idx])
 
-    axs[2].title.set_text("actions, timeseries")
-    axs[2].legend()
-    axs[2].set_xlabel(r"time $t$ in seconds")
+        axs[2].title.set_text("actions, timeseries")
+        axs[2].legend()
+        axs[2].set_xlabel(r"time $t$ in seconds")
 
     for ax in axs:
         ax.grid()
 
     fig.tight_layout()
+    return fig, axs
+
+
+def plot_model_performance(model, true_observations, actions, tau, obs_labels, action_labels):
+    """Compare the performance of the model to the ground truth data."""
+
+    fig, axs = plot_sequence(
+        observations=true_observations,
+        actions=actions,
+        tau=tau,
+        obs_labels=obs_labels,
+        action_labels=action_labels)
+
+    pred_observations = simulate_ahead(model, true_observations[0, :], actions, tau)
+
+    fig, axs = plot_sequence(
+        observations=pred_observations,
+        actions=None,
+        tau=tau,
+        obs_labels=obs_labels,
+        action_labels=action_labels,
+        fig=fig,
+        axs=axs,
+        dotted=True
+    )
     return fig, axs
 
 
