@@ -1,7 +1,7 @@
 import jax
 import jax.numpy as jnp
 import equinox as eqx
-from models import NeuralEulerODE
+from exciting_exciting_systems.models.models import NeuralEulerODE
 
 
 @eqx.filter_jit

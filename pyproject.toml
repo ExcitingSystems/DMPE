@@ -1,0 +1,24 @@
+[build-system]
+requires = ["setuptools"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "exciting_exciting_systems"
+version = "0.0.1"
+authors = [
+  { name="Hendrik Vater", email="vater@lea.uni-paderborn.de" },
+]
+description = "Excitation of exciting systems"
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Operating System :: OS Independent",
+]
+
+[project.urls]
+Homepage = "https://github.com/hvater/exciting-exciting-systems"
+Issues = "https://github.com/hvater/exciting-exciting-systems/issues"
+
+[tool.setuptools]
+py-modules = ["exciting_exciting_systems"]
