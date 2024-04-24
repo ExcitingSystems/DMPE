@@ -1,13 +1,9 @@
-from functools import partial
-
-from tqdm.notebook import tqdm
-
 import jax
 import jax.numpy as jnp
 import optax
 import equinox as eqx
 
-import exciting_environments as excenvs
+from exciting_environments.core_env import CoreEnvironment
 
 from model_utils import simulate_ahead, simulate_ahead_with_env
 from density_estimation import update_kde_grid_multiple_observations
@@ -33,7 +29,7 @@ def loss_function(
         bandwidth: float,
         tau: float,
         target_distribution: jnp.ndarray
-    ) -> jnp.ndarray:
+) -> jnp.ndarray:
     """Predicts a trajectory based on the given actions and the model and computes the
     corresponding loss value.
 
@@ -54,7 +50,7 @@ def loss_function(
             w.r.t. this distribution
     """
 
-    if isinstance(model, excenvs.core_env.CoreEnvironment):
+    if isinstance(model, CoreEnvironment):
         observations = simulate_ahead_with_env(
             env=model,
             init_obs=init_obs,
@@ -98,7 +94,7 @@ def optimize(
         bandwidth,
         tau,
         target_distribution
-    ):
+):
 
     solver = optax.adabelief(learning_rate=1e-1)
     opt_state = solver.init(proposed_actions)

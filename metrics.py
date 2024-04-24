@@ -5,7 +5,7 @@ import jax.numpy as jnp
 @jax.jit
 def kullback_leibler_divergence(p: jnp.ndarray, q: jnp.ndarray):
     """Computes the sample KLD between two inputs.
-    
+
     The last dim of the input needs to be of length 1. The summation occurs along the second to
     last dimension. All dimensions before that are kept as they are. Overall the shape of the
     two inputs must be indentical.
@@ -15,9 +15,9 @@ def kullback_leibler_divergence(p: jnp.ndarray, q: jnp.ndarray):
     assert p.shape == q.shape, "The two inputs need to be of the same shape."
     assert p.shape[-1] == q.shape[-1] == 1, "Last dim needs to be of length 1 for PDFs"
 
-    eps=1e-12
+    eps = 1e-12
 
-    kld = (p + eps) * jnp.log((p + eps)  / (q + eps))
+    kld = (p + eps) * jnp.log((p + eps) / (q + eps))
     return jnp.sum(kld, axis=-2)
 
 
@@ -30,7 +30,7 @@ def KLDLoss(p: jnp.ndarray, q: jnp.ndarray):
 @jax.jit
 def jensen_shannon_divergence(p: jnp.ndarray, q: jnp.ndarray):
     """Computes the sample JSD between two inputs.
-    
+
     The last dim of the input needs to be of length 1. The summation occurs along the second to
     last dimension. All dimensions before that are kept as they are. Overall the shape of the
     two inputs must be indentical.

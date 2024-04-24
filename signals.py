@@ -18,7 +18,7 @@ def aprbs_single_batch(len, t_min, t_max, key):
         steps_key, value_key, key = jax.random.split(key, 3)
 
         t_step = jax.random.randint(steps_key, shape=(1,), minval=t_min, maxval=t_max)
-           
+
         sig.append(jnp.ones(t_step) * jax.random.uniform(value_key, shape=(1,), minval=-1, maxval=1))
         t += t_step.item()
 

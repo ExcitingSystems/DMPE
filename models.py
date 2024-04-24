@@ -1,8 +1,6 @@
-import jax
 import jax.nn as jnn
 import jax.numpy as jnp
 
-import diffrax
 import equinox as eqx
 
 
@@ -23,7 +21,7 @@ class MLP(eqx.Module):
     def __call__(self, obs, action):
         obs_action = jnp.hstack([obs, action])
         return self.mlp(obs_action)
-    
+
 
 class NeuralEulerODE(eqx.Module):
     func: MLP

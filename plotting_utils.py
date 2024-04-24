@@ -2,7 +2,6 @@ import matplotlib.pyplot as plt
 import matplotlib.colors as mcolors
 import numpy as np
 
-import jax
 import jax.numpy as jnp
 
 import exciting_environments as excenvs
@@ -35,7 +34,7 @@ def plot_sequence(observations, actions, tau, obs_labels, action_labels):
 
     for action_idx in range(actions.shape[-1]):
         axs[2].plot(t[:-1], jnp.squeeze(actions[..., action_idx]), label=action_labels[action_idx])
-    
+
     axs[2].title.set_text("actions, timeseries")
     axs[2].legend()
     axs[2].set_xlabel(r"time $t$ in seconds")
@@ -56,23 +55,37 @@ def append_predictions_to_sequence_plot(
         tau,
         obs_labels,
         action_labels
-    ):
+):
     """Appends the future predictions to the given plot."""
 
     t = jnp.linspace(0, pred_observations.shape[0]-1, pred_observations.shape[0]) * tau
     t += tau * starting_step  # start where the trajectory left off
 
-
     colors = list(mcolors.CSS4_COLORS.values())[:pred_observations.shape[-1]]
     for observation_idx, color in zip(range(pred_observations.shape[-1]), colors):
-        axs[0].plot(t, jnp.squeeze(pred_observations[..., observation_idx]), color=color, label="pred " + obs_labels[observation_idx])
+        axs[0].plot(
+            t,
+            jnp.squeeze(pred_observations[..., observation_idx]),
+            color=color,
+            label="pred " + obs_labels[observation_idx]
+        )
 
     if pred_observations.shape[-1] == 2:
-        axs[1].scatter(jnp.squeeze(pred_observations[..., 0]), jnp.squeeze(pred_observations[..., 1]), s=1, color=mcolors.CSS4_COLORS["orange"])
+        axs[1].scatter(
+            jnp.squeeze(pred_observations[..., 0]),
+            jnp.squeeze(pred_observations[..., 1]),
+            s=1,
+            color=mcolors.CSS4_COLORS["orange"]
+        )
 
     colors = list(mcolors.CSS4_COLORS.values())[:pred_observations.shape[-1]]
     for action_idx, color in zip(range(proposed_actions.shape[-1]), colors):
-        axs[2].plot(t[:-1], jnp.squeeze(proposed_actions[..., action_idx]), color=color, label="pred " + action_labels[action_idx])
+        axs[2].plot(
+            t[:-1],
+            jnp.squeeze(proposed_actions[..., action_idx]),
+            color=color,
+            label="pred " + action_labels[action_idx]
+        )
 
     return fig, axs
 
@@ -84,13 +97,12 @@ def plot_sequence_and_prediction(
         obs_labels,
         actions_labels,
         model,
-        n_prediction_steps,
         init_obs,
         init_state,
         proposed_actions
-    ):
+):
     """Plots the current trajectory and appends the predictions from the optimization."""
-    
+
     fig, axs = plot_sequence(
         observations=observations,
         actions=actions,
@@ -131,13 +143,11 @@ def plot_sequence_and_prediction(
     return fig, axs
 
 
-### region: 2D only
-
 def plot_2d_kde_as_contourf(
         p_est,
         x,
         observation_labels
-    ):
+):
 
     fig, axs = plt.subplots(
         figsize=(6, 6)
@@ -165,7 +175,7 @@ def plot_2d_kde_as_surface(
         p_est,
         x,
         observation_labels
-    ):
+):
 
     fig = plt.figure(figsize=(6, 6))
     axs = fig.add_subplot(111, projection='3d')
@@ -173,7 +183,7 @@ def plot_2d_kde_as_surface(
     grid_len_per_dim = int(np.sqrt(x.shape[0]))
     x_plot = x.reshape((grid_len_per_dim, grid_len_per_dim, 2))
 
-    cax = axs.plot_surface(
+    _ = axs.plot_surface(
         x_plot[..., 0],
         x_plot[..., 1],
         p_est.reshape(x_plot.shape[:-1]),

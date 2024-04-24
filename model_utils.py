@@ -1,5 +1,3 @@
-from functools import partial
-
 import jax
 import jax.numpy as jnp
 import equinox as eqx
@@ -14,7 +12,7 @@ def simulate_ahead(
     tau: float
 ) -> jnp.ndarray:
     """Uses the given model to look ahead and simulate future observations.
-    
+
     Args:
         model: The model to use in the simulation
         init_obs: The initial observation from which to start the simulation
