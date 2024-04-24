@@ -1,0 +1,6 @@
+{
+    "python.analysis.typeCheckingMode": "off",
+    "flake8.args": [
+        "--max-line-length=120"
+     ]
+}
