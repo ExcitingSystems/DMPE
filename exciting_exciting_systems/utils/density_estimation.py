@@ -69,3 +69,17 @@ def update_kde_grid_multiple_observations(
     p_est = 1 / (n_observations + observations.shape[0]) * (n_observations * p_est + new_sum_part)
 
     return p_est
+
+
+def build_grid_2d(low, high, points_per_dim):
+    x1, x2 = [
+        jnp.linspace(low, high, points_per_dim),
+        jnp.linspace(low, high, points_per_dim)
+    ]
+
+    x_g = jnp.meshgrid(*[x1, x2])
+    x_g = jnp.stack([_x for _x in x_g], axis=-1)
+    x_g = x_g.reshape(-1, 2)
+
+    assert x_g.shape[0] == points_per_dim**2
+    return x_g
