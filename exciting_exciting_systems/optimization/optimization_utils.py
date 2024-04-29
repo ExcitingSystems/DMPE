@@ -6,7 +6,9 @@ import equinox as eqx
 from exciting_environments.core_env import CoreEnvironment
 
 from exciting_exciting_systems.models.model_utils import simulate_ahead, simulate_ahead_with_env
-from exciting_exciting_systems.utils.density_estimation import update_kde_grid_multiple_observations
+from exciting_exciting_systems.utils.density_estimation import (
+    update_kde_grid_multiple_observations, update_kde_grid
+)
 from exciting_exciting_systems.utils.metrics import JSDLoss
 
 
@@ -82,10 +84,12 @@ def loss_function(
     return loss + penalty_terms
 
 
+@eqx.filter_jit
 def optimize(
         grad_loss_function,
         proposed_actions,
         model,
+        solver,
         init_obs,
         init_state,
         p_est,
@@ -95,11 +99,10 @@ def optimize(
         tau,
         target_distribution
 ):
-
-    solver = optax.adabelief(learning_rate=1e-1)
     opt_state = solver.init(proposed_actions)
 
-    for iter in range(5):
+    def body_fun(i, carry):
+        proposed_actions, opt_state = carry
         grad = jax.vmap(
             grad_loss_function,
             in_axes=(None, 0, 0, 0, 0, None, None, None, None, None)
@@ -117,21 +120,50 @@ def optimize(
         )
         updates, opt_state = solver.update(grad, opt_state, proposed_actions)
         proposed_actions = optax.apply_updates(proposed_actions, updates)
+        return (proposed_actions, opt_state)
 
-    final_loss = jax.vmap(
-            loss_function,
-            in_axes=(None, 0, 0, 0, 0, None, None, None, None, None)
-        )(
-            model,
-            init_obs,
-            init_state,
-            proposed_actions,
-            p_est,
-            x,
-            start_n_measurments,
-            bandwidth,
-            tau,
-            target_distribution
-        )
+    proposed_actions, _ = jax.lax.fori_loop(0, 5, body_fun, (proposed_actions, opt_state))
+    return proposed_actions
 
-    return proposed_actions, final_loss
+
+@eqx.filter_jit
+def choose_action(
+        grad_loss_function,
+        proposed_actions,
+        model,
+        solver_prediction,
+        init_obs,
+        init_state,
+        p_est,
+        x_g,
+        start_n_measurments,
+        bandwidth,
+        tau,
+        target_distribution
+):
+    """Chooses which action to apply and updated the underlying density estimate."""
+
+    proposed_actions = optimize(
+        grad_loss_function=grad_loss_function,
+        proposed_actions=proposed_actions,
+        model=model,
+        solver=solver_prediction,
+        init_obs=init_obs,
+        init_state=init_state,
+        p_est=p_est,
+        x=x_g,
+        start_n_measurments=start_n_measurments,
+        bandwidth=bandwidth,
+        tau=tau,
+        target_distribution=target_distribution
+    )
+
+    # update grid KDE with x_k
+    p_est = jax.vmap(update_kde_grid, in_axes=[0, None, 0, None, None])(
+        p_est, x_g, init_obs, start_n_measurments, bandwidth
+    )
+
+    action = proposed_actions[:, 0, :]
+    proposed_actions = proposed_actions.at[:, :-1, :].set(proposed_actions[:, 1:, :])
+
+    return action, proposed_actions, p_est
