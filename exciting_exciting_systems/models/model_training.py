@@ -49,3 +49,21 @@ def dataloader(memory, batch_size, sequence_length, key):
         batched_actions = actions[slice]
 
         yield tuple([batched_observations, batched_actions])
+
+
+@eqx.filter_jit
+def load_single_batch(observations_array, actions_array, starting_points, sequence_length):
+
+    slice = jnp.linspace(
+            start=starting_points,
+            stop=starting_points+sequence_length,
+            num=sequence_length,
+            dtype=int
+        ).T
+
+    batched_observations = observations_array[slice]
+    batched_actions = actions_array[slice]
+
+    batched_observations = batched_observations[:, :, :]
+    batched_actions = batched_actions[:, :-1, :]
+    return batched_observations, batched_actions
