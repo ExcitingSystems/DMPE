@@ -30,7 +30,7 @@ def excite(
 
 ):
     """Choose an action and apply it on the system.
-    
+
     Only jit-compilable if the call to the environment's step function is jit-compilable.   
     """
 
@@ -101,7 +101,7 @@ def precompute_starting_points(
     index_normalized = jax.random.uniform(loader_key, shape=(n_train_steps, training_batch_size)) * (k + 1 - sequence_length)
     starting_points = index_normalized.astype(jnp.int32) 
     (loader_key,) = jax.random.split(loader_key, 1)
-  
+
     return starting_points, loader_key
 
 
@@ -131,7 +131,7 @@ def excite_and_fit(
         loader_key
 ):
     """Main algorithm to throw at a given (unknown) system and generate informative data from that system.
-    
+
     Args:
 
     Returns:
@@ -155,7 +155,7 @@ def excite_and_fit(
             tau,
             target_distribution
         )
-        
+
         if k > n_prediction_steps:
             starting_points, loader_key = precompute_starting_points(
                 n_train_steps, jnp.array([k]), sequence_length, training_batch_size, loader_key
@@ -174,18 +174,18 @@ def excite_and_fit(
                 opt_state_model
             )
 
-        if k % 500 == 0 and k > 0:
-            fig, axs = plot_sequence_and_prediction(
-                observations=observations[:k+2,:],
-                actions=actions[:k+1,:],
-                tau=tau,
-                obs_labels=[r"$\theta$", r"$\omega$"],
-                actions_labels=[r"$u$"],
-                model=env,
-                init_obs=obs[0, :],
-                init_state=state[0, :],
-                proposed_actions=proposed_actions[0, :]
-            )
-            plt.show()
+        # if k % 500 == 0 and k > 0:
+        #     fig, axs = plot_sequence_and_prediction(
+        #         observations=observations[:k+2,:],
+        #         actions=actions[:k+1,:],
+        #         tau=tau,
+        #         obs_labels=[r"$\theta$", r"$\omega$"],
+        #         actions_labels=[r"$u$"],
+        #         model=env,
+        #         init_obs=obs[0, :],
+        #         init_state=state[0, :],
+        #         proposed_actions=proposed_actions[0, :]
+        #     )
+        #     plt.show()
 
     return observations, actions, model
