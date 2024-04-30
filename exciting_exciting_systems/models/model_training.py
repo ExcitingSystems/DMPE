@@ -5,7 +5,7 @@ import equinox as eqx
 from exciting_exciting_systems.models.model_utils import simulate_ahead
 
 
-@eqx.filter_value_and_grad
+@eqx.filter_grad
 def grad_loss(model, true_obs, actions, tau, featurize):
 
     pred_obs = jax.vmap(simulate_ahead, in_axes=(None, 0, 0, None))(model, true_obs[:, 0, :], actions, tau)
@@ -18,10 +18,10 @@ def grad_loss(model, true_obs, actions, tau, featurize):
 
 @eqx.filter_jit
 def make_step(model, observations, actions, tau, opt_state, featurize, optim):
-    loss, grads = grad_loss(model, observations, actions, tau, featurize)
+    grads = grad_loss(model, observations, actions, tau, featurize)
     updates, opt_state = optim.update(grads, opt_state)
     model = eqx.apply_updates(model, updates)
-    return loss, model, opt_state
+    return model, opt_state
 
 
 def dataloader(memory, batch_size, sequence_length, key):

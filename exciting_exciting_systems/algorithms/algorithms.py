@@ -69,16 +69,22 @@ def fit(
     tau,
     featurize,
     optim,
-    opt_state
+    init_opt_state
 ):
     """Fit the model on the gathered data."""
-    for (i, iter_starting_points) in zip(range(n_train_steps), starting_points):
+
+    dynamic_init_model_state, static_model_state = eqx.partition(model, eqx.is_array)
+    init_carry = (dynamic_init_model_state, init_opt_state)
+
+    def body_fun(i, carry):
+        dynamic_model_state, opt_state = carry
+        model_state = eqx.combine(static_model_state, dynamic_model_state)
 
         batched_observations, batched_actions = load_single_batch(
-            observations, actions, iter_starting_points, sequence_length
+            observations, actions, starting_points[i, ...], sequence_length
         )
-        model_training_loss, model, opt_state = make_step(
-            model,
+        new_model_state, new_opt_state = make_step(
+            model_state,
             batched_observations,
             batched_actions,
             tau,
@@ -87,7 +93,13 @@ def fit(
             optim
         )
 
-    return model_training_loss, model, opt_state
+        new_dynamic_model_state, new_static_model_state = eqx.partition(new_model_state, eqx.is_array)
+        assert eqx.tree_equal(static_model_state, new_static_model_state) is True
+        return (new_dynamic_model_state, new_opt_state)
+
+    final_dynamic_model_state, final_opt_state = jax.lax.fori_loop(lower=0, upper=n_train_steps,body_fun=body_fun, init_val=init_carry)
+    final_model = eqx.combine(static_model_state, final_dynamic_model_state)
+    return final_model, final_opt_state
 
 
 @eqx.filter_jit
@@ -161,7 +173,7 @@ def excite_and_fit(
                 n_train_steps, jnp.array([k]), sequence_length, training_batch_size, loader_key
             )
 
-            model_training_loss, model, opt_state_model = fit(
+            model, opt_state_model = fit(
                 model,
                 n_train_steps,
                 starting_points,
