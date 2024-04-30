@@ -1,6 +1,8 @@
 import jax
 import jax.numpy as jnp
 
+import equinox as eqx
+
 
 @jax.jit
 def gaussian_kernel(x: jnp.ndarray, bandwidth: float) -> jnp.ndarray:
@@ -13,49 +15,62 @@ def gaussian_kernel(x: jnp.ndarray, bandwidth: float) -> jnp.ndarray:
     return 1 / factor * jnp.exp(- jnp.linalg.norm(x, axis=-1)**2 / (2*bandwidth**2))
 
 
+class DensityEstimate(eqx.Module):
+    """Holds an estimation of the density of sampled datapoints."""
+
+    p: jnp.float32
+    x_g: jnp.ndarray
+    bandwidth: jnp.ndarray
+    n_observations: jnp.ndarray
+
+    @classmethod
+    def from_estimate(cls, p, n_additional_observations, density_estimate):
+        return cls(
+            p=p,
+            n_observations=(density_estimate.n_observations + n_additional_observations),
+            x_g=density_estimate.x_g,
+            bandwidth=density_estimate.bandwidth
+        )
+
+
 @jax.jit
-def update_kde_grid(
-        kde_grid: jnp.ndarray,
-        x_eval: jnp.ndarray,
-        observation: jnp.ndarray,
-        n_observations: int,
-        bandwidth: float,
+def update_density_estimate(
+        density_estimate: DensityEstimate,
+        observation: jnp.ndarray
 ) -> jnp.ndarray:
     """Recursive update to the kernel density estimation (KDE) on a fixed grid.
 
     Args:
-        kde_grid: Values of the KDE before the update
-        x_eval: The grid points
+        density_estimate: The density estimate before the update
         observation: The new data point
-        n_observations: The number of observations in the estimate without the new data point
-        bandwidth: The bandwidth of the KDE
 
     Returns:
-        The updated values for the KDE
+        The updated density estimate
     """
     kernel_value = gaussian_kernel(
-        x=x_eval - observation,
-        bandwidth=bandwidth
+        x=density_estimate.x_g - observation,
+        bandwidth=density_estimate.bandwidth
     )
-    return 1 / (n_observations + 1) * (n_observations * kde_grid + kernel_value[..., None])
+    p_est = (1 / (density_estimate.n_observations + 1) 
+             * (density_estimate.n_observations * density_estimate.p + kernel_value[..., None]))
+
+    return DensityEstimate.from_estimate(
+        p=p_est,
+        n_additional_observations=1,
+        density_estimate=density_estimate
+    )
 
 
 @jax.jit
-def update_kde_grid_multiple_observations(
-        p_est: jnp.ndarray,
-        x_eval: jnp.ndarray,
-        observations: jnp.ndarray,
-        n_observations: int,
-        bandwidth: float
+def update_density_estimate_multiple_observations(
+        density_estimate: DensityEstimate,
+        observations: jnp.ndarray
 ) -> jnp.ndarray:
     """Add a new sequence of observations to the current data density estimate.
 
     Args:
-        p_est: Values of the density estimate before the update
-        x_eval: The grid points of the density estimate
+        density_estimate: The density estimate before the update
         observations: The sequence of observations
-        n_observations: The number of observations in the estimate without the new data observations
-        bandwidth: The bandwidth of the KDE
 
     Returns:
         The updated values for the density estimate
@@ -64,11 +79,18 @@ def update_kde_grid_multiple_observations(
     def shifted_gaussian_kernel(x, observation, bandwidth):
         return gaussian_kernel(x - observation, bandwidth)
 
-    new_sum_part = jax.vmap(shifted_gaussian_kernel, in_axes=(None, 0, None))(x_eval, observations, bandwidth)
+    new_sum_part = jax.vmap(shifted_gaussian_kernel, in_axes=(None, 0, None))(
+        density_estimate.x_g, observations, density_estimate.bandwidth
+    )
     new_sum_part = jnp.sum(new_sum_part, axis=0)[..., None]
-    p_est = 1 / (n_observations + observations.shape[0]) * (n_observations * p_est + new_sum_part)
-
-    return p_est
+    p_est = (1 / (density_estimate.n_observations + observations.shape[0])
+             * (density_estimate.n_observations * density_estimate.p + new_sum_part))
+    
+    return DensityEstimate.from_estimate(
+        p=p_est,
+        n_additional_observations=observations.shape[0],
+        density_estimate=density_estimate
+    )
 
 
 def build_grid_2d(low, high, points_per_dim):
