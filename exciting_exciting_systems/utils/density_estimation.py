@@ -16,7 +16,15 @@ def gaussian_kernel(x: jnp.ndarray, bandwidth: float) -> jnp.ndarray:
 
 
 class DensityEstimate(eqx.Module):
-    """Holds an estimation of the density of sampled datapoints."""
+    """Holds an estimation of the density of sampled datapoints.
+    
+    Args:
+        p: The probability estimates at the grid points
+        x_g: The grid points
+        bandwidth: The bandwidth of the kernel density estimate
+        n_observations: The number of observations that make up the current
+            estimate
+    """
 
     p: jnp.float32
     x_g: jnp.ndarray
@@ -85,7 +93,7 @@ def update_density_estimate_multiple_observations(
     new_sum_part = jnp.sum(new_sum_part, axis=0)[..., None]
     p_est = (1 / (density_estimate.n_observations + observations.shape[0])
              * (density_estimate.n_observations * density_estimate.p + new_sum_part))
-    
+
     return DensityEstimate.from_estimate(
         p=p_est,
         n_additional_observations=observations.shape[0],
