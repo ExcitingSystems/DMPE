@@ -7,7 +7,7 @@ from exciting_environments.core_env import CoreEnvironment
 
 from exciting_exciting_systems.models.model_utils import simulate_ahead, simulate_ahead_with_env
 from exciting_exciting_systems.utils.density_estimation import (
-    update_kde_grid_multiple_observations, update_kde_grid
+    DensityEstimate, update_density_estimate, update_density_estimate_multiple_observations
 )
 from exciting_exciting_systems.utils.metrics import JSDLoss
 
@@ -25,10 +25,7 @@ def loss_function(
         init_obs: jnp.ndarray,
         init_state: jnp.ndarray,
         actions: jnp.ndarray,
-        p_est: jnp.ndarray,
-        x: jnp.ndarray,
-        start_n_measurments: jnp.ndarray,
-        bandwidth: float,
+        density_estimate: DensityEstimate,
         tau: float,
         target_distribution: jnp.ndarray
 ) -> jnp.ndarray:
@@ -42,11 +39,7 @@ def loss_function(
         actions: The actions to apply in each step of the simulation, the length
             of the first dimension of this array determine the lenght of the
             output.
-        p_est: The current estimation for the probability density
-        x: The grid coordinates for the density estimation
-        start_n_measurements: The number of measurements actually gathered from the
-            environment so far
-        bandwidth: The bandwidth of the density estimation
+        density_estimate: The current estimate of the data density
         tau: The sampling time for the model
         target_distribution: The goal distribution of the data. The JSD loss is computed
             w.r.t. this distribution
@@ -70,9 +63,9 @@ def loss_function(
             tau=tau
         )
 
-    p_est = update_kde_grid_multiple_observations(p_est, x, observations, start_n_measurments, bandwidth)
+    predicted_density_estimate = update_density_estimate_multiple_observations(density_estimate, observations)
     loss = JSDLoss(
-        p=p_est,
+        p=predicted_density_estimate.p,
         q=target_distribution
     )
 
@@ -92,10 +85,7 @@ def optimize(
         solver,
         init_obs,
         init_state,
-        p_est,
-        x,
-        start_n_measurments,
-        bandwidth,
+        density_estimate,
         tau,
         target_distribution
 ):
@@ -105,16 +95,13 @@ def optimize(
         proposed_actions, opt_state = carry
         grad = jax.vmap(
             grad_loss_function,
-            in_axes=(None, 0, 0, 0, 0, None, None, None, None, None)
+            in_axes=(None, 0, 0, 0, DensityEstimate(0, None, None, None), None, None),
         )(
             model,
             init_obs,
             init_state,
             proposed_actions,
-            p_est,
-            x,
-            start_n_measurments,
-            bandwidth,
+            density_estimate,
             tau,
             target_distribution
         )
@@ -134,10 +121,7 @@ def choose_action(
         solver_prediction,
         init_obs,
         init_state,
-        p_est,
-        x_g,
-        start_n_measurments,
-        bandwidth,
+        density_estimate,
         tau,
         target_distribution
 ):
@@ -150,20 +134,60 @@ def choose_action(
         solver=solver_prediction,
         init_obs=init_obs,
         init_state=init_state,
-        p_est=p_est,
-        x=x_g,
-        start_n_measurments=start_n_measurments,
-        bandwidth=bandwidth,
+        density_estimate=density_estimate,
         tau=tau,
         target_distribution=target_distribution
     )
 
     # update grid KDE with x_k
-    p_est = jax.vmap(update_kde_grid, in_axes=[0, None, 0, None, None])(
-        p_est, x_g, init_obs, start_n_measurments, bandwidth
-    )
+    density_estimate = jax.vmap(
+        update_density_estimate,
+        in_axes=[DensityEstimate(0, None, None, None), 0],
+        out_axes=DensityEstimate(0, None, None, None)
+    )(density_estimate, init_obs)
 
     action = proposed_actions[:, 0, :]
     proposed_actions = proposed_actions.at[:, :-1, :].set(proposed_actions[:, 1:, :])
 
-    return action, proposed_actions, p_est
+    return action, proposed_actions, density_estimate
+
+@eqx.filter_jit
+def excite(
+    env,
+    actions,
+    observations,
+    grad_loss_function,
+    proposed_actions,
+    model,
+    solver_prediction,
+    obs,
+    state,
+    density_estimate,
+    tau,
+    target_distribution
+
+):
+    """Choose an action and apply it on the system.
+
+    Only jit-compilable if the call to the environment's step function is jit-compilable.   
+    """
+
+    action, proposed_actions, p_est = choose_action(
+        grad_loss_function,
+        proposed_actions,
+        model,
+        solver_prediction,
+        obs,
+        state,
+        density_estimate,
+        tau,
+        target_distribution
+    )
+
+    # apply u_k = \hat{u}_{k+1} and go to x_{k+1}
+    obs, _, _, _, state = env.step(action, state)
+
+    actions = actions.at[density_estimate.n_observations].set(action[0])  # store u_k
+    observations = observations.at[density_estimate.n_observations+1].set(obs[0])  # store x_{k+1}
+
+    return obs, state, actions, observations, proposed_actions, p_est

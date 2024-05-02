@@ -67,3 +67,47 @@ def load_single_batch(observations_array, actions_array, starting_points, sequen
     batched_observations = batched_observations[:, :, :]
     batched_actions = batched_actions[:, :-1, :]
     return batched_observations, batched_actions
+
+
+@eqx.filter_jit
+def fit(
+    model,
+    n_train_steps,
+    starting_points,
+    sequence_length,
+    observations,
+    actions,
+    tau,
+    featurize,
+    optim,
+    init_opt_state
+):
+    """Fit the model on the gathered data."""
+
+    dynamic_init_model_state, static_model_state = eqx.partition(model, eqx.is_array)
+    init_carry = (dynamic_init_model_state, init_opt_state)
+
+    def body_fun(i, carry):
+        dynamic_model_state, opt_state = carry
+        model_state = eqx.combine(static_model_state, dynamic_model_state)
+
+        batched_observations, batched_actions = load_single_batch(
+            observations, actions, starting_points[i, ...], sequence_length
+        )
+        new_model_state, new_opt_state = make_step(
+            model_state,
+            batched_observations,
+            batched_actions,
+            tau,
+            opt_state,
+            featurize,
+            optim
+        )
+
+        new_dynamic_model_state, new_static_model_state = eqx.partition(new_model_state, eqx.is_array)
+        assert eqx.tree_equal(static_model_state, new_static_model_state) is True
+        return (new_dynamic_model_state, new_opt_state)
+
+    final_dynamic_model_state, final_opt_state = jax.lax.fori_loop(lower=0, upper=n_train_steps,body_fun=body_fun, init_val=init_carry)
+    final_model = eqx.combine(static_model_state, final_dynamic_model_state)
+    return final_model, final_opt_state
