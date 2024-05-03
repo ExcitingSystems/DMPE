@@ -10,21 +10,6 @@ from exciting_exciting_systems.optimization import excite
 from exciting_exciting_systems.models.model_training import fit
 
 
-@eqx.filter_jit
-def precompute_starting_points(
-        n_train_steps,
-        k,
-        sequence_length,
-        training_batch_size,
-        loader_key
-):
-    index_normalized = jax.random.uniform(loader_key, shape=(n_train_steps, training_batch_size)) * (k + 1 - sequence_length)
-    starting_points = index_normalized.astype(jnp.int32) 
-    (loader_key,) = jax.random.split(loader_key, 1)
-
-    return starting_points, loader_key
-
-
 def excite_and_fit(
         n_timesteps,
         env,
@@ -96,7 +81,7 @@ def excite_and_fit(
                 tau=tau,
                 obs_labels=[r"$\theta$", r"$\omega$"],
                 actions_labels=[r"$u$"],
-                model=env,
+                model=model,
                 init_obs=obs[0, :],
                 init_state=state[0, :],
                 proposed_actions=proposed_actions[0, :]

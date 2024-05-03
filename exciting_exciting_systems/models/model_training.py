@@ -70,6 +70,21 @@ def load_single_batch(observations_array, actions_array, starting_points, sequen
 
 
 @eqx.filter_jit
+def precompute_starting_points(
+        n_train_steps,
+        k,
+        sequence_length,
+        training_batch_size,
+        loader_key
+):
+    index_normalized = jax.random.uniform(loader_key, shape=(n_train_steps, training_batch_size)) * (k + 1 - sequence_length)
+    starting_points = index_normalized.astype(jnp.int32) 
+    (loader_key,) = jax.random.split(loader_key, 1)
+
+    return starting_points, loader_key
+
+
+@eqx.filter_jit
 def fit(
     model,
     n_train_steps,
