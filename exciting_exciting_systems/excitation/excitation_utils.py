@@ -1,3 +1,5 @@
+from typing import Callable
+
 import jax
 import jax.numpy as jnp
 import optax
@@ -78,7 +80,7 @@ def loss_function(
 
 
 @eqx.filter_jit
-def optimize(
+def optimize_actions(
         grad_loss_function,
         proposed_actions,
         model,
@@ -89,6 +91,10 @@ def optimize(
         tau,
         target_distribution
 ):
+    """Uses the model to compute the effect of actions onto the state/observation trajectory to 
+    optimize the actions w.r.t. the given (gradient of the) loss function.
+    """
+
     opt_state = solver.init(proposed_actions)
 
     def body_fun(i, carry):
@@ -113,40 +119,68 @@ def optimize(
     return proposed_actions
 
 
-@eqx.filter_jit
-def choose_action(
-        grad_loss_function,
-        proposed_actions,
-        model,
-        solver_prediction,
-        init_obs,
-        init_state,
-        density_estimate,
-        tau,
-        target_distribution
-):
-    """Chooses which action to apply and updated the underlying density estimate."""
+class Exciter(eqx.Module):
+    """A class that carries the necessary tools for excitation input computations.
+    
+    Args:
+        grad_loss_function: The gradient of the loss function w.r.t. the actions as
+            a callable function
+        excitiation_solver: The solver/optimizer for the excitation input computation
+        tau: The time step length of the simulation
+        target_distribution: The targeted distribution for the data density
+    """
 
-    proposed_actions = optimize(
-        grad_loss_function=grad_loss_function,
-        proposed_actions=proposed_actions,
-        model=model,
-        solver=solver_prediction,
-        init_obs=init_obs,
-        init_state=init_state,
-        density_estimate=density_estimate,
-        tau=tau,
-        target_distribution=target_distribution
-    )
+    grad_loss_function: Callable
+    excitation_solver: optax._src.base.GradientTransformationExtraArgs
+    tau: float
+    target_distribution: jnp.ndarray
 
-    # update grid KDE with x_k
-    density_estimate = jax.vmap(
-        update_density_estimate,
-        in_axes=[DensityEstimate(0, None, None, None), 0],
-        out_axes=DensityEstimate(0, None, None, None)
-    )(density_estimate, init_obs)
+    @eqx.filter_jit
+    def choose_action(
+            self,
+            obs: jnp.ndarray,
+            state: jnp.ndarray,
+            model,
+            density_estimate: DensityEstimate,
+            proposed_actions: jnp.ndarray,
+    ) -> tuple[jnp.ndarray, jnp.ndarray, DensityEstimate]:
+        """Chooses the next action to take, updates the density estimate and 
+        proposes future actions.
 
-    action = proposed_actions[:, 0, :]
-    proposed_actions = proposed_actions.at[:, :-1, :].set(proposed_actions[:, 1:, :])
+        Args:
+            obs: The current observations from which to start
+            state: The current state from which to start
+            model: The current model of the environment used for the prediction
+            density_estimate: The current estimate of the data density without
+                the current step k
+            propsed_actions: An initial proposition of actions to take
 
-    return action, proposed_actions, density_estimate
+        Returns:
+            action: The chosen action
+            next_proposed_actions: An initial proposition for future actions
+            density_estimate: The updated density estimate now incorporating
+                the current step k
+        """
+        proposed_actions = optimize_actions(
+            grad_loss_function=self.grad_loss_function,
+            proposed_actions=proposed_actions,
+            model=model,
+            solver=self.excitation_solver,
+            init_obs=obs,
+            init_state=state,
+            density_estimate=density_estimate,
+            tau=self.tau,
+            target_distribution=self.target_distribution
+        )
+    
+        # update grid KDE with x_k
+        density_estimate = jax.vmap(
+            update_density_estimate,
+            in_axes=[DensityEstimate(0, None, None, None), 0],
+            out_axes=DensityEstimate(0, None, None, None)
+        )(density_estimate, obs)
+    
+        action = proposed_actions[:, 0, :]
+        next_proposed_actions = proposed_actions.at[:, :-1, :].set(proposed_actions[:, 1:, :])
+    
+        return action, next_proposed_actions, density_estimate
