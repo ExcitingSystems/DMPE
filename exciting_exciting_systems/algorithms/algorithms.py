@@ -5,30 +5,29 @@ import jax
 import jax.numpy as jnp
 import equinox as eqx
 
+from exciting_exciting_systems.algorithms.algorithm_utils import interact_and_observe
+from exciting_exciting_systems.models.model_training import precompute_starting_points, fit
 from exciting_exciting_systems.evaluation.plotting_utils import plot_sequence_and_prediction
-from exciting_exciting_systems.optimization import excite
-from exciting_exciting_systems.models.model_training import fit
+
 
 
 def excite_and_fit(
         n_timesteps,
         env,
-        grad_loss_function,
         obs,
         state,
         proposed_actions,
-        density_estimate,
-        tau,
-        target_distribution,
-        n_prediction_steps,
-        training_batch_size,
+        exciter,
         model,
-        n_train_steps,
-        sequence_length,
+        density_estimate,
         observations,
         actions,
+        tau,
+        start_learning,
+        training_batch_size,
+        n_train_steps,
+        sequence_length,
         featurize,
-        solver_prediction,
         solver_model,
         opt_state_model,
         loader_key
@@ -41,22 +40,25 @@ def excite_and_fit(
 
     """
     for k in tqdm(range(n_timesteps)):
-        obs, state, actions, observations, proposed_actions, density_estimate = excite(
-            env,
-            actions,
-            observations,
-            grad_loss_function,
-            proposed_actions,
-            model,
-            solver_prediction,
-            obs,
-            state,
-            density_estimate,
-            tau,
-            target_distribution
+        action, proposed_actions, density_estimate = exciter.choose_action(
+            obs=obs,
+            state=state,
+            model=model,
+            density_estimate=density_estimate,
+            proposed_actions=proposed_actions
         )
 
-        if k > n_prediction_steps:
+        obs, state, actions, observations = interact_and_observe(
+            env=env,
+            k=jnp.array([k]),
+            action=action,
+            obs=obs,
+            state=state,
+            actions=actions,
+            observations=observations
+        )
+
+        if k > start_learning:
             starting_points, loader_key = precompute_starting_points(
                 n_train_steps, jnp.array([k]), sequence_length, training_batch_size, loader_key
             )

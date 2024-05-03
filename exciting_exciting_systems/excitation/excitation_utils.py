@@ -94,7 +94,6 @@ def optimize_actions(
     """Uses the model to compute the effect of actions onto the state/observation trajectory to 
     optimize the actions w.r.t. the given (gradient of the) loss function.
     """
-
     opt_state = solver.init(proposed_actions)
 
     def body_fun(i, carry):
