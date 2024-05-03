@@ -84,7 +84,7 @@ def optimize_actions(
         grad_loss_function,
         proposed_actions,
         model,
-        solver,
+        optimizer,
         init_obs,
         init_state,
         density_estimate,
@@ -94,7 +94,7 @@ def optimize_actions(
     """Uses the model to compute the effect of actions onto the state/observation trajectory to 
     optimize the actions w.r.t. the given (gradient of the) loss function.
     """
-    opt_state = solver.init(proposed_actions)
+    opt_state = optimizer.init(proposed_actions)
 
     def body_fun(i, carry):
         proposed_actions, opt_state = carry
@@ -110,7 +110,7 @@ def optimize_actions(
             tau,
             target_distribution
         )
-        updates, opt_state = solver.update(grad, opt_state, proposed_actions)
+        updates, opt_state = optimizer.update(grad, opt_state, proposed_actions)
         proposed_actions = optax.apply_updates(proposed_actions, updates)
         return (proposed_actions, opt_state)
 
@@ -124,13 +124,13 @@ class Exciter(eqx.Module):
     Args:
         grad_loss_function: The gradient of the loss function w.r.t. the actions as
             a callable function
-        excitiation_solver: The solver/optimizer for the excitation input computation
+        excitiation_optimizer: The optimizer for the excitation input computation
         tau: The time step length of the simulation
         target_distribution: The targeted distribution for the data density
     """
 
     grad_loss_function: Callable
-    excitation_solver: optax._src.base.GradientTransformationExtraArgs
+    excitation_optimizer: optax._src.base.GradientTransformationExtraArgs
     tau: float
     target_distribution: jnp.ndarray
 
@@ -164,7 +164,7 @@ class Exciter(eqx.Module):
             grad_loss_function=self.grad_loss_function,
             proposed_actions=proposed_actions,
             model=model,
-            solver=self.excitation_solver,
+            optimizer=self.excitation_optimizer,
             init_obs=obs,
             init_state=state,
             density_estimate=density_estimate,

@@ -10,25 +10,18 @@ from exciting_exciting_systems.models.model_training import precompute_starting_
 from exciting_exciting_systems.evaluation.plotting_utils import plot_sequence_and_prediction
 
 
-
 def excite_and_fit(
         n_timesteps,
         env,
+        model,
         obs,
         state,
         proposed_actions,
         exciter,
-        model,
+        model_trainer,
         density_estimate,
         observations,
         actions,
-        tau,
-        start_learning,
-        training_batch_size,
-        n_train_steps,
-        sequence_length,
-        featurize,
-        solver_model,
         opt_state_model,
         loader_key
 ):
@@ -58,29 +51,21 @@ def excite_and_fit(
             observations=observations
         )
 
-        if k > start_learning:
-            starting_points, loader_key = precompute_starting_points(
-                n_train_steps, jnp.array([k]), sequence_length, training_batch_size, loader_key
-            )
-
-            model, opt_state_model = fit(
-                model,
-                n_train_steps,
-                starting_points,
-                sequence_length,
-                observations, 
-                actions,
-                tau,
-                featurize,
-                solver_model,
-                opt_state_model
+        if k > model_trainer.start_learning:
+            model, opt_state_model, loader_key = model_trainer.fit(
+                model=model,
+                k=jnp.array([k]),
+                observations=observations,
+                actions=actions,
+                opt_state=opt_state_model,
+                loader_key=loader_key
             )
 
         if k % 500 == 0 and k > 0:
             fig, axs = plot_sequence_and_prediction(
                 observations=observations[:k+2,:],
                 actions=actions[:k+1,:],
-                tau=tau,
+                tau=exciter.tau,
                 obs_labels=[r"$\theta$", r"$\omega$"],
                 actions_labels=[r"$u$"],
                 model=model,
@@ -90,4 +75,4 @@ def excite_and_fit(
             )
             plt.show()
 
-    return observations, actions, model
+    return observations, actions, model, density_estimate

@@ -1,6 +1,9 @@
+from typing import Callable
+
 import jax
 import jax.numpy as jnp
 import equinox as eqx
+import optax
 
 from exciting_exciting_systems.models.model_utils import simulate_ahead
 
@@ -86,16 +89,16 @@ def precompute_starting_points(
 
 @eqx.filter_jit
 def fit(
-    model,
-    n_train_steps,
-    starting_points,
-    sequence_length,
-    observations,
-    actions,
-    tau,
-    featurize,
-    optim,
-    init_opt_state
+        model,
+        n_train_steps,
+        starting_points,
+        sequence_length,
+        observations,
+        actions,
+        tau,
+        featurize,
+        optim,
+        init_opt_state
 ):
     """Fit the model on the gathered data."""
 
@@ -126,3 +129,44 @@ def fit(
     final_dynamic_model_state, final_opt_state = jax.lax.fori_loop(lower=0, upper=n_train_steps,body_fun=body_fun, init_val=init_carry)
     final_model = eqx.combine(static_model_state, final_dynamic_model_state)
     return final_model, final_opt_state
+
+
+class ModelTrainer(eqx.Module):
+    start_learning: jnp.int32
+    training_batch_size: jnp.int32
+    n_train_steps: jnp.int32
+    sequence_length: jnp.int32
+    featurize: Callable
+    model_optimizer: optax._src.base.GradientTransformationExtraArgs
+    tau: jnp.float32
+
+    def fit(
+            self,
+            model,
+            k,
+            observations,
+            actions,
+            opt_state,
+            loader_key
+    ):
+        starting_points, loader_key = precompute_starting_points(
+            n_train_steps=self.n_train_steps,
+            k=k,
+            sequence_length=self.sequence_length,
+            training_batch_size=self.training_batch_size,
+            loader_key=loader_key
+        )
+
+        final_model, final_opt_state = fit(
+            model=model,
+            n_train_steps=self.n_train_steps,
+            starting_points=starting_points,
+            sequence_length=self.sequence_length,
+            observations=observations,
+            actions=actions,
+            tau=self.tau,
+            featurize=self.featurize,
+            optim=self.model_optimizer,
+            init_opt_state=opt_state
+        )
+        return final_model, final_opt_state, loader_key
