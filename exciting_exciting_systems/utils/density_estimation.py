@@ -42,7 +42,7 @@ class DensityEstimate(eqx.Module):
 
 
 @jax.jit
-def update_density_estimate(
+def update_density_estimate_single_observation(
         density_estimate: DensityEstimate,
         observation: jnp.ndarray
 ) -> jnp.ndarray:
@@ -101,6 +101,8 @@ def update_density_estimate_multiple_observations(
     )
 
 
+# TODO: implement a more general build_grid function for arbitrary dims and constraints
+
 def build_grid_2d(low, high, points_per_dim):
     x1, x2 = [
         jnp.linspace(low, high, points_per_dim),
@@ -112,4 +114,19 @@ def build_grid_2d(low, high, points_per_dim):
     x_g = x_g.reshape(-1, 2)
 
     assert x_g.shape[0] == points_per_dim**2
+    return x_g
+
+
+def build_grid_3d(low, high, points_per_dim):
+    x1, x2, x3 = [
+        jnp.linspace(low, high, points_per_dim),
+        jnp.linspace(low, high, points_per_dim),
+        jnp.linspace(low, high, points_per_dim)
+    ]
+
+    x_g = jnp.meshgrid(*[x1, x2, x3])
+    x_g = jnp.stack([_x for _x in x_g], axis=-1)
+    x_g = x_g.reshape(-1, 3)
+
+    assert x_g.shape[0] == points_per_dim**3
     return x_g

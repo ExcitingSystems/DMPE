@@ -9,7 +9,7 @@ from exciting_environments.core_env import CoreEnvironment
 
 from exciting_exciting_systems.models.model_utils import simulate_ahead, simulate_ahead_with_env
 from exciting_exciting_systems.utils.density_estimation import (
-    DensityEstimate, update_density_estimate, update_density_estimate_multiple_observations
+    DensityEstimate, update_density_estimate_single_observation, update_density_estimate_multiple_observations
 )
 from exciting_exciting_systems.utils.metrics import JSDLoss
 
@@ -65,7 +65,10 @@ def loss_function(
             tau=tau
         )
 
-    predicted_density_estimate = update_density_estimate_multiple_observations(density_estimate, observations)
+    predicted_density_estimate = update_density_estimate_multiple_observations(
+        density_estimate,
+        jnp.concatenate([observations[0:-1, :], actions], axis=-1)
+    )
     loss = JSDLoss(
         p=predicted_density_estimate.p,
         q=target_distribution
@@ -171,15 +174,17 @@ class Exciter(eqx.Module):
             tau=self.tau,
             target_distribution=self.target_distribution
         )
-    
-        # update grid KDE with x_k
-        density_estimate = jax.vmap(
-            update_density_estimate,
-            in_axes=[DensityEstimate(0, None, None, None), 0],
-            out_axes=DensityEstimate(0, None, None, None)
-        )(density_estimate, obs)
-    
         action = proposed_actions[:, 0, :]
         next_proposed_actions = proposed_actions.at[:, :-1, :].set(proposed_actions[:, 1:, :])
-    
+
+        # update grid KDE with x_k and u_k
+        density_estimate = jax.vmap(
+            update_density_estimate_single_observation,
+            in_axes=[DensityEstimate(0, None, None, None), 0],
+            out_axes=DensityEstimate(0, None, None, None)
+        )(
+            density_estimate,
+            jnp.concatenate([obs, action], axis=-1)
+        )
+
         return action, next_proposed_actions, density_estimate

@@ -140,6 +140,7 @@ class ModelTrainer(eqx.Module):
     model_optimizer: optax._src.base.GradientTransformationExtraArgs
     tau: jnp.float32
 
+    @eqx.filter_jit
     def fit(
             self,
             model,
