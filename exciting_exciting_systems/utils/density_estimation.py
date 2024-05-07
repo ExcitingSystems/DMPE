@@ -17,7 +17,7 @@ def gaussian_kernel(x: jnp.ndarray, bandwidth: float) -> jnp.ndarray:
 
 class DensityEstimate(eqx.Module):
     """Holds an estimation of the density of sampled datapoints.
-    
+
     Args:
         p: The probability estimates at the grid points
         x_g: The grid points

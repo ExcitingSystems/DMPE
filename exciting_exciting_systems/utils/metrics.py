@@ -45,3 +45,34 @@ def jensen_shannon_divergence(p: jnp.ndarray, q: jnp.ndarray):
 def JSDLoss(p: jnp.ndarray, q: jnp.ndarray):
     """Reduce mapped JSD to loss value."""
     return jnp.mean(jensen_shannon_divergence(p, q))
+
+
+@jax.jit
+def audze_eglais(data_points: jnp.ndarray) -> jnp.ndarray:
+    """From [Smits+Nelles2024]. The maximin-desing penalizes points that 
+    are too close in the point distribution.
+
+    TODO: There has to be a more efficient way to do this.    
+    """
+    N = data_points.shape[0]
+    distance_matrix = jnp.linalg.norm(data_points[:, None, :] - data_points[None, ...], axis=-1)
+    distances = distance_matrix[jax.numpy.triu_indices(N, k=1)]
+
+    return 2 / (N * (N-1)) * jnp.sum(1 / distances**2)
+
+
+@jax.jit
+def MC_uniform_sampling_distribution_approximation(
+        data_points: jnp.ndarray,
+        support_points: jnp.ndarray
+) -> jnp.ndarray:
+    """From [Smits+Nelles2024]. The minimax-design tries to minimize
+    the distances of the data points to the support points.
+
+    What stops the data points to just flock to a single support point?
+    This is just looking at the shortest distance.
+    """
+    M = support_points.shape[0]
+    distance_matrix = jnp.linalg.norm(data_points[:, None, :] - support_points[None, ...], axis=-1)
+    minimal_distances = jnp.min(distance_matrix, axis=0)
+    return jnp.sum(minimal_distances) / M
