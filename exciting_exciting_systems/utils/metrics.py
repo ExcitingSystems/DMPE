@@ -48,6 +48,23 @@ def JSDLoss(p: jnp.ndarray, q: jnp.ndarray):
 
 
 @jax.jit
+def MNNS_without_penalty(
+        data_points: jnp.ndarray,
+        new_data_points: jnp.ndarray
+) -> jnp.ndarray:
+    """From [Smits+Nelles2024].
+
+    Implementation inspired by https://github.com/google/jax/discussions/9813
+
+    TODO: Not sure about this penalty. Seems difficult to use for continuous action-spaces?
+    """
+    L = new_data_points.shape[0]
+    distance_matrix = jnp.linalg.norm(data_points[:, None, :] - new_data_points[None, ...], axis=-1)
+    minimal_distances = jnp.min(distance_matrix, axis=0)
+    return - jnp.sum(minimal_distances) / L
+
+
+@jax.jit
 def audze_eglais(data_points: jnp.ndarray) -> jnp.ndarray:
     """From [Smits+Nelles2024]. The maximin-desing penalizes points that
     are too close in the point distribution.
