@@ -49,10 +49,10 @@ def JSDLoss(p: jnp.ndarray, q: jnp.ndarray):
 
 @jax.jit
 def audze_eglais(data_points: jnp.ndarray) -> jnp.ndarray:
-    """From [Smits+Nelles2024]. The maximin-desing penalizes points that 
+    """From [Smits+Nelles2024]. The maximin-desing penalizes points that
     are too close in the point distribution.
 
-    TODO: There has to be a more efficient way to do this.    
+    TODO: There has to be a more efficient way to do this.
     """
     N = data_points.shape[0]
     distance_matrix = jnp.linalg.norm(data_points[:, None, :] - data_points[None, ...], axis=-1)
