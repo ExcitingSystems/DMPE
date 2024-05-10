@@ -123,7 +123,7 @@ def optimize_actions(
 
 class Exciter(eqx.Module):
     """A class that carries the necessary tools for excitation input computations.
-    
+
     Args:
         grad_loss_function: The gradient of the loss function w.r.t. the actions as
             a callable function
