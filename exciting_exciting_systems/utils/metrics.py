@@ -57,6 +57,7 @@ def MNNS_without_penalty(
     Implementation inspired by https://github.com/google/jax/discussions/9813
 
     TODO: Not sure about this penalty. Seems difficult to use for continuous action-spaces?
+    They used quantized amplitude levels in their implementation.
     """
     L = new_data_points.shape[0]
     distance_matrix = jnp.linalg.norm(data_points[:, None, :] - new_data_points[None, ...], axis=-1)

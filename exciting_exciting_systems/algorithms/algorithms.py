@@ -61,18 +61,18 @@ def excite_and_fit(
                 loader_key=loader_key
             )
 
-        if k % 500 == 0 and k > 0:
-            fig, axs = plot_sequence_and_prediction(
-                observations=observations[:k+2,:],
-                actions=actions[:k+1,:],
-                tau=exciter.tau,
-                obs_labels=[r"$\theta$", r"$\omega$"],
-                actions_labels=[r"$u$"],
-                model=model,
-                init_obs=obs[0, :],
-                init_state=state[0, :],
-                proposed_actions=proposed_actions[0, :]
-            )
-            plt.show()
+        # if k % 500 == 0 and k > 0:
+        #     fig, axs = plot_sequence_and_prediction(
+        #         observations=observations[:k+2,:],
+        #         actions=actions[:k+1,:],
+        #         tau=exciter.tau,
+        #         obs_labels=[r"$\theta$", r"$\omega$"],
+        #         actions_labels=[r"$u$"],
+        #         model=model,
+        #         init_obs=obs[0, :],
+        #         init_state=state[0, :],
+        #         proposed_actions=proposed_actions[0, :]
+        #     )
+        #     plt.show()
 
     return observations, actions, model, density_estimate
