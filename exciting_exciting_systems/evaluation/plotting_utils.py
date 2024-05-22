@@ -40,6 +40,10 @@ def plot_sequence(observations, actions, tau, obs_labels, action_labels, fig=Non
         axs[1].title.set_text("observations, together")
 
     if actions is not None:
+        if observations.shape[-1] == 1 and actions.shape[-1] == 1:
+            axs[1].scatter(jnp.squeeze(actions[..., 0]), jnp.squeeze(observations[:-1, 0]), s=1)
+            axs[1].title.set_text("observations + actions, together")
+
         for action_idx in range(actions.shape[-1]):
             axs[2].plot(t[:-1], jnp.squeeze(actions[..., action_idx]), label=action_labels[action_idx])
 
