@@ -1,10 +1,15 @@
 import numpy as np
-import jax
-import jax.numpy as jnp
 
-from exciting_exciting_systems.models.model_utils import simulate_ahead_with_env
-from exciting_exciting_systems.utils.metrics import MNNS_without_penalty
-from exciting_exciting_systems.excitation.excitation_utils import soft_penalty
+from exciting_exciting_systems.related_work.np_reimpl.env_utils import simulate_ahead_with_env
+from exciting_exciting_systems.related_work.np_reimpl.metrics import MNNS_without_penalty
+
+
+def soft_penalty(a, a_max=1):
+    """Computes penalty for the given input. Assumes symmetry in all dimensions.
+    """
+    relued_a = np.maximum(np.abs(a) - a_max, np.zeros(a.shape))
+    penalty = np.sum(relued_a, axis=(-2, -1))
+    return np.squeeze(penalty)
 
 
 def generate_aprbs(amplitudes, durations):
@@ -21,7 +26,6 @@ def fitness_function(
         prev_observations,
         action_parameters,
         h,
-        max_duration,
         featurize
 ):
     actions = generate_aprbs(
@@ -29,35 +33,23 @@ def fitness_function(
         durations=action_parameters[h:].astype(np.int32)
     )[:, None]
 
-    max_signal_length = h * max_duration
-    diff_to_max = max_signal_length - actions.shape[1]
-    padded_actions = jnp.concatenate([actions, jnp.zeros((diff_to_max, 1))], axis=0)
-
-    padded_observations = jax.vmap(simulate_ahead_with_env, in_axes=(None, 0, 0, 0, 0, 0, 0))(
+    observations = simulate_ahead_with_env(
         env,
         obs,
         state,
-        padded_actions[None, ...],
-        env.env_state_normalizer,
-        env.action_normalizer,
-        env.static_params
+        actions[None, ...],
     )
-    padded_observations = np.array(padded_observations[0])
-    padded_feat_observations = featurize(padded_observations)
-    feat_observations = padded_feat_observations[:-diff_to_max, :]
+    feat_observations = featurize(observations)
 
     score = MNNS_without_penalty(
         data_points=featurize(prev_observations),
-        new_data_points=feat_observations[1:, :]
+        new_data_points=feat_observations[0, 1:, :]
     )
-
-    observations = padded_observations[:-diff_to_max, :]
-    actions = padded_actions[:-diff_to_max, :]
 
     rho_obs = 1e10
     rho_act = 1e10
     penalty_terms = rho_obs * soft_penalty(a=observations, a_max=1) + rho_act * soft_penalty(a=actions, a_max=1)
-    return jnp.squeeze(score).item() + penalty_terms.item()
+    return np.squeeze(score).item() + penalty_terms.item()
 
 
 def optimize_aprbs(
@@ -68,7 +60,6 @@ def optimize_aprbs(
         n_generations,
         env,
         h,
-        max_duration,
         featurize
 ):
     for generation in range(n_generations):
@@ -84,7 +75,6 @@ def optimize_aprbs(
                 prev_observations,
                 x_for_eval,
                 h,
-                max_duration=max_duration,
                 featurize=featurize
             )
 

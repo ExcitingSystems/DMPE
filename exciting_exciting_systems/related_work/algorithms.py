@@ -1,6 +1,5 @@
 from tqdm.notebook import tqdm
 import numpy as np
-import jax.numpy as jnp
 
 from cmaes import CMAwM
 
@@ -34,8 +33,8 @@ def excite_with_iGOATs(
     steps = np.concatenate([np.zeros(continuous_dim), np.ones(discrete_dim)])
 
     obs, env_state = env.reset()
-    obs = obs.astype(jnp.float32)
-    env_state = env_state.astype(jnp.float32)
+    obs = obs.astype(np.float32)
+    env_state = env_state.astype(np.float32)
 
     observations.append(obs[0])
 
@@ -53,11 +52,10 @@ def excite_with_iGOATs(
             optimizer,
             obs,
             env_state,
-            jnp.stack(observations),
+            np.stack(observations),
             n_generations=n_generations,
             env=env,
             h=h,
-            max_duration=bounds[-1, -1],
             featurize=featurize
         )
 
@@ -76,7 +74,8 @@ def excite_with_iGOATs(
 
         for i in range(new_actions.shape[1]):
             action = new_actions[:, i, :]
-            obs, _, _, _, env_state = env.step(action, env_state)
+            env_state = env.step(env_state, action)
+            obs = env.generate_observation(env_state)
 
             observations.append(obs[0])
             actions.append(action[0])
