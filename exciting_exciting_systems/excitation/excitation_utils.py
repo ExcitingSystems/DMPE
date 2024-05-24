@@ -14,7 +14,6 @@ from exciting_exciting_systems.utils.density_estimation import (
 from exciting_exciting_systems.utils.metrics import JSDLoss
 
 
-@jax.jit
 def soft_penalty(a, a_max=1):
     """Computes penalty for the given input. Assumes symmetry in all dimensions."""
     penalty = jnp.sum(jax.nn.relu(jnp.abs(a) - a_max), axis=(-2, -1))
@@ -67,7 +66,7 @@ def loss_function(
 
     predicted_density_estimate = update_density_estimate_multiple_observations(
         density_estimate,
-        observations  # jnp.concatenate([observations[0:-1, :], actions], axis=-1)
+        jnp.concatenate([observations[0:-1, :], actions], axis=-1)
     )
     loss = JSDLoss(
         p=predicted_density_estimate.p,
@@ -184,7 +183,7 @@ class Exciter(eqx.Module):
             out_axes=DensityEstimate(0, None, None, None)
         )(
             density_estimate,
-            obs  # jnp.concatenate([obs, action], axis=-1)
+            jnp.concatenate([obs, action], axis=-1)
         )
 
         return action, next_proposed_actions, density_estimate
