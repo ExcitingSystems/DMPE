@@ -66,7 +66,7 @@ def loss_function(
 
     predicted_density_estimate = update_density_estimate_multiple_observations(
         density_estimate,
-        jnp.concatenate([observations[0:-1, :], actions], axis=-1)
+        observations  # jnp.concatenate([observations[0:-1, :], actions], axis=-1)
     )
     loss = JSDLoss(
         p=predicted_density_estimate.p,
@@ -183,7 +183,7 @@ class Exciter(eqx.Module):
             out_axes=DensityEstimate(0, None, None, None)
         )(
             density_estimate,
-            jnp.concatenate([obs, action], axis=-1)
+            obs  # jnp.concatenate([obs, action], axis=-1)
         )
 
         return action, next_proposed_actions, density_estimate

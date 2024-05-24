@@ -6,6 +6,10 @@ from cmaes import CMAwM
 from exciting_exciting_systems.related_work.excitation_utils import optimize_aprbs, generate_aprbs
 
 
+def excite_with_GOATs():
+    raise NotImplementedError
+
+
 def excite_with_iGOATs(
         n_timesteps,
         env,
@@ -84,3 +88,7 @@ def excite_with_iGOATs(
     pbar.close()
 
     return observations, actions
+
+
+def excite_with_sGOATs():
+    raise NotImplementedError
