@@ -7,13 +7,13 @@ from cmaes import CMAwM
 from exciting_exciting_systems.related_work.excitation_utils import optimize_aprbs, generate_aprbs
 
 
-def excite_with_GOATs(
+def excite_with_iGOATs(
         n_timesteps,
         env,
-        obs,
-        env_state,
+        actions,
+        observations,
         h,
-        a,
+        a,  # TODO: implement the possiblity to not use the full signal
         bounds_amplitude,
         bounds_duration,
         population_size,
@@ -37,8 +37,6 @@ def excite_with_GOATs(
     obs = obs.astype(jnp.float32)
     env_state = env_state.astype(jnp.float32)
 
-    actions = []
-    observations = []
     observations.append(obs[0])
 
     pbar = tqdm(total=n_timesteps)
@@ -80,3 +78,5 @@ def excite_with_GOATs(
 
         pbar.update(new_actions.shape[1])
     pbar.close()
+
+    return observations, actions
