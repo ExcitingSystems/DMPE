@@ -69,6 +69,11 @@ def excite_with_iGOATs(
             durations=durations
         )[None, :, None]
 
+        # TODO: is this fair? The goal is to not go past the maximum number of steps
+        # IMO needs to be reconsidered or discusseds
+        if new_actions.shape[1] + len(observations) > n_timesteps:
+            new_actions = new_actions[: , :(n_timesteps - len(observations) + 1), :]
+
         for i in range(new_actions.shape[1]):
             action = new_actions[:, i, :]
             obs, _, _, _, env_state = env.step(action, env_state)
