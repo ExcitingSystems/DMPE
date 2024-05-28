@@ -1,6 +1,6 @@
 from tqdm.notebook import tqdm
 import numpy as np
-
+from scipy.stats.qmc import LatinHypercube
 from cmaes import CMAwM
 
 from pymoo.optimize import minimize
@@ -20,7 +20,7 @@ def excite_with_GOATs(
         env,
         bounds_duration,
         population_size,
-        n_generations,  # TODO: Not sure about this one yet... The standard termination conditions seem to be working well in pymoo
+        n_generations,
         n_support_points,
         featurize,
         seed=0,
@@ -33,7 +33,7 @@ def excite_with_GOATs(
 
     # TODO: How big is the overhead of redefining the problem for each block in sGOATs?
     opt_problem = GoatsProblem(
-        n_amplitudes,
+        LatinHypercube(d=1).random(n=n_amplitudes) * 2 - 1,
         env,
         obs,
         env_state,
@@ -53,6 +53,7 @@ def excite_with_GOATs(
     res = minimize(
         opt_problem,
         opt_algorithm,
+        termination=('n_gen', n_generations),
         seed=seed,
         save_history=False,
         verbose=verbose
@@ -67,7 +68,7 @@ def excite_with_GOATs(
         durations=applied_durations
     )[None, :, None]
 
-    observations = simulate_ahead_with_env(
+    observations, _ = simulate_ahead_with_env(
         env,
         obs,
         env_state,
@@ -157,5 +158,80 @@ def excite_with_iGOATs(
     return observations, actions
 
 
-def excite_with_sGOATs():
-    raise NotImplementedError
+def excite_with_sGOATs(
+        n_amplitudes,
+        n_amplitude_groups,
+        all_observations,
+        all_actions,
+        env,
+        bounds_duration,
+        population_size,
+        n_generations,
+        n_support_points,
+        featurize,
+        seed=0,
+        verbose=True
+):
+    
+    opt_algorithm = GA(
+        pop_size=population_size,
+        sampling=IntegerRandomSampling(),
+        crossover=SBX(prob=1.0, eta=10.0, vtype=float, repair=RoundingRepair()),
+        mutation=PM(prob=1.0, eta=10.0, vtype=float, repair=RoundingRepair()),
+        eliminate_duplicates=True,
+    )
+    
+    obs, env_state = env.reset()
+    obs = obs.astype(np.float32)
+    env_state = env_state.astype(np.float32)
+    
+    all_amplitudes = LatinHypercube(d=1).random(n=n_amplitudes) * 2 - 1
+    amplitude_groups = np.split(all_amplitudes, n_amplitude_groups, axis=0)
+
+    for amplitudes in amplitude_groups:
+
+        # TODO: How big is the overhead of redefining the problem for each block in sGOATs?
+        opt_problem = GoatsProblem(
+            amplitudes,
+            env,
+            obs,
+            env_state,
+            featurize,
+            bounds_duration,
+            n_support_points,
+        )
+
+        res = minimize(
+            opt_problem,
+            opt_algorithm,
+            termination=('n_gen', n_generations),
+            seed=seed,
+            save_history=False,
+            verbose=verbose
+        )
+
+        indices = opt_problem.decode(res.X[:opt_problem.n_amplitudes])
+        applied_amplitudes = opt_problem.amplitudes[indices]
+        applied_durations = res.X[opt_problem.n_amplitudes:]
+
+        actions = generate_aprbs(
+            amplitudes=applied_amplitudes,
+            durations=applied_durations
+        )[None, :, None]
+
+        observations, last_env_state = simulate_ahead_with_env(
+            env,
+            obs,
+            env_state,
+            actions,
+        )
+
+        # update obs and env_state as the starting point for the next amplitude group
+        obs = observations[:, -1, :]
+        env_state = last_env_state
+
+        # save optimized actions and resulting observations
+        all_observations.append(observations[0, 1:, :])
+        all_actions.append(actions[0])
+
+    return all_observations, all_actions

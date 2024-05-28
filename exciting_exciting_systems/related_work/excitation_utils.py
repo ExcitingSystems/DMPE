@@ -37,7 +37,7 @@ def fitness_function(
         durations=action_parameters[h:].astype(np.int32)
     )[:, None]
 
-    observations = simulate_ahead_with_env(
+    observations, _ = simulate_ahead_with_env(
         env,
         obs,
         state,
@@ -109,7 +109,7 @@ class GoatsProblem(ElementwiseProblem):
    
     def __init__(
             self,
-            n_amplitudes,
+            amplitudes,
             env,
             obs,
             env_state,
@@ -118,6 +118,8 @@ class GoatsProblem(ElementwiseProblem):
             n_support_points=1600
         ):
 
+        n_amplitudes = amplitudes.shape[0]
+    
         self.env = env
         self.obs = obs
         self.env_state = env_state
@@ -138,7 +140,7 @@ class GoatsProblem(ElementwiseProblem):
             LatinHypercube(d=2).random(n=n_support_points)
         )
 
-        self.amplitudes = LatinHypercube(d=1).random(n=n_amplitudes) * 2 - 1
+        self.amplitudes = amplitudes
         self.n_amplitudes = n_amplitudes
     
     @staticmethod
@@ -169,12 +171,13 @@ class GoatsProblem(ElementwiseProblem):
             durations=x[self.n_amplitudes:]
         )[None, :, None]
 
-        observations = simulate_ahead_with_env(
+        observations, _ = simulate_ahead_with_env(
             self.env,
             self.obs,
             self.env_state,
             actions,
-        )[0]
+        )
+        observations = observations[0]
 
         feat_observations = self.featurize(observations)
 

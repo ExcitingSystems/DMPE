@@ -16,4 +16,4 @@ def simulate_ahead_with_env(
 
         observations.append(obs)
 
-    return np.stack(observations, axis=1)
+    return np.stack(observations, axis=1), state
