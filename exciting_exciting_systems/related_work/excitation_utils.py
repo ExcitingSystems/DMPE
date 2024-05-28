@@ -114,8 +114,8 @@ class GoatsProblem(ElementwiseProblem):
             obs,
             env_state,
             featurize,
+            support_points,
             bounds_duration=(1, 50),
-            n_support_points=1600
         ):
 
         n_amplitudes = amplitudes.shape[0]
@@ -136,9 +136,7 @@ class GoatsProblem(ElementwiseProblem):
         )
 
         # The featurized support points
-        self.support_points = featurize(
-            LatinHypercube(d=2).random(n=n_support_points)
-        )
+        self.support_points = support_points
 
         self.amplitudes = amplitudes
         self.n_amplitudes = n_amplitudes

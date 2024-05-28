@@ -31,15 +31,14 @@ def excite_with_GOATs(
     obs = obs.astype(np.float32)
     env_state = env_state.astype(np.float32)
 
-    # TODO: How big is the overhead of redefining the problem for each block in sGOATs?
     opt_problem = GoatsProblem(
         LatinHypercube(d=1).random(n=n_amplitudes) * 2 - 1,
         env,
         obs,
         env_state,
         featurize,
-        bounds_duration,
-        n_support_points,
+        featurize(LatinHypercube(d=2).random(n=n_support_points)),
+        bounds_duration
     )
 
     opt_algorithm = GA(
@@ -172,6 +171,9 @@ def excite_with_sGOATs(
         seed=0,
         verbose=True
 ):
+    """
+    TODO: Implement use of "old" points in optimization metric
+    """
     
     opt_algorithm = GA(
         pop_size=population_size,
@@ -184,9 +186,15 @@ def excite_with_sGOATs(
     obs, env_state = env.reset()
     obs = obs.astype(np.float32)
     env_state = env_state.astype(np.float32)
+
+    all_observations.append([obs[0]])
     
     all_amplitudes = LatinHypercube(d=1).random(n=n_amplitudes) * 2 - 1
     amplitude_groups = np.split(all_amplitudes, n_amplitude_groups, axis=0)
+
+    support_points = featurize(
+        LatinHypercube(d=2).random(n=n_support_points)
+    )
 
     for amplitudes in amplitude_groups:
 
@@ -197,8 +205,8 @@ def excite_with_sGOATs(
             obs,
             env_state,
             featurize,
+            support_points,
             bounds_duration,
-            n_support_points,
         )
 
         res = minimize(
