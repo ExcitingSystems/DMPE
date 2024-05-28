@@ -54,7 +54,24 @@ def MNNS(
     if delta is None:
         delta = average_euclidean_distance(data_points)
 
-    action_counts = None  
-    penalty = action_counts * k_d_max * delta
+    raise NotImplementedError
+    # action_counts = None  
+    # penalty = action_counts * k_d_max * delta
 
-    return score_without_penalty + penalty
+    # return score_without_penalty + penalty
+
+
+def MC_uniform_sampling_distribution_approximation(
+        data_points: np.ndarray,
+        support_points: np.ndarray
+) -> np.ndarray:
+    """From [Smits+Nelles2024]. The minimax-design tries to minimize
+    the distances of the data points to the support points.
+
+    What stops the data points to just flock to a single support point?
+    This is just looking at the shortest distance.
+    """
+    M = support_points.shape[0]
+    distance_matrix = np.linalg.norm(data_points[:, None, :] - support_points[None, ...], axis=-1)
+    minimal_distances = np.min(distance_matrix, axis=0)
+    return np.sum(minimal_distances) / M
