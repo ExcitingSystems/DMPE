@@ -116,6 +116,7 @@ class GoatsProblem(ElementwiseProblem):
             featurize,
             support_points,
             bounds_duration=(1, 50),
+            starting_observations=None
         ):
 
         n_amplitudes = amplitudes.shape[0]
@@ -136,10 +137,14 @@ class GoatsProblem(ElementwiseProblem):
         )
 
         # The featurized support points
-        self.support_points = support_points
+        self.support_points = featurize(support_points)
 
         self.amplitudes = amplitudes
         self.n_amplitudes = n_amplitudes
+        if starting_observations is not None:
+            self.starting_observations = featurize(starting_observations)
+        else:
+            self.starting_observations = None
     
     @staticmethod
     def decode(lehmer_code: list[int]) -> list[int]:
@@ -178,6 +183,9 @@ class GoatsProblem(ElementwiseProblem):
         observations = observations[0]
 
         feat_observations = self.featurize(observations)
+        if self.starting_observations is not None:
+            feat_observations = np.concatenate([feat_observations, self.starting_observations])
+
 
         score = MC_uniform_sampling_distribution_approximation(
             data_points=feat_observations,

@@ -37,8 +37,9 @@ def excite_with_GOATs(
         obs,
         env_state,
         featurize,
-        featurize(LatinHypercube(d=2).random(n=n_support_points)),
-        bounds_duration
+        LatinHypercube(d=2).random(n=n_support_points) * 2 - 1,
+        bounds_duration,
+        starting_observations=None,
     )
 
     opt_algorithm = GA(
@@ -160,6 +161,7 @@ def excite_with_iGOATs(
 def excite_with_sGOATs(
         n_amplitudes,
         n_amplitude_groups,
+        reuse_observations,
         all_observations,
         all_actions,
         env,
@@ -192,13 +194,13 @@ def excite_with_sGOATs(
     all_amplitudes = LatinHypercube(d=1).random(n=n_amplitudes) * 2 - 1
     amplitude_groups = np.split(all_amplitudes, n_amplitude_groups, axis=0)
 
-    support_points = featurize(
-        LatinHypercube(d=2).random(n=n_support_points)
-    )
+    support_points = LatinHypercube(d=2).random(n=n_support_points) * 2 - 1
 
     for amplitudes in amplitude_groups:
 
         # TODO: How big is the overhead of redefining the problem for each block in sGOATs?
+        # TODO: The current implementation has x_0 in the starting observations twice? i think 
+        # so at least -> investigate
         opt_problem = GoatsProblem(
             amplitudes,
             env,
@@ -207,6 +209,7 @@ def excite_with_sGOATs(
             featurize,
             support_points,
             bounds_duration,
+            starting_observations=np.concatenate(all_observations) if reuse_observations else None
         )
 
         res = minimize(
