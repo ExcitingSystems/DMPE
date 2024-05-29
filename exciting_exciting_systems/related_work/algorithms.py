@@ -71,13 +71,13 @@ def excite_with_GOATs(
 
     observations, actions, _ = optimize_permutation_aprbs(
         opt_algorithm,
-        amplitudes=latin_hypercube_sampling(d=1, n=n_amplitudes),
+        amplitudes=latin_hypercube_sampling(d=1, n=n_amplitudes, seed=seed),
         env=env,
         obs=obs,
         env_state=env_state,
         bounds_duration=bounds_duration,
         n_generations=n_generations,
-        support_points=latin_hypercube_sampling(d=2, n=n_support_points),
+        support_points=latin_hypercube_sampling(d=2, n=n_support_points, seed=seed),
         featurize=featurize,
         seed=seed,
         verbose=verbose,
@@ -152,10 +152,10 @@ def excite_with_sGOATs(
 
     all_observations.append([obs[0]])
 
-    all_amplitudes = latin_hypercube_sampling(d=1, n=n_amplitudes)
+    all_amplitudes = latin_hypercube_sampling(d=1, n=n_amplitudes, seed=seed)
     amplitude_groups = np.split(all_amplitudes, n_amplitude_groups, axis=0)
 
-    support_points = latin_hypercube_sampling(d=2, n=n_support_points)
+    support_points = latin_hypercube_sampling(d=2, n=n_support_points, seed=seed)
 
     for amplitudes in amplitude_groups:
 
