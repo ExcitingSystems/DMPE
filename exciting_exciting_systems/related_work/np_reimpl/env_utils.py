@@ -1,12 +1,7 @@
 import numpy as np
 
 
-def simulate_ahead_with_env(
-       env,
-       obs,
-       state,
-       actions 
-):
+def simulate_ahead_with_env(env, obs, state, actions):
     observations = []
     observations.append(obs)
 

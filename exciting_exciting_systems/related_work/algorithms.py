@@ -16,17 +16,17 @@ from exciting_exciting_systems.related_work.excitation_utils import optimize_apr
 
 
 def excite_with_GOATs(
-        n_amplitudes,
-        env,
-        bounds_duration,
-        population_size,
-        n_generations,
-        n_support_points,
-        featurize,
-        seed=0,
-        verbose=True
+    n_amplitudes,
+    env,
+    bounds_duration,
+    population_size,
+    n_generations,
+    n_support_points,
+    featurize,
+    seed=0,
+    verbose=True,
 ):
-    
+
     obs, env_state = env.reset()
     obs = obs.astype(np.float32)
     env_state = env_state.astype(np.float32)
@@ -51,22 +51,14 @@ def excite_with_GOATs(
     )
 
     res = minimize(
-        opt_problem,
-        opt_algorithm,
-        termination=('n_gen', n_generations),
-        seed=seed,
-        save_history=False,
-        verbose=verbose
+        opt_problem, opt_algorithm, termination=("n_gen", n_generations), seed=seed, save_history=False, verbose=verbose
     )
 
-    indices = opt_problem.decode(res.X[:opt_problem.n_amplitudes])
+    indices = opt_problem.decode(res.X[: opt_problem.n_amplitudes])
     applied_amplitudes = opt_problem.amplitudes[indices]
-    applied_durations = res.X[opt_problem.n_amplitudes:]
+    applied_durations = res.X[opt_problem.n_amplitudes :]
 
-    actions = generate_aprbs(
-        amplitudes=applied_amplitudes,
-        durations=applied_durations
-    )[None, :, None]
+    actions = generate_aprbs(amplitudes=applied_amplitudes, durations=applied_durations)[None, :, None]
 
     observations, _ = simulate_ahead_with_env(
         env,
@@ -79,19 +71,19 @@ def excite_with_GOATs(
 
 
 def excite_with_iGOATs(
-        n_timesteps,
-        env,
-        actions,
-        observations,
-        h,
-        a,  # TODO: implement the possiblity to not use the full signal
-        bounds_amplitude,
-        bounds_duration,
-        population_size,
-        n_generations,
-        mean,
-        sigma,
-        featurize
+    n_timesteps,
+    env,
+    actions,
+    observations,
+    h,
+    a,  # TODO: implement the possiblity to not use the full signal
+    bounds_amplitude,
+    bounds_duration,
+    population_size,
+    n_generations,
+    mean,
+    sigma,
+    featurize,
 ):
     continuous_dim = h
     discrete_dim = h
@@ -112,13 +104,7 @@ def excite_with_iGOATs(
 
     pbar = tqdm(total=n_timesteps)
     while len(observations) < n_timesteps:
-        optimizer = CMAwM(
-            mean=mean,
-            sigma=sigma,
-            population_size=population_size,
-            bounds=bounds,
-            steps=steps
-        )
+        optimizer = CMAwM(mean=mean, sigma=sigma, population_size=population_size, bounds=bounds, steps=steps)
 
         proposed_aprbs_params, values, optimizer = optimize_aprbs(
             optimizer,
@@ -128,21 +114,18 @@ def excite_with_iGOATs(
             n_generations=n_generations,
             env=env,
             h=h,
-            featurize=featurize
+            featurize=featurize,
         )
 
         amplitudes = proposed_aprbs_params[:h]
         durations = proposed_aprbs_params[h:].astype(np.int32)
 
-        new_actions = generate_aprbs(
-            amplitudes=amplitudes,
-            durations=durations
-        )[None, :, None]
+        new_actions = generate_aprbs(amplitudes=amplitudes, durations=durations)[None, :, None]
 
         # TODO: is this fair? The goal is to not go past the maximum number of steps
         # IMO needs to be reconsidered or discusseds
         if new_actions.shape[1] + len(observations) > n_timesteps:
-            new_actions = new_actions[: , :(n_timesteps - len(observations) + 1), :]
+            new_actions = new_actions[:, : (n_timesteps - len(observations) + 1), :]
 
         for i in range(new_actions.shape[1]):
             action = new_actions[:, i, :]
@@ -159,24 +142,24 @@ def excite_with_iGOATs(
 
 
 def excite_with_sGOATs(
-        n_amplitudes,
-        n_amplitude_groups,
-        reuse_observations,
-        all_observations,
-        all_actions,
-        env,
-        bounds_duration,
-        population_size,
-        n_generations,
-        n_support_points,
-        featurize,
-        seed=0,
-        verbose=True
+    n_amplitudes,
+    n_amplitude_groups,
+    reuse_observations,
+    all_observations,
+    all_actions,
+    env,
+    bounds_duration,
+    population_size,
+    n_generations,
+    n_support_points,
+    featurize,
+    seed=0,
+    verbose=True,
 ):
     """
     TODO: Implement use of "old" points in optimization metric
     """
-    
+
     opt_algorithm = GA(
         pop_size=population_size,
         sampling=IntegerRandomSampling(),
@@ -184,13 +167,13 @@ def excite_with_sGOATs(
         mutation=PM(prob=1.0, eta=10.0, vtype=float, repair=RoundingRepair()),
         eliminate_duplicates=True,
     )
-    
+
     obs, env_state = env.reset()
     obs = obs.astype(np.float32)
     env_state = env_state.astype(np.float32)
 
     all_observations.append([obs[0]])
-    
+
     all_amplitudes = LatinHypercube(d=1).random(n=n_amplitudes) * 2 - 1
     amplitude_groups = np.split(all_amplitudes, n_amplitude_groups, axis=0)
 
@@ -199,7 +182,7 @@ def excite_with_sGOATs(
     for amplitudes in amplitude_groups:
 
         # TODO: How big is the overhead of redefining the problem for each block in sGOATs?
-        # TODO: The current implementation has x_0 in the starting observations twice? i think 
+        # TODO: The current implementation has x_0 in the starting observations twice? i think
         # so at least -> investigate
         opt_problem = GoatsProblem(
             amplitudes,
@@ -209,26 +192,23 @@ def excite_with_sGOATs(
             featurize,
             support_points,
             bounds_duration,
-            starting_observations=np.concatenate(all_observations) if reuse_observations else None
+            starting_observations=np.concatenate(all_observations) if reuse_observations else None,
         )
 
         res = minimize(
             opt_problem,
             opt_algorithm,
-            termination=('n_gen', n_generations),
+            termination=("n_gen", n_generations),
             seed=seed,
             save_history=False,
-            verbose=verbose
+            verbose=verbose,
         )
 
-        indices = opt_problem.decode(res.X[:opt_problem.n_amplitudes])
+        indices = opt_problem.decode(res.X[: opt_problem.n_amplitudes])
         applied_amplitudes = opt_problem.amplitudes[indices]
-        applied_durations = res.X[opt_problem.n_amplitudes:]
+        applied_durations = res.X[opt_problem.n_amplitudes :]
 
-        actions = generate_aprbs(
-            amplitudes=applied_amplitudes,
-            durations=applied_durations
-        )[None, :, None]
+        actions = generate_aprbs(amplitudes=applied_amplitudes, durations=applied_durations)[None, :, None]
 
         observations, last_env_state = simulate_ahead_with_env(
             env,

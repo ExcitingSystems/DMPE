@@ -5,12 +5,7 @@ from exciting_exciting_systems.models import NeuralEulerODE
 
 
 @eqx.filter_jit
-def simulate_ahead(
-    model: NeuralEulerODE,
-    init_obs: jnp.ndarray,
-    actions: jnp.ndarray,
-    tau: float
-) -> jnp.ndarray:
+def simulate_ahead(model: NeuralEulerODE, init_obs: jnp.ndarray, actions: jnp.ndarray, tau: float) -> jnp.ndarray:
     """Uses the given model to look ahead and simulate future observations.
 
     Args:
@@ -46,7 +41,7 @@ def simulate_ahead_with_env(
     actions: jnp.ndarray,
     env_state_normalizer: jnp.ndarray,
     action_normalizer: jnp.ndarray,
-    static_params: dict
+    static_params: dict,
 ) -> jnp.ndarray:
     """Uses the given environment to look ahead and simulate future observations.
     This is used to have perfect predictions
@@ -71,13 +66,7 @@ def simulate_ahead_with_env(
     def body_fun(carry, action):
         obs, state = carry
 
-        state = env._ode_exp_euler_step(
-            state,
-            action,
-            env_state_normalizer,
-            action_normalizer,
-            static_params
-        )
+        state = env._ode_exp_euler_step(state, action, env_state_normalizer, action_normalizer, static_params)
         obs = env.generate_observation(state)
 
         return (obs, state), obs

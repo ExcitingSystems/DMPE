@@ -39,8 +39,5 @@ class NeuralEulerODEPendulum(NeuralEulerODE):
 
     def __call__(self, obs, action, tau):
         next_obs = super().__call__(obs, action, tau)
-        next_obs = jnp.stack(
-            [(((next_obs[..., 0] + 1) % 2) - 1), next_obs[..., 1]],
-            axis=-1
-        )
+        next_obs = jnp.stack([(((next_obs[..., 0] + 1) % 2) - 1), next_obs[..., 1]], axis=-1)
         return next_obs

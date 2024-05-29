@@ -11,19 +11,19 @@ from exciting_exciting_systems.evaluation.plotting_utils import plot_sequence_an
 
 
 def excite_and_fit(
-        n_timesteps,
-        env,
-        model,
-        obs,
-        state,
-        proposed_actions,
-        exciter,
-        model_trainer,
-        density_estimate,
-        observations,
-        actions,
-        opt_state_model,
-        loader_key
+    n_timesteps,
+    env,
+    model,
+    obs,
+    state,
+    proposed_actions,
+    exciter,
+    model_trainer,
+    density_estimate,
+    observations,
+    actions,
+    opt_state_model,
+    loader_key,
 ):
     """Main algorithm to throw at a given (unknown) system and generate informative data from that system.
 
@@ -34,21 +34,11 @@ def excite_and_fit(
     """
     for k in tqdm(range(n_timesteps)):
         action, proposed_actions, density_estimate = exciter.choose_action(
-            obs=obs,
-            state=state,
-            model=model,
-            density_estimate=density_estimate,
-            proposed_actions=proposed_actions
+            obs=obs, state=state, model=model, density_estimate=density_estimate, proposed_actions=proposed_actions
         )
 
         obs, state, actions, observations = interact_and_observe(
-            env=env,
-            k=jnp.array([k]),
-            action=action,
-            obs=obs,
-            state=state,
-            actions=actions,
-            observations=observations
+            env=env, k=jnp.array([k]), action=action, obs=obs, state=state, actions=actions, observations=observations
         )
 
         if k > model_trainer.start_learning:
@@ -58,20 +48,20 @@ def excite_and_fit(
                 observations=observations,
                 actions=actions,
                 opt_state=opt_state_model,
-                loader_key=loader_key
+                loader_key=loader_key,
             )
 
         if k % 500 == 0 and k > 0:
             fig, axs = plot_sequence_and_prediction(
-                observations=observations[:k+2, :],
-                actions=actions[:k+1, :],
+                observations=observations[: k + 2, :],
+                actions=actions[: k + 1, :],
                 tau=exciter.tau,
                 obs_labels=[r"$\theta$", r"$\omega$"],
                 actions_labels=[r"$u$"],
                 model=model,
                 init_obs=obs[0, :],
                 init_state=state[0, :],
-                proposed_actions=proposed_actions[0, :]
+                proposed_actions=proposed_actions[0, :],
             )
             plt.show()
 

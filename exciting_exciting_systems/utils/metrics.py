@@ -47,10 +47,7 @@ def JSDLoss(p: jnp.ndarray, q: jnp.ndarray):
     return jnp.mean(jensen_shannon_divergence(p, q))
 
 
-def MNNS_without_penalty(
-        data_points: jnp.ndarray,
-        new_data_points: jnp.ndarray
-) -> jnp.ndarray:
+def MNNS_without_penalty(data_points: jnp.ndarray, new_data_points: jnp.ndarray) -> jnp.ndarray:
     """From [Smits+Nelles2024].
 
     Implementation inspired by https://github.com/google/jax/discussions/9813
@@ -61,7 +58,7 @@ def MNNS_without_penalty(
     L = new_data_points.shape[0]
     distance_matrix = jnp.linalg.norm(data_points[:, None, :] - new_data_points[None, ...], axis=-1)
     minimal_distances = jnp.min(distance_matrix, axis=0)
-    return - jnp.sum(minimal_distances) / L
+    return -jnp.sum(minimal_distances) / L
 
 
 def audze_eglais(data_points: jnp.ndarray) -> jnp.ndarray:
@@ -74,12 +71,11 @@ def audze_eglais(data_points: jnp.ndarray) -> jnp.ndarray:
     distance_matrix = jnp.linalg.norm(data_points[:, None, :] - data_points[None, ...], axis=-1)
     distances = distance_matrix[jax.numpy.triu_indices(N, k=1)]
 
-    return 2 / (N * (N-1)) * jnp.sum(1 / distances**2)
+    return 2 / (N * (N - 1)) * jnp.sum(1 / distances**2)
 
 
 def MC_uniform_sampling_distribution_approximation(
-        data_points: jnp.ndarray,
-        support_points: jnp.ndarray
+    data_points: jnp.ndarray, support_points: jnp.ndarray
 ) -> jnp.ndarray:
     """From [Smits+Nelles2024]. The minimax-design tries to minimize
     the distances of the data points to the support points.

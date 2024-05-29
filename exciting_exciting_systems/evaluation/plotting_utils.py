@@ -13,14 +13,9 @@ def plot_sequence(observations, actions, tau, obs_labels, action_labels, fig=Non
     """Plots a given sequence of observations and actions."""
 
     if fig is None or axs is None:
-        fig, axs = plt.subplots(
-            nrows=1,
-            ncols=3,
-            figsize=(18, 6),
-            sharey=True
-        )
+        fig, axs = plt.subplots(nrows=1, ncols=3, figsize=(18, 6), sharey=True)
 
-    t = jnp.linspace(0, observations.shape[0]-1, observations.shape[0]) * tau
+    t = jnp.linspace(0, observations.shape[0] - 1, observations.shape[0]) * tau
 
     for observation_idx in range(observations.shape[-1]):
         axs[0].plot(
@@ -28,7 +23,7 @@ def plot_sequence(observations, actions, tau, obs_labels, action_labels, fig=Non
             jnp.squeeze(observations[..., observation_idx]),
             "." if dotted else "-",
             markersize=1,
-            label=obs_labels[observation_idx]
+            label=obs_labels[observation_idx],
         )
 
     axs[0].title.set_text("observations, timeseries")
@@ -62,11 +57,8 @@ def plot_model_performance(model, true_observations, actions, tau, obs_labels, a
     """Compare the performance of the model to the ground truth data."""
 
     fig, axs = plot_sequence(
-        observations=true_observations,
-        actions=actions,
-        tau=tau,
-        obs_labels=obs_labels,
-        action_labels=action_labels)
+        observations=true_observations, actions=actions, tau=tau, obs_labels=obs_labels, action_labels=action_labels
+    )
 
     pred_observations = simulate_ahead(model, true_observations[0, :], actions, tau)
 
@@ -78,33 +70,26 @@ def plot_model_performance(model, true_observations, actions, tau, obs_labels, a
         action_labels=action_labels,
         fig=fig,
         axs=axs,
-        dotted=True
+        dotted=True,
     )
     return fig, axs
 
 
 def append_predictions_to_sequence_plot(
-        fig,
-        axs,
-        starting_step,
-        pred_observations,
-        proposed_actions,
-        tau,
-        obs_labels,
-        action_labels
+    fig, axs, starting_step, pred_observations, proposed_actions, tau, obs_labels, action_labels
 ):
     """Appends the future predictions to the given plot."""
 
-    t = jnp.linspace(0, pred_observations.shape[0]-1, pred_observations.shape[0]) * tau
+    t = jnp.linspace(0, pred_observations.shape[0] - 1, pred_observations.shape[0]) * tau
     t += tau * starting_step  # start where the trajectory left off
 
-    colors = list(mcolors.CSS4_COLORS.values())[:pred_observations.shape[-1]]
+    colors = list(mcolors.CSS4_COLORS.values())[: pred_observations.shape[-1]]
     for observation_idx, color in zip(range(pred_observations.shape[-1]), colors):
         axs[0].plot(
             t,
             jnp.squeeze(pred_observations[..., observation_idx]),
             color=color,
-            label="pred " + obs_labels[observation_idx]
+            label="pred " + obs_labels[observation_idx],
         )
 
     if pred_observations.shape[-1] == 2:
@@ -112,31 +97,23 @@ def append_predictions_to_sequence_plot(
             jnp.squeeze(pred_observations[..., 0]),
             jnp.squeeze(pred_observations[..., 1]),
             s=1,
-            color=mcolors.CSS4_COLORS["orange"]
+            color=mcolors.CSS4_COLORS["orange"],
         )
 
-    colors = list(mcolors.CSS4_COLORS.values())[:pred_observations.shape[-1]]
+    colors = list(mcolors.CSS4_COLORS.values())[: pred_observations.shape[-1]]
     for action_idx, color in zip(range(proposed_actions.shape[-1]), colors):
         axs[2].plot(
             t[:-1],
             jnp.squeeze(proposed_actions[..., action_idx]),
             color=color,
-            label="pred " + action_labels[action_idx]
+            label="pred " + action_labels[action_idx],
         )
 
     return fig, axs
 
 
 def plot_sequence_and_prediction(
-        observations,
-        actions,
-        tau,
-        obs_labels,
-        actions_labels,
-        model,
-        init_obs,
-        init_state,
-        proposed_actions
+    observations, actions, tau, obs_labels, actions_labels, model, init_obs, init_state, proposed_actions
 ):
     """Plots the current trajectory and appends the predictions from the optimization."""
 
@@ -156,15 +133,10 @@ def plot_sequence_and_prediction(
             actions=proposed_actions,
             env_state_normalizer=model.env_state_normalizer[0, :],
             action_normalizer=model.action_normalizer[0, :],
-            static_params={key: value[0, :] for (key, value) in model.static_params.items()}
+            static_params={key: value[0, :] for (key, value) in model.static_params.items()},
         )
     else:
-        pred_observations = simulate_ahead(
-            model=model,
-            init_obs=init_obs,
-            actions=proposed_actions,
-            tau=tau
-        )
+        pred_observations = simulate_ahead(model=model, init_obs=init_obs, actions=proposed_actions, tau=tau)
 
     fig, axs = append_predictions_to_sequence_plot(
         fig=fig,
@@ -180,15 +152,9 @@ def plot_sequence_and_prediction(
     return fig, axs
 
 
-def plot_2d_kde_as_contourf(
-        p_est,
-        x,
-        observation_labels
-):
+def plot_2d_kde_as_contourf(p_est, x, observation_labels):
 
-    fig, axs = plt.subplots(
-        figsize=(6, 6)
-    )
+    fig, axs = plt.subplots(figsize=(6, 6))
 
     grid_len_per_dim = int(np.sqrt(x.shape[0]))
     x_plot = x.reshape((grid_len_per_dim, grid_len_per_dim, 2))
@@ -200,7 +166,7 @@ def plot_2d_kde_as_contourf(
         antialiased=False,
         levels=50,
         alpha=0.9,
-        cmap=plt.cm.coolwarm
+        cmap=plt.cm.coolwarm,
     )
     axs.set_xlabel(observation_labels[0])
     axs.set_ylabel(observation_labels[1])
@@ -208,14 +174,10 @@ def plot_2d_kde_as_contourf(
     return fig, axs, cax
 
 
-def plot_2d_kde_as_surface(
-        p_est,
-        x,
-        observation_labels
-):
+def plot_2d_kde_as_surface(p_est, x, observation_labels):
 
     fig = plt.figure(figsize=(6, 6))
-    axs = fig.add_subplot(111, projection='3d')
+    axs = fig.add_subplot(111, projection="3d")
 
     grid_len_per_dim = int(np.sqrt(x.shape[0]))
     x_plot = x.reshape((grid_len_per_dim, grid_len_per_dim, 2))
@@ -226,7 +188,7 @@ def plot_2d_kde_as_surface(
         p_est.reshape(x_plot.shape[:-1]),
         antialiased=False,
         alpha=1,
-        cmap=plt.cm.coolwarm
+        cmap=plt.cm.coolwarm,
     )
     axs.set_xlabel(observation_labels[0])
     axs.set_ylabel(observation_labels[1])

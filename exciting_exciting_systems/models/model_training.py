@@ -42,10 +42,7 @@ def dataloader(memory, batch_size, sequence_length, key):
         (key,) = jax.random.split(key, 1)
 
         slice = jnp.linspace(
-            start=starting_points,
-            stop=starting_points+sequence_length,
-            num=sequence_length,
-            dtype=int
+            start=starting_points, stop=starting_points + sequence_length, num=sequence_length, dtype=int
         ).T
 
         batched_observations = observations[slice]
@@ -58,11 +55,8 @@ def dataloader(memory, batch_size, sequence_length, key):
 def load_single_batch(observations_array, actions_array, starting_points, sequence_length):
 
     slice = jnp.linspace(
-            start=starting_points,
-            stop=starting_points+sequence_length,
-            num=sequence_length,
-            dtype=int
-        ).T
+        start=starting_points, stop=starting_points + sequence_length, num=sequence_length, dtype=int
+    ).T
 
     batched_observations = observations_array[slice]
     batched_actions = actions_array[slice]
@@ -73,15 +67,11 @@ def load_single_batch(observations_array, actions_array, starting_points, sequen
 
 
 @eqx.filter_jit
-def precompute_starting_points(
-        n_train_steps,
-        k,
-        sequence_length,
-        training_batch_size,
-        loader_key
-):
-    index_normalized = jax.random.uniform(loader_key, shape=(n_train_steps, training_batch_size)) * (k + 1 - sequence_length)
-    starting_points = index_normalized.astype(jnp.int32) 
+def precompute_starting_points(n_train_steps, k, sequence_length, training_batch_size, loader_key):
+    index_normalized = jax.random.uniform(loader_key, shape=(n_train_steps, training_batch_size)) * (
+        k + 1 - sequence_length
+    )
+    starting_points = index_normalized.astype(jnp.int32)
     (loader_key,) = jax.random.split(loader_key, 1)
 
     return starting_points, loader_key
@@ -89,16 +79,7 @@ def precompute_starting_points(
 
 @eqx.filter_jit
 def fit(
-        model,
-        n_train_steps,
-        starting_points,
-        sequence_length,
-        observations,
-        actions,
-        tau,
-        featurize,
-        optim,
-        init_opt_state
+    model, n_train_steps, starting_points, sequence_length, observations, actions, tau, featurize, optim, init_opt_state
 ):
     """Fit the model on the gathered data."""
 
@@ -113,20 +94,16 @@ def fit(
             observations, actions, starting_points[i, ...], sequence_length
         )
         new_model_state, new_opt_state = make_step(
-            model_state,
-            batched_observations,
-            batched_actions,
-            tau,
-            opt_state,
-            featurize,
-            optim
+            model_state, batched_observations, batched_actions, tau, opt_state, featurize, optim
         )
 
         new_dynamic_model_state, new_static_model_state = eqx.partition(new_model_state, eqx.is_array)
         assert eqx.tree_equal(static_model_state, new_static_model_state) is True
         return (new_dynamic_model_state, new_opt_state)
 
-    final_dynamic_model_state, final_opt_state = jax.lax.fori_loop(lower=0, upper=n_train_steps,body_fun=body_fun, init_val=init_carry)
+    final_dynamic_model_state, final_opt_state = jax.lax.fori_loop(
+        lower=0, upper=n_train_steps, body_fun=body_fun, init_val=init_carry
+    )
     final_model = eqx.combine(static_model_state, final_dynamic_model_state)
     return final_model, final_opt_state
 
@@ -141,21 +118,13 @@ class ModelTrainer(eqx.Module):
     tau: jnp.float32
 
     @eqx.filter_jit
-    def fit(
-            self,
-            model,
-            k,
-            observations,
-            actions,
-            opt_state,
-            loader_key
-    ):
+    def fit(self, model, k, observations, actions, opt_state, loader_key):
         starting_points, loader_key = precompute_starting_points(
             n_train_steps=self.n_train_steps,
             k=k,
             sequence_length=self.sequence_length,
             training_batch_size=self.training_batch_size,
-            loader_key=loader_key
+            loader_key=loader_key,
         )
 
         final_model, final_opt_state = fit(
@@ -168,6 +137,6 @@ class ModelTrainer(eqx.Module):
             tau=self.tau,
             featurize=self.featurize,
             optim=self.model_optimizer,
-            init_opt_state=opt_state
+            init_opt_state=opt_state,
         )
         return final_model, final_opt_state, loader_key
