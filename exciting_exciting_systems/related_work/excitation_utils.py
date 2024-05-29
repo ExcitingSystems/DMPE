@@ -1,12 +1,20 @@
+from typing import Callable
+
 import numpy as np
 from scipy.stats.qmc import LatinHypercube
 from pymoo.core.problem import ElementwiseProblem
+from pymoo.optimize import minimize
 
 from exciting_exciting_systems.related_work.np_reimpl.env_utils import simulate_ahead_with_env
 from exciting_exciting_systems.related_work.np_reimpl.metrics import (
     MNNS_without_penalty,
     MC_uniform_sampling_distribution_approximation,
 )
+
+
+def latin_hypercube_sampling(d, n, seed=None):
+    """Samples random points with latin hypercube sampling and normalizes between -1 and 1."""
+    return LatinHypercube(d=d, seed=seed).random(n=n) * 2 - 1
 
 
 def soft_penalty(a, a_max=1):
@@ -42,7 +50,8 @@ def fitness_function(env, obs, state, prev_observations, action_parameters, h, f
     return np.squeeze(score).item() + penalty_terms.item()
 
 
-def optimize_aprbs(optimizer, obs, env_state, prev_observations, n_generations, env, h, featurize):
+def optimize_continuous_aprbs(optimizer, obs, env_state, prev_observations, n_generations, env, h, featurize):
+    """Optimize an APRBS signal with chooseable amplitude levels for system excitiation."""
     for generation in range(n_generations):
         solutions = []
         x_for_eval_list = []
@@ -71,7 +80,7 @@ class GoatsProblem(ElementwiseProblem):
     """pymoo-API optimization problem for the GOATs and sGOATs algorithms.
 
     Optimizes amplitude permutations and durations of each specific amplitude.
-    The amplitudes are randomly sampled between -1 and 1 with LHS.
+    The amplitude levels are chosen beforehand.
 
     TODO: arbitrary observation and input dimensions
     """
@@ -164,3 +173,55 @@ class GoatsProblem(ElementwiseProblem):
         penalty_terms = rho_obs * soft_penalty(a=observations, a_max=1) + rho_act * soft_penalty(a=actions, a_max=1)
 
         out["F"] = 1 * score + penalty_terms.item()
+
+
+def optimize_permutation_aprbs(
+    opt_algorithm,
+    amplitudes: np.ndarray,
+    env,
+    obs: np.ndarray,
+    env_state: np.ndarray,
+    bounds_duration: tuple,
+    n_generations: int,
+    support_points: np.ndarray,
+    featurize: Callable,
+    seed: int,
+    verbose: bool,
+    starting_observations: np.ndarray | None,
+):
+    """Optimize an APRBS signal with predefined amplitude levels for system excitiation."""
+
+    opt_problem = GoatsProblem(
+        amplitudes=amplitudes,
+        env=env,
+        obs=obs,
+        env_state=env_state,
+        featurize=featurize,
+        support_points=support_points,
+        bounds_duration=bounds_duration,
+        starting_observations=starting_observations,
+    )
+
+    res = minimize(
+        problem=opt_problem,
+        algorithm=opt_algorithm,
+        termination=("n_gen", n_generations),
+        seed=seed,
+        save_history=False,
+        verbose=verbose,
+    )
+
+    indices = opt_problem.decode(res.X[: opt_problem.n_amplitudes])
+    applied_amplitudes = opt_problem.amplitudes[indices]
+    applied_durations = res.X[opt_problem.n_amplitudes :]
+
+    actions = generate_aprbs(amplitudes=applied_amplitudes, durations=applied_durations)[None, :, None]
+
+    observations, last_env_state = simulate_ahead_with_env(
+        env,
+        obs,
+        env_state,
+        actions,
+    )
+
+    return observations, actions, last_env_state
