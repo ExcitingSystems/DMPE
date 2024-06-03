@@ -187,7 +187,7 @@ def plot_2d_kde_as_surface(p_est, x, observation_labels):
         x_plot[..., 1],
         p_est.reshape(x_plot.shape[:-1]),
         antialiased=False,
-        alpha=1,
+        alpha=0.8,
         cmap=plt.cm.coolwarm,
     )
     axs.set_xlabel(observation_labels[0])

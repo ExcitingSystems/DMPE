@@ -24,6 +24,7 @@ def excite_and_fit(
     actions,
     opt_state_model,
     loader_key,
+    plot_every,
 ):
     """Main algorithm to throw at a given (unknown) system and generate informative data from that system.
 
@@ -51,7 +52,7 @@ def excite_and_fit(
                 loader_key=loader_key,
             )
 
-        if k % 500 == 0 and k > 0:
+        if k % plot_every == 0 and k > 0:
             fig, axs = plot_sequence_and_prediction(
                 observations=observations[: k + 2, :],
                 actions=actions[: k + 1, :],
