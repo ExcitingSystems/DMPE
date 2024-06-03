@@ -95,6 +95,7 @@ class GoatsProblem(ElementwiseProblem):
         support_points,
         bounds_duration=(1, 50),
         starting_observations=None,
+        starting_actions=None,
     ):
 
         n_amplitudes = amplitudes.shape[0]
@@ -125,6 +126,7 @@ class GoatsProblem(ElementwiseProblem):
             self.starting_observations = featurize(starting_observations)
         else:
             self.starting_observations = None
+        self.starting_actions = starting_actions
 
     @staticmethod
     def decode(lehmer_code: list[int]) -> list[int]:
@@ -161,10 +163,17 @@ class GoatsProblem(ElementwiseProblem):
 
         feat_observations = self.featurize(observations)
         if self.starting_observations is not None:
+            assert (
+                self.starting_actions is not None
+            ), "There are starting observations, but no corresponding starting actions!"
             feat_observations = np.concatenate([feat_observations, self.starting_observations])
+            all_actions = np.concatenate([actions[0], self.starting_actions])
+        else:
+            all_actions = actions[0]
 
         score = MC_uniform_sampling_distribution_approximation(
-            data_points=feat_observations, support_points=self.support_points
+            data_points=np.concatenate([feat_observations[:-1, ...], all_actions], axis=-1),
+            support_points=self.support_points,
         )
         N = observations.shape[0]
 
@@ -188,6 +197,7 @@ def optimize_permutation_aprbs(
     seed: int,
     verbose: bool,
     starting_observations: np.ndarray | None,
+    starting_actions: np.ndarray | None,
 ):
     """Optimize an APRBS signal with predefined amplitude levels for system excitiation."""
 
@@ -200,6 +210,7 @@ def optimize_permutation_aprbs(
         support_points=support_points,
         bounds_duration=bounds_duration,
         starting_observations=starting_observations,
+        starting_actions=starting_actions,
     )
 
     res = minimize(

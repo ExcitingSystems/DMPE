@@ -76,11 +76,14 @@ def excite_with_GOATs(
         env_state=env_state,
         bounds_duration=bounds_duration,
         n_generations=n_generations,
-        support_points=latin_hypercube_sampling(d=env.observation_space.shape[-1], n=n_support_points, seed=seed),
+        support_points=latin_hypercube_sampling(
+            d=(env.observation_space.shape[-1] + env.action_space.shape[-1]), n=n_support_points, seed=seed
+        ),
         featurize=featurize,
         seed=seed,
         verbose=verbose,
         starting_observations=None,
+        starting_actions=None,
     )
 
     return observations, actions
@@ -154,7 +157,9 @@ def excite_with_sGOATs(
     all_amplitudes = latin_hypercube_sampling(d=env.action_space.shape[-1], n=n_amplitudes, seed=seed)
     amplitude_groups = np.split(all_amplitudes, n_amplitude_groups, axis=0)
 
-    support_points = latin_hypercube_sampling(d=env.observation_space.shape[-1], n=n_support_points, seed=seed)
+    support_points = latin_hypercube_sampling(
+        d=(env.observation_space.shape[-1] + env.action_space.shape[-1]), n=n_support_points, seed=seed
+    )
 
     for amplitudes in amplitude_groups:
 
@@ -174,6 +179,7 @@ def excite_with_sGOATs(
             seed=seed,
             verbose=verbose,
             starting_observations=np.concatenate(all_observations) if reuse_observations else None,
+            starting_actions=np.concatenate(all_actions) if reuse_observations else None,
         )
 
         # update obs and env_state as the starting point for the next amplitude group
