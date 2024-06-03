@@ -48,8 +48,7 @@ def excite_with_GOATs(
         n_support_points: The number of support point in MCUDSA
         featurize: Featurization of the observations before computation of the metric. If
             this is not necessary for the environment/system, pass the identity function
-        seed: The seed for the genetic algorithm. TODO: This currently does not apply for
-            the LHS which makes this kinda pointless to have a seed. To be fixed
+        seed: The seed for the genetic algorithm and LHS
         verbose: Whether the genetic algorithm print out its optimization progress
 
     Returns:
@@ -71,13 +70,13 @@ def excite_with_GOATs(
 
     observations, actions, _ = optimize_permutation_aprbs(
         opt_algorithm,
-        amplitudes=latin_hypercube_sampling(d=1, n=n_amplitudes, seed=seed),
+        amplitudes=latin_hypercube_sampling(d=env.action_space.shape[-1], n=n_amplitudes, seed=seed),
         env=env,
         obs=obs,
         env_state=env_state,
         bounds_duration=bounds_duration,
         n_generations=n_generations,
-        support_points=latin_hypercube_sampling(d=2, n=n_support_points, seed=seed),
+        support_points=latin_hypercube_sampling(d=env.observation_space.shape[-1], n=n_support_points, seed=seed),
         featurize=featurize,
         seed=seed,
         verbose=verbose,
@@ -152,10 +151,10 @@ def excite_with_sGOATs(
 
     all_observations.append([obs[0]])
 
-    all_amplitudes = latin_hypercube_sampling(d=1, n=n_amplitudes, seed=seed)
+    all_amplitudes = latin_hypercube_sampling(d=env.action_space.shape[-1], n=n_amplitudes, seed=seed)
     amplitude_groups = np.split(all_amplitudes, n_amplitude_groups, axis=0)
 
-    support_points = latin_hypercube_sampling(d=2, n=n_support_points, seed=seed)
+    support_points = latin_hypercube_sampling(d=env.observation_space.shape[-1], n=n_support_points, seed=seed)
 
     for amplitudes in amplitude_groups:
 
