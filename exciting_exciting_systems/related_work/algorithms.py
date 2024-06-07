@@ -152,8 +152,6 @@ def excite_with_sGOATs(
     obs = obs.astype(np.float32)
     env_state = env_state.astype(np.float32)
 
-    all_observations.append([obs[0]])
-
     all_amplitudes = latin_hypercube_sampling(d=env.action_space.shape[-1], n=n_amplitudes, seed=seed)
     amplitude_groups = np.split(all_amplitudes, n_amplitude_groups, axis=0)
 
@@ -163,9 +161,16 @@ def excite_with_sGOATs(
 
     for amplitudes in amplitude_groups:
 
-        # TODO: How big is the overhead of redefining the problem for each block in sGOATs?
-        # TODO: The current implementation has x_0 in the starting observations twice? i think
-        # so at least -> investigate
+        if len(all_observations) > 0 and reuse_observations:
+            starting_observations = np.concatenate(all_observations)
+        else:
+            starting_observations = None
+
+        if len(all_actions) > 0 and reuse_observations:
+            starting_actions = np.concatenate(all_actions)
+        else:
+            starting_actions = None
+
         observations, actions, last_env_state = optimize_permutation_aprbs(
             opt_algorithm=opt_algorithm,
             amplitudes=amplitudes,
@@ -178,8 +183,8 @@ def excite_with_sGOATs(
             featurize=featurize,
             seed=seed,
             verbose=verbose,
-            starting_observations=np.concatenate(all_observations) if reuse_observations else None,
-            starting_actions=np.concatenate(all_actions) if reuse_observations else None,
+            starting_observations=starting_observations,
+            starting_actions=starting_actions,
         )
 
         # update obs and env_state as the starting point for the next amplitude group
@@ -187,7 +192,7 @@ def excite_with_sGOATs(
         env_state = last_env_state
 
         # save optimized actions and resulting observations
-        all_observations.append(observations[0, 1:, :])
+        all_observations.append(observations[0, :-1, :])
         all_actions.append(actions[0])
 
     return all_observations, all_actions
