@@ -3,7 +3,7 @@ import jax.numpy as jnp
 
 
 @jax.jit
-def kullback_leibler_divergence(p: jnp.ndarray, q: jnp.ndarray):
+def KLDLoss(p: jnp.ndarray, q: jnp.ndarray):
     """Computes the sample KLD between two inputs.
 
     The last dim of the input needs to be of length 1. The summation occurs along the second to
@@ -22,13 +22,7 @@ def kullback_leibler_divergence(p: jnp.ndarray, q: jnp.ndarray):
 
 
 @jax.jit
-def KLDLoss(p: jnp.ndarray, q: jnp.ndarray):
-    """Reduce mapped KLD to loss value."""
-    return jnp.mean(kullback_leibler_divergence(p, q))
-
-
-@jax.jit
-def jensen_shannon_divergence(p: jnp.ndarray, q: jnp.ndarray):
+def JSDLoss(p: jnp.ndarray, q: jnp.ndarray):
     """Computes the sample JSD between two inputs.
 
     The last dim of the input needs to be of length 1. The summation occurs along the second to
@@ -39,13 +33,7 @@ def jensen_shannon_divergence(p: jnp.ndarray, q: jnp.ndarray):
     assert p.shape[-1] == q.shape[-1] == 1, "Last dim needs to be of length 1 for PDFs"
 
     m = (p + q) / 2
-    return (kullback_leibler_divergence(p, m) + kullback_leibler_divergence(q, m)) / 2
-
-
-@jax.jit
-def JSDLoss(p: jnp.ndarray, q: jnp.ndarray):
-    """Reduce mapped JSD to loss value."""
-    return jnp.mean(jensen_shannon_divergence(p, q))
+    return (KLDLoss(p, m) + KLDLoss(q, m)) / 2
 
 
 def MNNS_without_penalty(data_points: jnp.ndarray, new_data_points: jnp.ndarray) -> jnp.ndarray:
