@@ -62,9 +62,12 @@ def loss_function(
         observations = simulate_ahead(model=model, init_obs=init_obs, actions=actions, tau=tau)
 
     predicted_density_estimate = update_density_estimate_multiple_observations(
-        density_estimate, jnp.concatenate([observations[0:-1, :], actions], axis=-1)  # observations
+        density_estimate, observations  # density_estimate, jnp.concatenate([observations[0:-1, :], actions], axis=-1)
     )
-    loss = JSDLoss(p=predicted_density_estimate.p, q=target_distribution)
+    loss = JSDLoss(
+        p=predicted_density_estimate.p / jnp.sum(predicted_density_estimate.p),
+        q=target_distribution / jnp.sum(target_distribution),
+    )
 
     # TODO: pull this automatically, maybe penalty_kwargs or something
     rho_obs = 1e4
@@ -167,7 +170,7 @@ class Exciter(eqx.Module):
             in_axes=[DensityEstimate(0, None, None, None), 0],
             out_axes=DensityEstimate(0, None, None, None),
         )(
-            density_estimate, jnp.concatenate([obs, action], axis=-1)  # obs
+            density_estimate, obs  # density_estimate, jnp.concatenate([obs, action], axis=-1)
         )
 
         return action, next_proposed_actions, density_estimate

@@ -38,7 +38,8 @@ def jensen_shannon_divergence(p: jnp.ndarray, q: jnp.ndarray):
     assert p.shape == q.shape, "The two inputs need to be of the same shape."
     assert p.shape[-1] == q.shape[-1] == 1, "Last dim needs to be of length 1 for PDFs"
 
-    return (kullback_leibler_divergence(p, q) + kullback_leibler_divergence(q, p)) / 2
+    m = (p + q) / 2
+    return (kullback_leibler_divergence(p, m) + kullback_leibler_divergence(q, m)) / 2
 
 
 @jax.jit
