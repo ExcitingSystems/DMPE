@@ -231,8 +231,6 @@ def excite_with_iGOATs(
     obs = obs.astype(np.float32)[0]
     env_state = env_state.astype(np.float32)[0]
 
-    observations.append(obs)
-
     pbar = tqdm(total=n_timesteps)
     while len(observations) < n_timesteps:
         optimizer = CMAwM(mean=mean, sigma=sigma, population_size=population_size, bounds=bounds, steps=steps)
@@ -241,7 +239,8 @@ def excite_with_iGOATs(
             optimizer,
             obs,
             env_state,
-            np.stack(observations),
+            observations,
+            actions,
             n_generations=n_generations,
             env=env,
             h=h,
@@ -264,13 +263,14 @@ def excite_with_iGOATs(
             env_state,
             new_actions,
         )
+        obs = new_observations[-1]
 
-        observations = observations + new_observations[1:, :].tolist()
+        observations = observations + new_observations[:-1, :].tolist()
         actions = actions + new_actions.tolist()
-
-        obs = observations[-1]
 
         pbar.update(new_actions.shape[0])
     pbar.close()
 
-    return observations, actions
+    observations.append(obs)
+
+    return np.stack(observations), np.stack(actions)

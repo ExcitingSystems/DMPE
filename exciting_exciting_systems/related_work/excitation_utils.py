@@ -9,6 +9,7 @@ from exciting_exciting_systems.related_work.np_reimpl.env_utils import simulate_
 from exciting_exciting_systems.related_work.np_reimpl.metrics import (
     MNNS_without_penalty,
     MC_uniform_sampling_distribution_approximation,
+    audze_eglais,
 )
 
 
@@ -29,7 +30,7 @@ def generate_aprbs(amplitudes, durations):
     return np.concatenate([np.ones(duration) * amplitude for (amplitude, duration) in zip(amplitudes, durations)])
 
 
-def fitness_function(env, obs, state, prev_observations, action_parameters, h, featurize):
+def fitness_function(env, obs, state, prev_observations, prev_actions, action_parameters, h, featurize):
     actions = generate_aprbs(amplitudes=action_parameters[:h], durations=action_parameters[h:].astype(np.int32))[
         :, None
     ]
@@ -41,8 +42,20 @@ def fitness_function(env, obs, state, prev_observations, action_parameters, h, f
         actions,
     )
     feat_observations = featurize(observations)
+    new_datapoints = np.concatenate([feat_observations[:-1], actions], axis=-1)
 
-    score = MNNS_without_penalty(data_points=featurize(prev_observations), new_data_points=feat_observations[1:, :])
+    if len(prev_actions) == 0 and len(prev_observations) == 0:
+        score = audze_eglais(new_datapoints)
+    else:
+        prev_observations = np.stack(prev_observations)
+        prev_actions = np.stack(prev_actions)
+        feat_previous_observations = featurize(prev_observations)
+        prev_datapoints = np.concatenate([feat_previous_observations, prev_actions], axis=-1)
+
+        score = MNNS_without_penalty(
+            data_points=prev_datapoints,
+            new_data_points=new_datapoints,
+        )
 
     rho_obs = 1e10
     rho_act = 1e10
@@ -50,7 +63,9 @@ def fitness_function(env, obs, state, prev_observations, action_parameters, h, f
     return np.squeeze(score).item() + penalty_terms.item()
 
 
-def optimize_continuous_aprbs(optimizer, obs, env_state, prev_observations, n_generations, env, h, featurize):
+def optimize_continuous_aprbs(
+    optimizer, obs, env_state, prev_observations, prev_actions, n_generations, env, h, featurize
+):
     """Optimize an APRBS signal with chooseable amplitude levels for system excitiation."""
     for generation in range(n_generations):
         solutions = []
@@ -58,7 +73,9 @@ def optimize_continuous_aprbs(optimizer, obs, env_state, prev_observations, n_ge
 
         for i in range(optimizer.population_size):
             x_for_eval, x_for_tell = optimizer.ask()
-            value = fitness_function(env, obs, env_state, prev_observations, x_for_eval, h, featurize=featurize)
+            value = fitness_function(
+                env, obs, env_state, prev_observations, prev_actions, x_for_eval, h, featurize=featurize
+            )
 
             solutions.append((x_for_tell, value))
             x_for_eval_list.append(x_for_eval)
