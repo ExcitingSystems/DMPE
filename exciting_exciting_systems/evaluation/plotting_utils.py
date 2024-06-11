@@ -6,7 +6,7 @@ import jax.numpy as jnp
 
 import exciting_environments as excenvs
 
-from exciting_exciting_systems.models.model_utils import simulate_ahead, simulate_ahead_with_env
+from exciting_exciting_systems.models.model_utils import simulate_ahead
 
 
 def plot_sequence(observations, actions, tau, obs_labels, action_labels, fig=None, axs=None, dotted=False):
@@ -113,7 +113,7 @@ def append_predictions_to_sequence_plot(
 
 
 def plot_sequence_and_prediction(
-    observations, actions, tau, obs_labels, actions_labels, model, init_obs, init_state, proposed_actions
+    observations, actions, tau, obs_labels, actions_labels, model, init_obs, proposed_actions
 ):
     """Plots the current trajectory and appends the predictions from the optimization."""
 
@@ -125,18 +125,7 @@ def plot_sequence_and_prediction(
         action_labels=actions_labels,
     )
 
-    if isinstance(model, excenvs.core_env.CoreEnvironment):
-        pred_observations = simulate_ahead_with_env(
-            env=model,
-            init_obs=init_obs,
-            init_state=init_state,
-            actions=proposed_actions,
-            env_state_normalizer=model.env_state_normalizer[0, :],
-            action_normalizer=model.action_normalizer[0, :],
-            static_params={key: value[0, :] for (key, value) in model.static_params.items()},
-        )
-    else:
-        pred_observations = simulate_ahead(model=model, init_obs=init_obs, actions=proposed_actions, tau=tau)
+    pred_observations = simulate_ahead(model=model, init_obs=init_obs, actions=proposed_actions, tau=tau)
 
     fig, axs = append_predictions_to_sequence_plot(
         fig=fig,

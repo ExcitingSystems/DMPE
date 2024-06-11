@@ -7,7 +7,7 @@ import equinox as eqx
 
 from exciting_environments.core_env import CoreEnvironment
 
-from exciting_exciting_systems.models.model_utils import simulate_ahead, simulate_ahead_with_env
+from exciting_exciting_systems.models.model_utils import simulate_ahead
 from exciting_exciting_systems.utils.density_estimation import (
     DensityEstimate,
     update_density_estimate_single_observation,
@@ -26,7 +26,6 @@ def soft_penalty(a, a_max=1):
 def loss_function(
     model,
     init_obs: jnp.ndarray,
-    init_state: jnp.ndarray,
     actions: jnp.ndarray,
     density_estimate: DensityEstimate,
     tau: float,
@@ -38,7 +37,6 @@ def loss_function(
     Args:
         model: The model to use for the prediction
         init_obs: The initial observation from which to start the simulation
-        init_state: The initial state from which to start the simulation
         actions: The actions to apply in each step of the simulation, the length
             of the first dimension of this array determine the lenght of the
             output.
@@ -47,19 +45,7 @@ def loss_function(
         target_distribution: The goal distribution of the data. The JSD loss is computed
             w.r.t. this distribution
     """
-
-    if isinstance(model, CoreEnvironment):
-        observations = simulate_ahead_with_env(
-            env=model,
-            init_obs=init_obs,
-            init_state=init_state,
-            actions=actions,
-            env_state_normalizer=model.env_state_normalizer[0, :],
-            action_normalizer=model.action_normalizer[0, :],
-            static_params={key: value[0, :] for (key, value) in model.static_params.items()},
-        )
-    else:
-        observations = simulate_ahead(model=model, init_obs=init_obs, actions=actions, tau=tau)
+    observations = simulate_ahead(model=model, init_obs=init_obs, actions=actions, tau=tau)
 
     predicted_density_estimate = update_density_estimate_multiple_observations(
         density_estimate, jnp.concatenate([observations[0:-1, :], actions], axis=-1)
@@ -84,22 +70,18 @@ def optimize_actions(
     model,
     optimizer,
     init_obs,
-    init_state,
     density_estimate,
     tau,
     target_distribution,
 ):
-    """Uses the model to compute the effect of actions onto the state/observation trajectory to
+    """Uses the model to compute the effect of actions onto the observation trajectory to
     optimize the actions w.r.t. the given (gradient of the) loss function.
     """
     opt_state = optimizer.init(proposed_actions)
 
     def body_fun(i, carry):
         proposed_actions, opt_state = carry
-        grad = jax.vmap(
-            grad_loss_function,
-            in_axes=(None, 0, 0, 0, DensityEstimate(0, None, None, None), None, None),
-        )(model, init_obs, init_state, proposed_actions, density_estimate, tau, target_distribution)
+        grad = grad_loss_function(model, init_obs, proposed_actions, density_estimate, tau, target_distribution)
         updates, opt_state = optimizer.update(grad, opt_state, proposed_actions)
         proposed_actions = optax.apply_updates(proposed_actions, updates)
         return (proposed_actions, opt_state)
@@ -128,7 +110,6 @@ class Exciter(eqx.Module):
     def choose_action(
         self,
         obs: jnp.ndarray,
-        state: jnp.ndarray,
         model,
         density_estimate: DensityEstimate,
         proposed_actions: jnp.ndarray,
@@ -138,7 +119,6 @@ class Exciter(eqx.Module):
 
         Args:
             obs: The current observations from which to start
-            state: The current state from which to start
             model: The current model of the environment used for the prediction
             density_estimate: The current estimate of the data density without
                 the current step k
@@ -156,19 +136,16 @@ class Exciter(eqx.Module):
             model=model,
             optimizer=self.excitation_optimizer,
             init_obs=obs,
-            init_state=state,
             density_estimate=density_estimate,
             tau=self.tau,
             target_distribution=self.target_distribution,
         )
-        action = proposed_actions[:, 0, :]
-        next_proposed_actions = proposed_actions.at[:, :-1, :].set(proposed_actions[:, 1:, :])
+        action = proposed_actions[0, :]
+        next_proposed_actions = proposed_actions.at[:-1, :].set(proposed_actions[1:, :])
 
         # update grid KDE with x_k and u_k
-        density_estimate = jax.vmap(
-            update_density_estimate_single_observation,
-            in_axes=[DensityEstimate(0, None, None, None), 0],
-            out_axes=DensityEstimate(0, None, None, None),
-        )(density_estimate, jnp.concatenate([obs, action], axis=-1))
+        density_estimate = update_density_estimate_single_observation(
+            density_estimate, jnp.concatenate([obs, action], axis=-1)
+        )
 
         return action, next_proposed_actions, density_estimate

@@ -35,7 +35,7 @@ def excite_and_fit(
     """
     for k in tqdm(range(n_timesteps)):
         action, proposed_actions, density_estimate = exciter.choose_action(
-            obs=obs, state=state, model=model, density_estimate=density_estimate, proposed_actions=proposed_actions
+            obs=obs, model=model, density_estimate=density_estimate, proposed_actions=proposed_actions
         )
 
         obs, state, actions, observations = interact_and_observe(
@@ -60,9 +60,8 @@ def excite_and_fit(
                 obs_labels=[r"$\theta$", r"$\omega$"],
                 actions_labels=[r"$u$"],
                 model=model,
-                init_obs=obs[0, :],
-                init_state=state[0, :],
-                proposed_actions=proposed_actions[0, :],
+                init_obs=obs,
+                proposed_actions=proposed_actions,
             )
             plt.show()
 
