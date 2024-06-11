@@ -19,6 +19,7 @@ from exciting_exciting_systems.related_work.excitation_utils import (
     generate_aprbs,
     latin_hypercube_sampling,
 )
+from exciting_exciting_systems.related_work.np_reimpl.env_utils import simulate_ahead_with_env
 
 
 def excite_with_GOATs(
@@ -257,13 +258,17 @@ def excite_with_iGOATs(
         if new_actions.shape[1] + len(observations) > n_timesteps:
             new_actions = new_actions[: (n_timesteps - len(observations) + 1), :]
 
-        for i in range(new_actions.shape[1]):
-            action = new_actions[i, :]
-            env_state = env.step(env_state, action)
-            obs = env.generate_observation(env_state)
+        new_observations, env_state = simulate_ahead_with_env(
+            env,
+            obs,
+            env_state,
+            new_actions,
+        )
 
-            observations.append(obs)
-            actions.append(action)
+        observations = observations + new_observations[1:, :].tolist()
+        actions = actions + new_actions.tolist()
+
+        obs = observations[-1]
 
         pbar.update(new_actions.shape[0])
     pbar.close()
