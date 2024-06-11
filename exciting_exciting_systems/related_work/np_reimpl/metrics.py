@@ -62,3 +62,16 @@ def MC_uniform_sampling_distribution_approximation(data_points: np.ndarray, supp
     distance_matrix = np.linalg.norm(data_points[:, None, :] - support_points[None, ...], axis=-1)
     minimal_distances = np.min(distance_matrix, axis=0)
     return np.sum(minimal_distances) / M
+
+
+def audze_eglais(data_points: np.ndarray) -> np.ndarray:
+    """From [Smits+Nelles2024]. The maximin-desing penalizes points that
+    are too close in the point distribution.
+
+    TODO: There has to be a more efficient way to do this.
+    """
+    N = data_points.shape[0]
+    distance_matrix = np.linalg.norm(data_points[:, None, :] - data_points[None, ...], axis=-1)
+    distances = distance_matrix[np.triu_indices(N, k=1)]
+
+    return 2 / (N * (N - 1)) * np.sum(1 / distances**2)

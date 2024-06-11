@@ -18,7 +18,7 @@ def KLDLoss(p: jnp.ndarray, q: jnp.ndarray):
     eps = 1e-12
 
     kld = (p + eps) * jnp.log((p + eps) / (q + eps))
-    return jnp.sum(kld, axis=-2)
+    return jnp.squeeze(jnp.sum(kld, axis=-2))
 
 
 @jax.jit
@@ -33,7 +33,7 @@ def JSDLoss(p: jnp.ndarray, q: jnp.ndarray):
     assert p.shape[-1] == q.shape[-1] == 1, "Last dim needs to be of length 1 for PDFs"
 
     m = (p + q) / 2
-    return (KLDLoss(p, m) + KLDLoss(q, m)) / 2
+    return jnp.squeeze((KLDLoss(p, m) + KLDLoss(q, m)) / 2)
 
 
 def MNNS_without_penalty(data_points: jnp.ndarray, new_data_points: jnp.ndarray) -> jnp.ndarray:
