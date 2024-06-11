@@ -57,8 +57,8 @@ def excite_with_GOATs(
     """
 
     obs, env_state = env.reset()
-    obs = obs.astype(np.float32)
-    env_state = env_state.astype(np.float32)
+    obs = obs.astype(np.float32)[0]
+    env_state = env_state.astype(np.float32)[0]
 
     opt_algorithm = GA(
         pop_size=population_size,
@@ -149,8 +149,8 @@ def excite_with_sGOATs(
     )
 
     obs, env_state = env.reset()
-    obs = obs.astype(np.float32)
-    env_state = env_state.astype(np.float32)
+    obs = obs.astype(np.float32)[0]
+    env_state = env_state.astype(np.float32)[0]
 
     all_amplitudes = latin_hypercube_sampling(d=env.action_space.shape[-1], n=n_amplitudes, seed=seed)
     amplitude_groups = np.split(all_amplitudes, n_amplitude_groups, axis=0)
@@ -188,12 +188,12 @@ def excite_with_sGOATs(
         )
 
         # update obs and env_state as the starting point for the next amplitude group
-        obs = observations[:, -1, :]
+        obs = observations[-1, :]
         env_state = last_env_state
 
         # save optimized actions and resulting observations
-        all_observations.append(observations[0, :-1, :])
-        all_actions.append(actions[0])
+        all_observations.append(observations[:-1, :])
+        all_actions.append(actions)
 
     return all_observations, all_actions
 
@@ -227,10 +227,10 @@ def excite_with_iGOATs(
     steps = np.concatenate([np.zeros(continuous_dim), np.ones(discrete_dim)])
 
     obs, env_state = env.reset()
-    obs = obs.astype(np.float32)
-    env_state = env_state.astype(np.float32)
+    obs = obs.astype(np.float32)[0]
+    env_state = env_state.astype(np.float32)[0]
 
-    observations.append(obs[0])
+    observations.append(obs)
 
     pbar = tqdm(total=n_timesteps)
     while len(observations) < n_timesteps:
@@ -250,22 +250,22 @@ def excite_with_iGOATs(
         amplitudes = proposed_aprbs_params[:h]
         durations = proposed_aprbs_params[h:].astype(np.int32)
 
-        new_actions = generate_aprbs(amplitudes=amplitudes, durations=durations)[None, :, None]
+        new_actions = generate_aprbs(amplitudes=amplitudes, durations=durations)[:, None]
 
         # TODO: is this fair? The goal is to not go past the maximum number of steps
         # IMO needs to be reconsidered or discussed
         if new_actions.shape[1] + len(observations) > n_timesteps:
-            new_actions = new_actions[:, : (n_timesteps - len(observations) + 1), :]
+            new_actions = new_actions[: (n_timesteps - len(observations) + 1), :]
 
         for i in range(new_actions.shape[1]):
-            action = new_actions[:, i, :]
+            action = new_actions[i, :]
             env_state = env.step(env_state, action)
             obs = env.generate_observation(env_state)
 
-            observations.append(obs[0])
-            actions.append(action[0])
+            observations.append(obs)
+            actions.append(action)
 
-        pbar.update(new_actions.shape[1])
+        pbar.update(new_actions.shape[0])
     pbar.close()
 
     return observations, actions

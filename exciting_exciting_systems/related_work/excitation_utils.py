@@ -38,11 +38,11 @@ def fitness_function(env, obs, state, prev_observations, action_parameters, h, f
         env,
         obs,
         state,
-        actions[None, ...],
+        actions,
     )
     feat_observations = featurize(observations)
 
-    score = MNNS_without_penalty(data_points=featurize(prev_observations), new_data_points=feat_observations[0, 1:, :])
+    score = MNNS_without_penalty(data_points=featurize(prev_observations), new_data_points=feat_observations[1:, :])
 
     rho_obs = 1e10
     rho_act = 1e10
@@ -151,7 +151,7 @@ class GoatsProblem(ElementwiseProblem):
 
         applied_amplitudes = self.amplitudes[indices]
 
-        actions = generate_aprbs(amplitudes=applied_amplitudes, durations=x[self.n_amplitudes :])[None, :, None]
+        actions = generate_aprbs(amplitudes=applied_amplitudes, durations=x[self.n_amplitudes :])[:, None]
 
         observations, _ = simulate_ahead_with_env(
             self.env,
@@ -159,7 +159,6 @@ class GoatsProblem(ElementwiseProblem):
             self.env_state,
             actions,
         )
-        observations = observations[0]
 
         feat_observations = self.featurize(observations)
         if self.starting_observations is not None:
@@ -167,9 +166,9 @@ class GoatsProblem(ElementwiseProblem):
                 self.starting_actions is not None
             ), "There are starting observations, but no corresponding starting actions!"
             feat_observations = np.concatenate([feat_observations, self.starting_observations])
-            all_actions = np.concatenate([actions[0], self.starting_actions])
+            all_actions = np.concatenate([actions, self.starting_actions])
         else:
-            all_actions = actions[0]
+            all_actions = actions
 
         score = MC_uniform_sampling_distribution_approximation(
             data_points=np.concatenate([feat_observations[:-1, ...], all_actions], axis=-1),
@@ -226,7 +225,7 @@ def optimize_permutation_aprbs(
     applied_amplitudes = opt_problem.amplitudes[indices]
     applied_durations = res.X[opt_problem.n_amplitudes :]
 
-    actions = generate_aprbs(amplitudes=applied_amplitudes, durations=applied_durations)[None, :, None]
+    actions = generate_aprbs(amplitudes=applied_amplitudes, durations=applied_durations)[:, None]
 
     observations, last_env_state = simulate_ahead_with_env(
         env,

@@ -5,10 +5,12 @@ def simulate_ahead_with_env(env, obs, state, actions):
     observations = []
     observations.append(obs)
 
-    for i in range(actions.shape[1]):
-        state = env.step(state, actions[:, i, :])
+    state = state[None, ...]
+
+    for i in range(actions.shape[0]):
+        state = env.step(state, actions[None, i, :])
         obs = env.generate_observation(state)
 
-        observations.append(obs)
+        observations.append(obs[0])
 
-    return np.stack(observations, axis=1), state
+    return np.vstack(observations), state[0]
