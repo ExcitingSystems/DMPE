@@ -21,16 +21,7 @@ def simulate_ahead(model: NeuralEulerODE, init_obs: jnp.ndarray, actions: jnp.nd
             (n_actions + 1, obs_dim). That is because the first observation is
             already given through the initial observation
     """
-
-    def body_fun(carry, action):
-        obs = carry
-        obs = model(obs, action, tau)
-        return obs, obs
-
-    _, observations = jax.lax.scan(body_fun, init_obs, actions)
-    observations = jnp.concatenate([init_obs[None, :], observations], axis=0)
-
-    return observations
+    return model(init_obs, actions, tau)
 
 
 @eqx.filter_jit
