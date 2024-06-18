@@ -66,7 +66,12 @@ class NeuralODEPendulum(NeuralODE):
         return jnp.stack([(((observations[..., 0] + 1) % 2) - 1), observations[..., 1]], axis=-1)
 
 
-class NeuralEulerODE(NeuralODE):
+class NeuralEulerODE(eqx.Module):
+    func: MLP
+
+    def __init__(self, obs_dim, action_dim, width_size, depth, *, key, **kwargs):
+        super().__init__(**kwargs)
+        self.func = MLP(obs_dim, action_dim, width_size, depth, key=key)
 
     def step(self, obs, action, tau):
         next_obs = obs + tau * self.func(obs, action)

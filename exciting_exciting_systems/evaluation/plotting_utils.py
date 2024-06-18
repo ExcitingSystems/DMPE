@@ -28,7 +28,7 @@ def plot_sequence(observations, actions, tau, obs_labels, action_labels, fig=Non
 
     axs[0].title.set_text("observations, timeseries")
     axs[0].legend()
-    axs[0].set_xlabel(r"time $t$ in seconds")
+    axs[0].set_xlabel("$t$ in seconds")
 
     if observations.shape[-1] == 2:
         axs[1].scatter(jnp.squeeze(observations[..., 0]), jnp.squeeze(observations[..., 1]), s=1)
@@ -44,7 +44,7 @@ def plot_sequence(observations, actions, tau, obs_labels, action_labels, fig=Non
 
         axs[2].title.set_text("actions, timeseries")
         axs[2].legend()
-        axs[2].set_xlabel(r"time $t$ in seconds")
+        axs[2].set_xlabel(r"$t$ in seconds")
 
     for ax in axs:
         ax.grid()
