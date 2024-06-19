@@ -4,8 +4,6 @@ import numpy as np
 
 import jax.numpy as jnp
 
-import exciting_environments as excenvs
-
 from exciting_exciting_systems.models.model_utils import simulate_ahead
 
 
@@ -13,7 +11,7 @@ def plot_sequence(observations, actions, tau, obs_labels, action_labels, fig=Non
     """Plots a given sequence of observations and actions."""
 
     if fig is None or axs is None:
-        fig, axs = plt.subplots(nrows=1, ncols=3, figsize=(18, 6), sharey=True)
+        fig, axs = plt.subplots(nrows=1, ncols=3, figsize=(18, 6))
 
     t = jnp.linspace(0, observations.shape[0] - 1, observations.shape[0]) * tau
 
@@ -28,22 +26,26 @@ def plot_sequence(observations, actions, tau, obs_labels, action_labels, fig=Non
 
     axs[0].title.set_text("observations, timeseries")
     axs[0].legend()
+    axs[0].set_ylabel(r"$\bm{x}$")
     axs[0].set_xlabel("$t$ in seconds")
 
     if observations.shape[-1] == 2:
         axs[1].scatter(jnp.squeeze(observations[..., 0]), jnp.squeeze(observations[..., 1]), s=1)
-        axs[1].title.set_text("observations, together")
+        axs[1].title.set_text("observation plane")
+        axs[1].set_ylabel(obs_labels[0])
+        axs[1].set_xlabel(obs_labels[1])
 
     if actions is not None:
         if observations.shape[-1] == 1 and actions.shape[-1] == 1:
             axs[1].scatter(jnp.squeeze(actions[..., 0]), jnp.squeeze(observations[:-1, 0]), s=1)
-            axs[1].title.set_text("observations + actions, together")
+            axs[1].title.set_text("observation + action plane")
 
         for action_idx in range(actions.shape[-1]):
             axs[2].plot(t[:-1], jnp.squeeze(actions[..., action_idx]), label=action_labels[action_idx])
 
         axs[2].title.set_text("actions, timeseries")
         axs[2].legend()
+        axs[2].set_ylabel(r"$\bm{u}$")
         axs[2].set_xlabel(r"$t$ in seconds")
 
     for ax in axs:
