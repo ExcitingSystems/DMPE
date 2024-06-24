@@ -3,6 +3,7 @@
 from typing import Callable
 
 from tqdm.notebook import tqdm
+import matplotlib.pyplot as plt
 import numpy as np
 from cmaes import CMAwM
 
@@ -20,6 +21,7 @@ from exciting_exciting_systems.related_work.excitation_utils import (
     latin_hypercube_sampling,
 )
 from exciting_exciting_systems.related_work.np_reimpl.env_utils import simulate_ahead_with_env
+from exciting_exciting_systems.evaluation.plotting_utils import plot_sequence
 
 
 def excite_with_GOATs(
@@ -28,14 +30,13 @@ def excite_with_GOATs(
     bounds_duration: tuple,
     population_size: int,
     n_generations: int,
-    n_support_points: int,
     featurize: Callable,
     seed: int = 0,
     verbose: bool = True,
 ):
     """System excitation using the GOATs algorithm from [Smits2024].
 
-    The optimization metric used here is MCUDSA as it is described in [Smits2024]
+    The optimization metric used here is audze eglais as it is described in [Smits2024]
     and it is optimized with a genetic algorithm.
 
     Args:
@@ -46,7 +47,6 @@ def excite_with_GOATs(
             as a tuple
         population_size: The number of individuals in the population of the GA
         n_generations: The number of generations of the GA
-        n_support_points: The number of support point in MCUDSA
         featurize: Featurization of the observations before computation of the metric. If
             this is not necessary for the environment/system, pass the identity function
         seed: The seed for the genetic algorithm and LHS
@@ -77,9 +77,6 @@ def excite_with_GOATs(
         env_state=env_state,
         bounds_duration=bounds_duration,
         n_generations=n_generations,
-        support_points=latin_hypercube_sampling(
-            d=(env.observation_space.shape[-1] + env.action_space.shape[-1]), n=n_support_points, seed=seed
-        ),
         featurize=featurize,
         seed=seed,
         verbose=verbose,
@@ -100,7 +97,6 @@ def excite_with_sGOATs(
     bounds_duration: tuple,
     population_size: int,
     n_generations: int,
-    n_support_points: int,
     featurize: Callable,
     seed=0,
     verbose=True,
@@ -129,7 +125,6 @@ def excite_with_sGOATs(
             as a tuple
         population_size: The number of individuals in the population of the GA
         n_generations: The number of generations of the GA
-        n_support_points: The number of support point in MCUDSA
         featurize: Featurization of the observations before computation of the metric. If
             this is not necessary for the environment/system, pass the identity function
         seed: The seed for the genetic algorithm. TODO: This currently does not apply for
@@ -156,10 +151,6 @@ def excite_with_sGOATs(
     all_amplitudes = latin_hypercube_sampling(d=env.action_space.shape[-1], n=n_amplitudes, seed=seed)
     amplitude_groups = np.split(all_amplitudes, n_amplitude_groups, axis=0)
 
-    support_points = latin_hypercube_sampling(
-        d=(env.observation_space.shape[-1] + env.action_space.shape[-1]), n=n_support_points, seed=seed
-    )
-
     for amplitudes in amplitude_groups:
 
         if len(all_observations) > 0 and reuse_observations:
@@ -180,7 +171,6 @@ def excite_with_sGOATs(
             env_state=env_state,
             bounds_duration=bounds_duration,
             n_generations=n_generations,
-            support_points=support_points,
             featurize=featurize,
             seed=seed,
             verbose=verbose,
@@ -195,6 +185,15 @@ def excite_with_sGOATs(
         # save optimized actions and resulting observations
         all_observations.append(observations[:-1, :])
         all_actions.append(actions)
+
+        fig, axs = plot_sequence(
+            observations=np.concatenate(all_observations),
+            actions=np.concatenate(all_actions)[:-1, ...],
+            tau=env.tau,
+            obs_labels=[r"$\theta$", r"$\omega$"],
+            action_labels=[r"$u$"],
+        )
+        plt.show()
 
     return all_observations, all_actions
 

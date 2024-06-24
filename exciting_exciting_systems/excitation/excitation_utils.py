@@ -56,8 +56,8 @@ def loss_function(
     )
 
     # TODO: pull this automatically, maybe penalty_kwargs or something
-    rho_obs = 1e4
-    rho_act = 1e4
+    rho_obs = 1e10
+    rho_act = 1e10
     penalty_terms = rho_obs * soft_penalty(a=observations, a_max=1) + rho_act * soft_penalty(a=actions, a_max=1)
 
     return loss + penalty_terms
@@ -86,7 +86,7 @@ def optimize_actions(
         proposed_actions = optax.apply_updates(proposed_actions, updates)
         return (proposed_actions, opt_state)
 
-    proposed_actions, _ = jax.lax.fori_loop(0, 5, body_fun, (proposed_actions, opt_state))
+    proposed_actions, _ = jax.lax.fori_loop(0, 30, body_fun, (proposed_actions, opt_state))
     return proposed_actions
 
 

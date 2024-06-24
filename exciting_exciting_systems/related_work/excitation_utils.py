@@ -11,6 +11,7 @@ from exciting_exciting_systems.related_work.np_reimpl.metrics import (
     MC_uniform_sampling_distribution_approximation,
     audze_eglais,
 )
+import matplotlib.pyplot as plt
 
 
 def latin_hypercube_sampling(d, n, seed=None):
@@ -28,6 +29,60 @@ def soft_penalty(a, a_max=1):
 def generate_aprbs(amplitudes, durations):
     """Parameterizable aprbs. This is used to transform the aprbs parameters into a signal."""
     return np.concatenate([np.ones(duration) * amplitude for (amplitude, duration) in zip(amplitudes, durations)])
+
+
+def compress_datapoints(datapoints, N_c, feature_dimension):
+
+    # split data
+    considered_data = datapoints[..., feature_dimension]
+    support_mask = np.diff(np.sign(considered_data)) != 0
+    support_mask = np.concatenate([support_mask, np.ones(1, dtype=bool)], axis=0)
+
+    curv_approx = np.diff(considered_data)
+    curv_support_mask = np.diff(np.sign(curv_approx)) != 0
+    curv_support_mask = np.concatenate([curv_support_mask, np.ones(2, dtype=bool)], axis=0)
+    support_mask = np.logical_or(curv_support_mask, support_mask)
+
+    support = considered_data[support_mask]
+    support_points = datapoints[support_mask]
+
+    # compute number of extra points per subsequence
+    support_distances = np.concatenate([np.diff(support), np.zeros(1)])
+    full_distance = 0
+    n_per_subsequence = np.zeros(support_distances.shape)
+
+    for idx, distance in enumerate(support_distances):
+        if distance > 0.2:
+            n_per_subsequence[idx] = distance
+            full_distance += distance
+
+    n_per_subsequence *= N_c / full_distance
+    n_per_subsequence = n_per_subsequence.astype(np.int32)
+
+    # bring data together
+    support_indices = np.where(support_mask == 1)[0]
+
+    compressed_data = []
+    indices = []
+
+    for idx, (start, start_point, n_new_points, distance) in enumerate(
+        zip(support, support_points, n_per_subsequence, support_distances)
+    ):
+        compressed_data.append(start_point)
+        indices.append(support_indices[idx])
+        if n_new_points > 0:
+            new_samples = (latin_hypercube_sampling(1, n=n_new_points) + 1) / 2 * distance + start
+            for sample in new_samples:
+                dist = np.abs(sample - considered_data)
+                chosen_idx = np.argmin(dist)
+                chosen_obs = datapoints[chosen_idx]
+                if chosen_idx not in indices:
+                    compressed_data.append(chosen_obs)
+                    indices.append(chosen_idx)
+
+    compressed_data = np.stack(compressed_data)
+
+    return compressed_data, indices
 
 
 def fitness_function(env, obs, state, prev_observations, prev_actions, action_parameters, h, featurize):
@@ -109,10 +164,11 @@ class GoatsProblem(ElementwiseProblem):
         obs,
         env_state,
         featurize,
-        support_points,
         bounds_duration=(1, 50),
         starting_observations=None,
         starting_actions=None,
+        compress_data=True,
+        target_N=100,
     ):
 
         n_amplitudes = amplitudes.shape[0]
@@ -134,9 +190,6 @@ class GoatsProblem(ElementwiseProblem):
             ),
         )
 
-        # The featurized support points
-        self.support_points = featurize(support_points)
-
         self.amplitudes = amplitudes
         self.n_amplitudes = n_amplitudes
         if starting_observations is not None:
@@ -144,6 +197,8 @@ class GoatsProblem(ElementwiseProblem):
         else:
             self.starting_observations = None
         self.starting_actions = starting_actions
+        self.compress_data = compress_data
+        self.target_N = target_N
 
     @staticmethod
     def decode(lehmer_code: list[int]) -> list[int]:
@@ -187,10 +242,18 @@ class GoatsProblem(ElementwiseProblem):
         else:
             all_actions = actions
 
-        score = MC_uniform_sampling_distribution_approximation(
-            data_points=np.concatenate([feat_observations[:-1, ...], all_actions], axis=-1),
-            support_points=self.support_points,
-        )
+        feat_datapoints = np.concatenate([feat_observations[:-1, ...], all_actions], axis=-1)
+
+        if self.compress_data:
+            feat_datapoints, indices = compress_datapoints(feat_datapoints, N_c=self.target_N, feature_dimension=2)
+
+        # N = observations.shape[0]
+        # plt.plot(np.linspace(0, N - 1, N), feat_observations[:N, 2])
+        # plt.plot(np.linspace(0, N - 1, N)[indices], compressed_feat_datapoints[..., 2], "r.")
+        # plt.show()
+
+        score = audze_eglais(feat_datapoints)
+
         N = observations.shape[0]
 
         rho_obs = 1
@@ -208,7 +271,6 @@ def optimize_permutation_aprbs(
     env_state: np.ndarray,
     bounds_duration: tuple,
     n_generations: int,
-    support_points: np.ndarray,
     featurize: Callable,
     seed: int,
     verbose: bool,
@@ -223,7 +285,6 @@ def optimize_permutation_aprbs(
         obs=obs,
         env_state=env_state,
         featurize=featurize,
-        support_points=support_points,
         bounds_duration=bounds_duration,
         starting_observations=starting_observations,
         starting_actions=starting_actions,
