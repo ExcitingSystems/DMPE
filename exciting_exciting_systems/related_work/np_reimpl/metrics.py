@@ -7,7 +7,7 @@ import numpy as np
 
 
 def MNNS_without_penalty(data_points: np.ndarray, new_data_points: np.ndarray) -> np.ndarray:
-    """From [Smits+Nelles2024].
+    """From [Smits2024].
 
     Implementation inspired by https://github.com/google/jax/discussions/9813
 
@@ -21,7 +21,7 @@ def MNNS_without_penalty(data_points: np.ndarray, new_data_points: np.ndarray) -
 
 
 def average_euclidean_distance(data_points: np.ndarray):
-    """From [Smits+Nelles2024].
+    """From [Smits2024].
 
     Used within the MNNS penalty term.
     """
@@ -32,7 +32,7 @@ def average_euclidean_distance(data_points: np.ndarray):
 
 
 def MNNS(data_points: np.ndarray, new_data_points: np.ndarray, k_d_max=1, delta=None):
-    """From [Smits+Nelles2024].
+    """From [Smits2024].
 
     Implementation inspired by https://github.com/google/jax/discussions/9813
 
@@ -52,7 +52,7 @@ def MNNS(data_points: np.ndarray, new_data_points: np.ndarray, k_d_max=1, delta=
 
 
 def MC_uniform_sampling_distribution_approximation(data_points: np.ndarray, support_points: np.ndarray) -> np.ndarray:
-    """From [Smits+Nelles2024]. The minimax-design tries to minimize
+    """From [Smits2024]. The minimax-design tries to minimize
     the distances of the data points to the support points.
 
     What stops the data points to just flock to a single support point?
@@ -65,7 +65,7 @@ def MC_uniform_sampling_distribution_approximation(data_points: np.ndarray, supp
 
 
 def audze_eglais(data_points: np.ndarray) -> np.ndarray:
-    """From [Smits+Nelles2024]. The maximin-desing penalizes points that
+    """From [Smits2024]. The maximin-desing penalizes points that
     are too close in the point distribution.
 
     TODO: There has to be a more efficient way to do this.

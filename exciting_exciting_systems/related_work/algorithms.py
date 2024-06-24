@@ -33,9 +33,9 @@ def excite_with_GOATs(
     seed: int = 0,
     verbose: bool = True,
 ):
-    """System excitation using the GOATs algorithm from [Smits+Nelles2024].
+    """System excitation using the GOATs algorithm from [Smits2024].
 
-    The optimization metric used here is MCUDSA as it is described in [Smits+Nelles2024]
+    The optimization metric used here is MCUDSA as it is described in [Smits2024]
     and it is optimized with a genetic algorithm.
 
     Args:
@@ -105,9 +105,9 @@ def excite_with_sGOATs(
     seed=0,
     verbose=True,
 ):
-    """System excitation using the sGOATs algorithm from [Smits+Nelles2024].
+    """System excitation using the sGOATs algorithm from [Smits2024].
 
-    The optimization metric used here is MCUDSA as it is described in [Smits+Nelles2024]
+    The optimization metric used here is MCUDSA as it is described in [Smits2024]
     and it is optimized with a genetic algorithm. It is similar to the GOATs algorithm
     with the major difference that the precomputed amplitude levels are not all used
     at once but only a subset of the amplitude levels is optimized at a time.
@@ -214,7 +214,7 @@ def excite_with_iGOATs(
     sigma,
     featurize,
 ):
-    """System excitation using the iGOATs algorithm from [Smits+Nelles2024]."""
+    """System excitation using the iGOATs algorithm from [Smits2024]."""
 
     continuous_dim = h
     discrete_dim = h

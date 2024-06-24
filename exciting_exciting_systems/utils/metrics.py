@@ -37,7 +37,7 @@ def JSDLoss(p: jnp.ndarray, q: jnp.ndarray):
 
 
 def MNNS_without_penalty(data_points: jnp.ndarray, new_data_points: jnp.ndarray) -> jnp.ndarray:
-    """From [Smits+Nelles2024].
+    """From [Smits2024].
 
     Implementation inspired by https://github.com/google/jax/discussions/9813
 
@@ -51,7 +51,7 @@ def MNNS_without_penalty(data_points: jnp.ndarray, new_data_points: jnp.ndarray)
 
 
 def audze_eglais(data_points: jnp.ndarray) -> jnp.ndarray:
-    """From [Smits+Nelles2024]. The maximin-desing penalizes points that
+    """From [Smits2024]. The maximin-desing penalizes points that
     are too close in the point distribution.
 
     TODO: There has to be a more efficient way to do this.
@@ -66,7 +66,7 @@ def audze_eglais(data_points: jnp.ndarray) -> jnp.ndarray:
 def MC_uniform_sampling_distribution_approximation(
     data_points: jnp.ndarray, support_points: jnp.ndarray
 ) -> jnp.ndarray:
-    """From [Smits+Nelles2024]. The minimax-design tries to minimize
+    """From [Smits2024]. The minimax-design tries to minimize
     the distances of the data points to the support points.
 
     What stops the data points to just flock to a single support point?
