@@ -48,13 +48,10 @@ def compress_datapoints(datapoints, N_c, feature_dimension):
 
     # compute number of extra points per subsequence
     support_distances = np.concatenate([np.diff(support), np.zeros(1)])
-    full_distance = 0
-    n_per_subsequence = np.zeros(support_distances.shape)
 
-    for idx, distance in enumerate(support_distances):
-        if distance > 0.2:
-            n_per_subsequence[idx] = distance
-            full_distance += distance
+    n_per_subsequence = np.zeros(support_distances.shape)
+    n_per_subsequence[support_distances > 0.2] = support_distances[support_distances > 0.2]
+    full_distance = np.sum(support_distances[support_distances > 0.2])
 
     n_per_subsequence *= N_c / full_distance
     n_per_subsequence = n_per_subsequence.astype(np.int32)
@@ -71,7 +68,7 @@ def compress_datapoints(datapoints, N_c, feature_dimension):
         compressed_data.append(start_point)
         indices.append(support_indices[idx])
         if n_new_points > 0:
-            new_samples = (latin_hypercube_sampling(1, n=n_new_points) + 1) / 2 * distance + start
+            new_samples = LatinHypercube(d=1, seed=None).random(n=n_new_points) * distance + start
             for sample in new_samples:
                 dist = np.abs(sample - considered_data)
                 chosen_idx = np.argmin(dist)
@@ -105,7 +102,10 @@ def fitness_function(env, obs, state, prev_observations, prev_actions, action_pa
         prev_observations = np.stack(prev_observations)
         prev_actions = np.stack(prev_actions)
         feat_previous_observations = featurize(prev_observations)
+
         prev_datapoints = np.concatenate([feat_previous_observations, prev_actions], axis=-1)
+        if prev_datapoints.shape[0] > 1000:
+            prev_datapoints, _ = compress_datapoints(prev_datapoints, N_c=100, feature_dimension=2)
 
         score = MNNS_without_penalty(
             data_points=prev_datapoints,
