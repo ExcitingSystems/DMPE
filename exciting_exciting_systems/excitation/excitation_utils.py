@@ -71,6 +71,7 @@ def optimize_actions(
     optimizer,
     init_obs,
     density_estimate,
+    n_opt_steps,
     tau,
     target_distribution,
 ):
@@ -86,7 +87,7 @@ def optimize_actions(
         proposed_actions = optax.apply_updates(proposed_actions, updates)
         return (proposed_actions, opt_state)
 
-    proposed_actions, _ = jax.lax.fori_loop(0, 30, body_fun, (proposed_actions, opt_state))
+    proposed_actions, _ = jax.lax.fori_loop(0, n_opt_steps, body_fun, (proposed_actions, opt_state))
     return proposed_actions
 
 
@@ -97,6 +98,7 @@ class Exciter(eqx.Module):
         grad_loss_function: The gradient of the loss function w.r.t. the actions as
             a callable function
         excitiation_optimizer: The optimizer for the excitation input computation
+        n_opt_steps: Number of SGD steps per iteration
         tau: The time step length of the simulation
         target_distribution: The targeted distribution for the data density
     """
@@ -104,6 +106,7 @@ class Exciter(eqx.Module):
     grad_loss_function: Callable
     excitation_optimizer: optax._src.base.GradientTransformationExtraArgs
     tau: float
+    n_opt_steps: int
     target_distribution: jnp.ndarray
 
     @eqx.filter_jit
@@ -137,6 +140,7 @@ class Exciter(eqx.Module):
             optimizer=self.excitation_optimizer,
             init_obs=obs,
             density_estimate=density_estimate,
+            n_opt_steps=self.n_opt_steps,
             tau=self.tau,
             target_distribution=self.target_distribution,
         )
