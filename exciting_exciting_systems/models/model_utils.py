@@ -1,3 +1,4 @@
+import json
 import jax
 import jax.numpy as jnp
 import equinox as eqx
@@ -64,3 +65,18 @@ def simulate_ahead_with_env(
     observations = jnp.concatenate([init_obs[None, :], observations], axis=0)
 
     return observations
+
+
+def save_model(filename, hyperparams, model):
+    with open(filename, "wb") as f:
+        hyperparam_str = json.dumps(hyperparams)
+        f.write((hyperparam_str + "\n").encode())
+        eqx.tree_serialise_leaves(f, model)
+
+
+def load_model(filename, model_class):
+    with open(filename, "rb") as f:
+        hyperparams = json.loads(f.readline().decode())
+        hyperparams["key"] = jnp.array(hyperparams["key"], dtype=jnp.uint32)
+        model = model_class(**hyperparams)
+        return eqx.tree_deserialise_leaves(f, model)

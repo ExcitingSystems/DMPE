@@ -1,13 +1,18 @@
 import matplotlib.pyplot as plt
-from tqdm.notebook import tqdm
+from tqdm import tqdm
 
 import jax
 import jax.numpy as jnp
 import equinox as eqx
+import optax
 
 from exciting_exciting_systems.algorithms.algorithm_utils import interact_and_observe
 from exciting_exciting_systems.models.model_training import precompute_starting_points, fit
 from exciting_exciting_systems.evaluation.plotting_utils import plot_sequence_and_prediction
+from exciting_exciting_systems.excitation import loss_function, Exciter
+from exciting_exciting_systems.models.model_training import ModelTrainer
+from exciting_exciting_systems.models import NeuralEulerODEPendulum
+from exciting_exciting_systems.utils.density_estimation import DensityEstimate, build_grid_3d
 
 
 def excite_and_fit(
@@ -64,5 +69,76 @@ def excite_and_fit(
                 proposed_actions=proposed_actions,
             )
             plt.show()
+
+    return observations, actions, model, density_estimate
+
+
+def excite_with_dmpe(
+    env,
+    exp_params,
+    proposed_actions,
+    model_key,
+    loader_key,
+):
+    dim_obs_space = env.physical_state_dim  # assumes fully observable system
+    dim_action_space = env.action_dim
+    dim = dim_obs_space + dim_action_space
+    n_grid_points = exp_params["alg_params"]["points_per_dim"] ** dim
+
+    # setup x_0 / y_0
+    obs, state = env.reset()
+    obs = obs[0]
+
+    # setup memory variables
+    observations = jnp.zeros((exp_params["n_timesteps"], dim_obs_space))
+    observations = observations.at[0].set(obs)
+    actions = jnp.zeros((exp_params["n_timesteps"] - 1, dim_action_space))
+
+    exciter = Exciter(
+        grad_loss_function=jax.grad(loss_function, argnums=(2)),
+        excitation_optimizer=optax.adabelief(exp_params["alg_params"]["action_lr"]),
+        tau=env.tau,
+        n_opt_steps=exp_params["alg_params"]["n_opt_steps"],
+        target_distribution=jnp.ones(shape=(n_grid_points, 1)) * 1 / (1 - (-1)) ** dim,
+        rho_obs=exp_params["alg_params"]["rho_obs"],
+        rho_act=exp_params["alg_params"]["rho_act"],
+    )
+
+    model_trainer = ModelTrainer(
+        start_learning=exp_params["model_trainer_params"]["start_learning"],
+        training_batch_size=exp_params["model_trainer_params"]["training_batch_size"],
+        n_train_steps=exp_params["model_trainer_params"]["n_train_steps"],
+        sequence_length=exp_params["model_trainer_params"]["sequence_length"],
+        featurize=exp_params["model_trainer_params"]["featurize"],
+        model_optimizer=optax.adabelief(exp_params["model_trainer_params"]["model_lr"]),
+        tau=env.tau,
+    )
+
+    density_estimate = DensityEstimate(
+        p=jnp.zeros([n_grid_points, 1]),
+        x_g=build_grid_3d(low=-1, high=1, points_per_dim=exp_params["alg_params"]["points_per_dim"]),
+        bandwidth=jnp.array([exp_params["alg_params"]["bandwidth"]]),
+        n_observations=jnp.array([0]),
+    )
+
+    model = NeuralEulerODEPendulum(**exp_params["model_params"])
+    opt_state_model = model_trainer.model_optimizer.init(eqx.filter(model, eqx.is_inexact_array))
+
+    observations, actions, model, density_estimate = excite_and_fit(
+        n_timesteps=exp_params["n_timesteps"],
+        env=env,
+        model=model,
+        obs=obs,
+        state=state,
+        proposed_actions=proposed_actions,
+        exciter=exciter,
+        model_trainer=model_trainer,
+        density_estimate=density_estimate,
+        observations=observations,
+        actions=actions,
+        opt_state_model=opt_state_model,
+        loader_key=loader_key,
+        plot_every=exp_params["n_timesteps"] + 1,
+    )
 
     return observations, actions, model, density_estimate

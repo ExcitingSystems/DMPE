@@ -30,6 +30,8 @@ def loss_function(
     density_estimate: DensityEstimate,
     tau: float,
     target_distribution: jnp.ndarray,
+    rho_obs: float,
+    rho_act: float,
 ) -> jnp.ndarray:
     """Predicts a trajectory based on the given actions and the model and computes the
     corresponding loss value.
@@ -55,9 +57,6 @@ def loss_function(
         q=target_distribution / jnp.sum(target_distribution),
     )
 
-    # TODO: pull this automatically, maybe penalty_kwargs or something
-    rho_obs = 1e10
-    rho_act = 1e10
     penalty_terms = rho_obs * soft_penalty(a=observations, a_max=1) + rho_act * soft_penalty(a=actions, a_max=1)
 
     return loss + penalty_terms
@@ -74,6 +73,8 @@ def optimize_actions(
     n_opt_steps,
     tau,
     target_distribution,
+    rho_obs,
+    rho_act,
 ):
     """Uses the model to compute the effect of actions onto the observation trajectory to
     optimize the actions w.r.t. the given (gradient of the) loss function.
@@ -82,7 +83,9 @@ def optimize_actions(
 
     def body_fun(i, carry):
         proposed_actions, opt_state = carry
-        grad = grad_loss_function(model, init_obs, proposed_actions, density_estimate, tau, target_distribution)
+        grad = grad_loss_function(
+            model, init_obs, proposed_actions, density_estimate, tau, target_distribution, rho_obs, rho_act
+        )
         updates, opt_state = optimizer.update(grad, opt_state, proposed_actions)
         proposed_actions = optax.apply_updates(proposed_actions, updates)
         return (proposed_actions, opt_state)
@@ -101,6 +104,8 @@ class Exciter(eqx.Module):
         n_opt_steps: Number of SGD steps per iteration
         tau: The time step length of the simulation
         target_distribution: The targeted distribution for the data density
+        rho_obs: Weighting factor for observation soft constraints
+        rho_act: Weighting factor for action soft constraints
     """
 
     grad_loss_function: Callable
@@ -108,6 +113,8 @@ class Exciter(eqx.Module):
     tau: float
     n_opt_steps: int
     target_distribution: jnp.ndarray
+    rho_obs: float
+    rho_act: float
 
     @eqx.filter_jit
     def choose_action(
@@ -143,6 +150,8 @@ class Exciter(eqx.Module):
             n_opt_steps=self.n_opt_steps,
             tau=self.tau,
             target_distribution=self.target_distribution,
+            rho_obs=self.rho_obs,
+            rho_act=self.rho_act,
         )
         action = proposed_actions[0, :]
         next_proposed_actions = proposed_actions.at[:-1, :].set(proposed_actions[1:, :])
