@@ -18,7 +18,7 @@ from exciting_exciting_systems.utils.metrics import JSDLoss
 
 def soft_penalty(a, a_max=1):
     """Computes penalty for the given input. Assumes symmetry in all dimensions."""
-    penalty = jnp.sum(jax.nn.relu(jnp.abs(a) - a_max), axis=(-2, -1))
+    penalty = jnp.sum(jax.nn.relu(jnp.abs(a) - a_max), axis=(-2, -1)) ** 2
     return jnp.squeeze(penalty)
 
 
@@ -160,5 +160,8 @@ class Exciter(eqx.Module):
         density_estimate = update_density_estimate_single_observation(
             density_estimate, jnp.concatenate([obs, action], axis=-1)
         )
+
+        action = jnp.clip(action, min=-1, max=1)
+        next_proposed_actions = jnp.clip(next_proposed_actions, min=-1, max=1)
 
         return action, next_proposed_actions, density_estimate
