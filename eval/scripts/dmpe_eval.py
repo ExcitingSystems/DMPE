@@ -1,19 +1,16 @@
 import json
 import datetime
 
-import numpy as np
 import jax
 import jax.numpy as jnp
 import diffrax
-import optax
-import equinox as eqx
 from haiku import PRNGSequence
 
 import exciting_environments as excenvs
 
 from exciting_exciting_systems.utils.signals import aprbs
 from exciting_exciting_systems.algorithms import excite_with_dmpe
-from exciting_exciting_systems.models.model_utils import save_model, load_model
+from exciting_exciting_systems.models.model_utils import save_model
 
 
 def featurize_theta(obs):
@@ -53,7 +50,7 @@ model_trainer_params = dict(
 )
 model_params = dict(obs_dim=env.physical_state_dim, action_dim=env.action_dim, width_size=128, depth=3, key=None)
 
-seeds = [21, 42, 63, 2, 4, 26, 27, 31]
+seeds = [21]  # 42, 63, 2, 4, 26, 27, 31]
 
 for seed in seeds:
     exp_params = dict(
@@ -91,3 +88,5 @@ for seed in seeds:
 
     model_params["key"] = model_params["key"].tolist()
     save_model(f"../results/dmpe/model_{file_name}.json", hyperparams=model_params, model=model)
+
+    jax.clear_caches()
