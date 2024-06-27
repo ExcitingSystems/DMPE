@@ -50,7 +50,7 @@ model_trainer_params = dict(
 )
 model_params = dict(obs_dim=env.physical_state_dim, action_dim=env.action_dim, width_size=128, depth=3, key=None)
 
-seeds = [21]  # 42, 63, 2, 4, 26, 27, 31]
+seeds = [124, 111, 52, 1, 0, 126, 227, 3331]
 
 for seed in seeds:
     exp_params = dict(
@@ -78,9 +78,7 @@ for seed in seeds:
     proposed_actions = aprbs(alg_params["n_prediction_steps"], env.batch_size, 1, 10, next(data_rng))[0]
 
     # run excitation algorithm
-    observations, actions, model, density_estimate = excite_with_dmpe(
-        env, exp_params, proposed_actions, model_key, loader_key
-    )
+    observations, actions, model, density_estimate = excite_with_dmpe(env, exp_params, proposed_actions, loader_key)
 
     # save observations + actions
     with open(f"../results/dmpe/data_{file_name}.json", "w") as fp:

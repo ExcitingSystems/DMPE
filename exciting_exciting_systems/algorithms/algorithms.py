@@ -1,3 +1,4 @@
+from typing import Tuple
 import matplotlib.pyplot as plt
 from tqdm import tqdm
 
@@ -16,27 +17,43 @@ from exciting_exciting_systems.utils.density_estimation import DensityEstimate, 
 
 
 def excite_and_fit(
-    n_timesteps,
+    n_timesteps: int,
     env,
-    model,
-    obs,
+    model: eqx.Module,
+    obs: jnp.ndarray,
     state,
-    proposed_actions,
-    exciter,
-    model_trainer,
-    density_estimate,
-    observations,
-    actions,
-    opt_state_model,
-    loader_key,
-    plot_every,
-):
-    """Main algorithm to throw at a given (unknown) system and generate informative data from that system.
+    proposed_actions: jnp.ndarray,
+    exciter: Exciter,
+    model_trainer: ModelTrainer,
+    density_estimate: DensityEstimate,
+    observations: jnp.ndarray,
+    actions: jnp.ndarray,
+    opt_state_model: optax.OptState,
+    loader_key: jax.random.PRNGKey,
+    plot_every: int,
+) -> Tuple[jnp.ndarray, jnp.ndarray, eqx.Module, DensityEstimate]:
+    """
+    Main algorithm to throw at a given (unknown) system and generate informative data from that system.
 
     Args:
+        n_timesteps (int): The number of timesteps to run the algorithm for.
+        env: The environment object representing the system.
+        model (eqx.Module): The model used for prediction.
+        obs (jnp.ndarray): The initial observation of the system.
+        state: The initial state of the system.
+        proposed_actions (jnp.ndarray): The proposed actions for exploration.
+        exciter (Exciter): The exciter object responsible for choosing actions.
+        model_trainer (ModelTrainer): The model trainer object responsible for training the model.
+        density_estimate (DensityEstimate): The density estimate used for exploration.
+        observations (jnp.ndarray): The history of observations.
+        actions (jnp.ndarray): The history of actions.
+        opt_state_model (optax.OptState): The optimizer state for the model.
+        loader_key (jax.random.PRNGKey): The key used for loading data.
+        plot_every (int): The frequency at which to plot the sequence and prediction.
 
     Returns:
-
+        Tuple[jnp.ndarray, jnp.ndarray, eqx.Module, DensityEstimate]: A tuple containing the updated history of observations,
+        the updated history of actions, the updated model, and the updated density estimate.
     """
     for k in tqdm(range(n_timesteps)):
         action, proposed_actions, density_estimate = exciter.choose_action(
@@ -44,7 +61,7 @@ def excite_and_fit(
         )
 
         obs, state, actions, observations = interact_and_observe(
-            env=env, k=jnp.array([k]), action=action, obs=obs, state=state, actions=actions, observations=observations
+            env=env, k=jnp.array([k]), action=action, state=state, actions=actions, observations=observations
         )
 
         if k > model_trainer.start_learning:
@@ -75,11 +92,24 @@ def excite_and_fit(
 
 def excite_with_dmpe(
     env,
-    exp_params,
-    proposed_actions,
-    model_key,
-    loader_key,
+    exp_params: dict,
+    proposed_actions: jnp.ndarray,
+    loader_key: jax.random.PRNGKey,
 ):
+    """
+    Excite the system using the Differentiable Model Predictive Excitation (DMPE) algorithm.
+
+    Args:
+        env: The environment object representing the system.
+        exp_params: The experiment parameters.
+        proposed_actions: The proposed actions for exploration.
+        model_key: The key for initializing the model.
+        loader_key: The key used for loading data.
+
+    Returns:
+        Tuple[jnp.ndarray, jnp.ndarray, eqx.Module, DensityEstimate]: A tuple containing the history of observations,
+        the history of actions, the trained model, and the density estimate.
+    """
     dim_obs_space = env.physical_state_dim  # assumes fully observable system
     dim_action_space = env.action_dim
     dim = dim_obs_space + dim_action_space
