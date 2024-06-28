@@ -1,5 +1,7 @@
+from operator import itemgetter
 from typing import Callable
 
+import matplotlib.pyplot as plt
 import numpy as np
 from scipy.stats.qmc import LatinHypercube
 from pymoo.core.problem import ElementwiseProblem
@@ -11,7 +13,7 @@ from exciting_exciting_systems.related_work.np_reimpl.metrics import (
     MC_uniform_sampling_distribution_approximation,
     audze_eglais,
 )
-import matplotlib.pyplot as plt
+from exciting_exciting_systems.related_work.mixed_GA import Permutation, Integer
 
 
 def latin_hypercube_sampling(d, n, seed=None):
@@ -178,16 +180,17 @@ class GoatsProblem(ElementwiseProblem):
         self.env_state = env_state
         self.featurize = featurize
 
+        amplitude_variables = {f"a_{number}": Permutation(bounds=(0, n_amplitudes)) for number in range(n_amplitudes)}
+        duration_variables = {f"d_{number}": Integer(bounds=bounds_duration) for number in range(n_amplitudes)}
+
+        self.permutation_keys = tuple(amplitude_variables.keys())
+        self.non_permutation_keys = tuple(duration_variables.keys())
+
+        all_vars = dict(amplitude_variables, **duration_variables)
+
         super().__init__(
-            n_var=2 * n_amplitudes,
+            vars=all_vars,
             n_obj=1,
-            xl=np.concatenate([np.zeros(n_amplitudes), np.ones(n_amplitudes) * bounds_duration[0]]),
-            xu=np.concatenate(
-                [
-                    np.ones(n_amplitudes) * np.linspace(0, n_amplitudes - 1, n_amplitudes)[::-1],
-                    np.ones(n_amplitudes) * bounds_duration[1],
-                ]
-            ),
         )
 
         self.amplitudes = amplitudes
@@ -200,30 +203,13 @@ class GoatsProblem(ElementwiseProblem):
         self.compress_data = compress_data
         self.target_N = target_N
 
-    @staticmethod
-    def decode(lehmer_code: list[int]) -> list[int]:
-        """Decode Lehmer code to permutation.
-
-        This function decodes Lehmer code represented as a list of integers to a permutation.
-
-        Source: https://optuna.readthedocs.io/en/latest/faq.html#how-can-i-deal-with-permutation-as-a-parameter
-        """
-        n = len(lehmer_code)
-
-        all_indices = list(range(n))
-        output = []
-        for k in lehmer_code:
-            value = all_indices[k]
-            output.append(value)
-            all_indices.remove(value)
-        return output
-
     def _evaluate(self, x, out, *args, **kwargs):
-        indices = self.decode(x[: self.n_amplitudes])
+        indices = np.array(itemgetter(*self.permutation_keys)(x))
+        durations = np.array(itemgetter(*self.non_permutation_keys)(x))
 
         applied_amplitudes = self.amplitudes[indices]
 
-        actions = generate_aprbs(amplitudes=applied_amplitudes, durations=x[self.n_amplitudes :])[:, None]
+        actions = generate_aprbs(amplitudes=applied_amplitudes, durations=durations)[:, None]
 
         observations, _ = simulate_ahead_with_env(
             self.env,
@@ -299,9 +285,10 @@ def optimize_permutation_aprbs(
         verbose=verbose,
     )
 
-    indices = opt_problem.decode(res.X[: opt_problem.n_amplitudes])
+    indices = np.array(itemgetter(*opt_problem.permutation_keys)(res.X))
     applied_amplitudes = opt_problem.amplitudes[indices]
-    applied_durations = res.X[opt_problem.n_amplitudes :]
+
+    applied_durations = np.array(itemgetter(*opt_problem.non_permutation_keys)(res.X))
 
     actions = generate_aprbs(amplitudes=applied_amplitudes, durations=applied_durations)[:, None]
 

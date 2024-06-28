@@ -6,13 +6,7 @@ from tqdm.notebook import tqdm
 import matplotlib.pyplot as plt
 import numpy as np
 from cmaes import CMAwM
-
-from pymoo.algorithms.soo.nonconvex.ga import GA
-
-from pymoo.operators.sampling.rnd import IntegerRandomSampling
-from pymoo.operators.crossover.sbx import SBX
-from pymoo.operators.mutation.pm import PM
-from pymoo.operators.repair.rounding import RoundingRepair
+from pymoo.core.mixed import MixedVariableGA, MixedVariableDuplicateElimination
 
 from exciting_exciting_systems.related_work.excitation_utils import (
     optimize_continuous_aprbs,
@@ -22,6 +16,7 @@ from exciting_exciting_systems.related_work.excitation_utils import (
 )
 from exciting_exciting_systems.related_work.np_reimpl.env_utils import simulate_ahead_with_env
 from exciting_exciting_systems.evaluation.plotting_utils import plot_sequence
+from exciting_exciting_systems.related_work.mixed_GA import MixedVariableMating, MixedVariableSampling
 
 
 def excite_with_GOATs(
@@ -61,12 +56,10 @@ def excite_with_GOATs(
     obs = obs.astype(np.float32)[0]
     env_state = env_state.astype(np.float32)[0]
 
-    opt_algorithm = GA(
+    opt_algorithm = MixedVariableGA(
         pop_size=population_size,
-        sampling=IntegerRandomSampling(),
-        crossover=SBX(prob=1.0, eta=10.0, vtype=float, repair=RoundingRepair()),
-        mutation=PM(prob=1.0, eta=10.0, vtype=float, repair=RoundingRepair()),
-        eliminate_duplicates=True,
+        sampling=MixedVariableSampling(),
+        mating=MixedVariableMating(eliminate_duplicates=MixedVariableDuplicateElimination()),
     )
 
     observations, actions, _ = optimize_permutation_aprbs(
@@ -136,12 +129,10 @@ def excite_with_sGOATs(
         all_actions: The finished actions list
     """
 
-    opt_algorithm = GA(
+    opt_algorithm = MixedVariableGA(
         pop_size=population_size,
-        sampling=IntegerRandomSampling(),
-        crossover=SBX(prob=1.0, eta=10.0, vtype=float, repair=RoundingRepair()),
-        mutation=PM(prob=1.0, eta=10.0, vtype=float, repair=RoundingRepair()),
-        eliminate_duplicates=True,
+        sampling=MixedVariableSampling(),
+        mating=MixedVariableMating(eliminate_duplicates=MixedVariableDuplicateElimination()),
     )
 
     obs, env_state = env.reset()
