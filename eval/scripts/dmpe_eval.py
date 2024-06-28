@@ -26,6 +26,7 @@ def safe_json_dump(obj, fp):
     return json.dump(obj, fp, default=default)
 
 
+### Start Experiment parameters
 env_params = dict(batch_size=1, tau=2e-2, max_torque=8, g=9.81, l=1, m=1, env_solver=diffrax.Tsit5())
 env = excenvs.make(
     env_id="Pendulum-v0",
@@ -38,7 +39,7 @@ env = excenvs.make(
 
 
 alg_params = dict(
-    bandwidth=0.05, n_prediction_steps=50, points_per_dim=50, action_lr=1e-1, n_opt_steps=5, rho_obs=1e6, rho_act=1e6
+    bandwidth=0.05, n_prediction_steps=50, points_per_dim=50, action_lr=1e-1, n_opt_steps=5, rho_obs=5, rho_act=5
 )
 model_trainer_params = dict(
     start_learning=alg_params["n_prediction_steps"],
@@ -51,6 +52,7 @@ model_trainer_params = dict(
 model_params = dict(obs_dim=env.physical_state_dim, action_dim=env.action_dim, width_size=128, depth=3, key=None)
 
 seeds = [124, 111, 52, 1, 0, 126, 227, 3331]
+### End Experiment parameters
 
 for seed in seeds:
     exp_params = dict(

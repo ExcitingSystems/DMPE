@@ -161,7 +161,7 @@ class Exciter(eqx.Module):
             density_estimate, jnp.concatenate([obs, action], axis=-1)
         )
 
-        action = jnp.clip(action, min=-1, max=1)
-        next_proposed_actions = jnp.clip(next_proposed_actions, min=-1, max=1)
+        # action = jnp.clip(action, min=-1, max=1)
+        # next_proposed_actions = jnp.clip(next_proposed_actions, min=-1, max=1)
 
         return action, next_proposed_actions, density_estimate
