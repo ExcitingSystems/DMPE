@@ -142,7 +142,7 @@ def excite_with_sGOATs(
     all_amplitudes = latin_hypercube_sampling(d=env.action_space.shape[-1], n=n_amplitudes, seed=seed)
     amplitude_groups = np.split(all_amplitudes, n_amplitude_groups, axis=0)
 
-    for amplitudes in amplitude_groups:
+    for idx, amplitudes in enumerate(amplitude_groups):
 
         if len(all_observations) > 0 and reuse_observations:
             starting_observations = np.concatenate(all_observations)
@@ -153,6 +153,8 @@ def excite_with_sGOATs(
             starting_actions = np.concatenate(all_actions)
         else:
             starting_actions = None
+
+        print(f"amplitude group {idx+1} of {len(amplitude_groups)}")
 
         observations, actions, last_env_state = optimize_permutation_aprbs(
             opt_algorithm=opt_algorithm,

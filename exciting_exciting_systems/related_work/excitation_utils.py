@@ -76,7 +76,7 @@ def compress_datapoints(datapoints, N_c, feature_dimension):
             available_support_indices = np.arange(support_indices[idx] + 1, support_indices[idx + 1])
         available_support = considered_data[available_support_indices]
 
-        if n_new_points > 0:
+        if n_new_points > 0 and len(available_support) > 0:
             new_samples = np.linspace(start, distance + start, n_new_points + 2)[1:-1]
             for sample in new_samples:
                 dist = np.abs(sample - available_support)
@@ -113,8 +113,8 @@ def fitness_function(env, obs, state, prev_observations, prev_actions, action_pa
         feat_previous_observations = featurize(prev_observations)
 
         prev_datapoints = np.concatenate([feat_previous_observations, prev_actions], axis=-1)
-        if prev_datapoints.shape[0] > 1000:
-            prev_datapoints, _ = compress_datapoints(prev_datapoints, N_c=100, feature_dimension=2)
+        if prev_datapoints.shape[0] > 2000:
+            prev_datapoints, _ = compress_datapoints(prev_datapoints, N_c=500, feature_dimension=-2)
 
         score = MNNS_without_penalty(
             data_points=prev_datapoints,
@@ -177,7 +177,7 @@ class GoatsProblem(ElementwiseProblem):
         starting_observations=None,
         starting_actions=None,
         compress_data=True,
-        target_N=100,
+        target_N=500,
     ):
 
         n_amplitudes = amplitudes.shape[0]
@@ -238,7 +238,7 @@ class GoatsProblem(ElementwiseProblem):
         feat_datapoints = np.concatenate([feat_observations[:-1, ...], all_actions], axis=-1)
 
         if self.compress_data:
-            feat_datapoints, indices = compress_datapoints(feat_datapoints, N_c=self.target_N, feature_dimension=2)
+            feat_datapoints, indices = compress_datapoints(feat_datapoints, N_c=self.target_N, feature_dimension=-2)
 
         # N = observations.shape[0]
         # plt.plot(np.linspace(0, N - 1, N), feat_observations[:N, 2])
