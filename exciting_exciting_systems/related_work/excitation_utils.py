@@ -50,12 +50,12 @@ def compress_datapoints(datapoints, N_c, feature_dimension):
 
     # compute number of extra points per subsequence
     support_distances = np.concatenate([np.diff(support), np.zeros(1)])
-
+    support_abs_distances = np.abs(support_distances)
     n_per_subsequence = np.zeros(support_distances.shape)
-    n_per_subsequence[support_distances > 0.2] = support_distances[support_distances > 0.2]
-    full_distance = np.sum(support_distances[support_distances > 0.2])
 
-    n_per_subsequence *= N_c / full_distance
+    dist_th = 0.1
+    n_per_subsequence[support_abs_distances > dist_th] = support_abs_distances[support_abs_distances > dist_th]
+    n_per_subsequence *= N_c / np.sum(n_per_subsequence)
     n_per_subsequence = n_per_subsequence.astype(np.int32)
 
     # bring data together
@@ -69,15 +69,22 @@ def compress_datapoints(datapoints, N_c, feature_dimension):
     ):
         compressed_data.append(start_point)
         indices.append(support_indices[idx])
+
+        if idx + 1 >= support.shape[0]:
+            available_support_indices = np.arange(support_indices[idx] + 1, support.shape[0])
+        else:
+            available_support_indices = np.arange(support_indices[idx] + 1, support_indices[idx + 1])
+        available_support = considered_data[available_support_indices]
+
         if n_new_points > 0:
-            new_samples = LatinHypercube(d=1, seed=None).random(n=n_new_points) * distance + start
+            new_samples = np.linspace(start, distance + start, n_new_points + 2)[1:-1]
             for sample in new_samples:
-                dist = np.abs(sample - considered_data)
+                dist = np.abs(sample - available_support)
                 chosen_idx = np.argmin(dist)
-                chosen_obs = datapoints[chosen_idx]
+                chosen_obs = datapoints[available_support_indices[chosen_idx]]
                 if chosen_idx not in indices:
                     compressed_data.append(chosen_obs)
-                    indices.append(chosen_idx)
+                    indices.append(available_support_indices[chosen_idx])
 
     compressed_data = np.stack(compressed_data)
 
