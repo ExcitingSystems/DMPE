@@ -242,8 +242,8 @@ class GoatsProblem(ElementwiseProblem):
 
         N = observations.shape[0]
 
-        rho_obs = 1
-        rho_act = 1
+        rho_obs = 1e3
+        rho_act = 1e3
         penalty_terms = rho_obs * soft_penalty(a=observations, a_max=1) + rho_act * soft_penalty(a=actions, a_max=1)
 
         out["F"] = 1 * score + penalty_terms.item()

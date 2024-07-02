@@ -55,10 +55,13 @@ def excite_and_fit(
         Tuple[jnp.ndarray, jnp.ndarray, eqx.Module, DensityEstimate]: A tuple containing the updated history of observations,
         the updated history of actions, the updated model, and the updated density estimate.
     """
+    losses = []
+
     for k in tqdm(range(n_timesteps)):
-        action, proposed_actions, density_estimate = exciter.choose_action(
+        action, proposed_actions, density_estimate, loss = exciter.choose_action(
             obs=obs, model=model, density_estimate=density_estimate, proposed_actions=proposed_actions
         )
+        losses.append(loss)
 
         obs, state, actions, observations = interact_and_observe(
             env=env, k=jnp.array([k]), action=action, state=state, actions=actions, observations=observations
@@ -87,7 +90,7 @@ def excite_and_fit(
             )
             plt.show()
 
-    return observations, actions, model, density_estimate
+    return observations, actions, model, density_estimate, losses
 
 
 def excite_with_dmpe(
@@ -154,7 +157,7 @@ def excite_with_dmpe(
     model = NeuralEulerODEPendulum(**exp_params["model_params"])
     opt_state_model = model_trainer.model_optimizer.init(eqx.filter(model, eqx.is_inexact_array))
 
-    observations, actions, model, density_estimate = excite_and_fit(
+    observations, actions, model, density_estimate, losses = excite_and_fit(
         n_timesteps=exp_params["n_timesteps"],
         env=env,
         model=model,
@@ -171,4 +174,4 @@ def excite_with_dmpe(
         plot_every=exp_params["n_timesteps"] + 1,
     )
 
-    return observations, actions, model, density_estimate
+    return observations, actions, model, density_estimate, losses

@@ -91,7 +91,12 @@ def optimize_actions(
         return (proposed_actions, opt_state)
 
     proposed_actions, _ = jax.lax.fori_loop(0, n_opt_steps, body_fun, (proposed_actions, opt_state))
-    return proposed_actions
+
+    loss = loss_function(
+        model, init_obs, proposed_actions, density_estimate, tau, target_distribution, rho_obs, rho_act
+    )
+
+    return proposed_actions, loss
 
 
 class Exciter(eqx.Module):
@@ -140,7 +145,7 @@ class Exciter(eqx.Module):
             density_estimate: The updated density estimate now incorporating
                 the current step k
         """
-        proposed_actions = optimize_actions(
+        proposed_actions, loss = optimize_actions(
             grad_loss_function=self.grad_loss_function,
             proposed_actions=proposed_actions,
             model=model,
@@ -164,4 +169,4 @@ class Exciter(eqx.Module):
         # action = jnp.clip(action, min=-1, max=1)
         # next_proposed_actions = jnp.clip(next_proposed_actions, min=-1, max=1)
 
-        return action, next_proposed_actions, density_estimate
+        return action, next_proposed_actions, density_estimate, loss

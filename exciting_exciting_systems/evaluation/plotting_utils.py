@@ -145,7 +145,7 @@ def plot_sequence_and_prediction(
 
 def plot_2d_kde_as_contourf(p_est, x, observation_labels):
 
-    fig, axs = plt.subplots(figsize=(6, 6))
+    fig, axs = plt.subplots(figsize=(6.75, 6))
 
     grid_len_per_dim = int(np.sqrt(x.shape[0]))
     x_plot = x.reshape((grid_len_per_dim, grid_len_per_dim, 2))

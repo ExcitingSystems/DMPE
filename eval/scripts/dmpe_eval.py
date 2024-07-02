@@ -39,7 +39,7 @@ env = excenvs.make(
 
 
 alg_params = dict(
-    bandwidth=0.05, n_prediction_steps=50, points_per_dim=50, action_lr=1e-1, n_opt_steps=5, rho_obs=5, rho_act=5
+    bandwidth=0.05, n_prediction_steps=50, points_per_dim=50, action_lr=1e-2, n_opt_steps=50, rho_obs=1e3, rho_act=1e3
 )
 model_trainer_params = dict(
     start_learning=alg_params["n_prediction_steps"],
@@ -80,7 +80,9 @@ for seed in seeds:
     proposed_actions = aprbs(alg_params["n_prediction_steps"], env.batch_size, 1, 10, next(data_rng))[0]
 
     # run excitation algorithm
-    observations, actions, model, density_estimate = excite_with_dmpe(env, exp_params, proposed_actions, loader_key)
+    observations, actions, model, density_estimate, losses = excite_with_dmpe(
+        env, exp_params, proposed_actions, loader_key
+    )
 
     # save observations + actions
     with open(f"../results/dmpe/data_{file_name}.json", "w") as fp:
