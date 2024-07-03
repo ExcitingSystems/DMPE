@@ -1,3 +1,4 @@
+from typing import Callable
 import json
 import pathlib
 import glob
@@ -7,6 +8,7 @@ import jax.numpy as jnp
 
 from exciting_exciting_systems.models.model_utils import load_model
 from exciting_exciting_systems.evaluation.plotting_utils import plot_sequence, plot_model_performance
+from exciting_exciting_systems.evaluation.metrics_utils import default_jsd, default_ae, default_mcudsa
 
 
 def get_experiment_ids(results_path: pathlib.Path):
@@ -29,6 +31,58 @@ def load_experiment_results(exp_id: str, results_path: pathlib.Path, model_class
         return params, observations, actions, model
     else:
         return params, observations, actions, None
+
+
+def evaluate_experiment_metrics(observations, actions, featurize=None):
+    results = {}
+
+    metrics = {
+        "jsd": default_jsd,
+        "ae": default_ae,
+        "mcudsa": default_mcudsa,
+    }
+
+    for name, metric in metrics.items():
+        results[name] = metric(observations, actions).item()
+
+    if featurize is not None:
+        assert isinstance(featurize, Callable)
+        for name, metric in metrics.items():
+            results[f"{name}_feat"] = metric(featurize(observations), actions).item()
+
+    return results
+
+
+def evaluate_algorithm_metrics(identifiers, results_path, featurize=None):
+    results = {}
+    for identifier in identifiers:
+        _, observations, actions, _ = load_experiment_results(
+            exp_id=identifier, results_path=results_path, model_class=None
+        )
+        single_result = evaluate_experiment_metrics(observations, actions, featurize=featurize)
+
+        if len(results.keys()) == 0:
+            for key, value in single_result.items():
+                results[key] = [value]
+        else:
+            for key, value in single_result.items():
+                results[key].append(value)
+    return results
+
+
+def evaluate_metrics(algorithm_names, n_results, results_parent_path, featurize):
+    """Gathers the last 'n_results' experiments for differnet algorithms and evaluates the metrics."""
+
+    results = {}
+    for algorithm_name in algorithm_names:
+        results_path = results_parent_path / pathlib.Path(algorithm_name)
+        algorithm_results = evaluate_algorithm_metrics(
+            identifiers=get_experiment_ids(results_path)[-n_results:],
+            results_path=results_path,
+            featurize=featurize,
+        )
+        results[algorithm_name] = algorithm_results
+    return results
 
 
 def quick_eval_pendulum(env, identifier, results_path, model_class=None):
@@ -61,7 +115,3 @@ def quick_eval_pendulum(env, identifier, results_path, model_class=None):
             action_labels=[r"$u$"],
         )
         plt.show()
-
-
-def evaluate_metrics(actions, observations):
-    raise NotImplementedError("TODO")
