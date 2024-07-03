@@ -96,30 +96,20 @@ def update_density_estimate_multiple_observations(
     )
 
 
-# TODO: implement a more general build_grid function for arbitrary dims and constraints
+def build_grid(dim, low, high, points_per_dim):
+    xs = [jnp.linspace(low, high, points_per_dim) for _ in range(dim)]
+
+    x_g = jnp.meshgrid(*xs)
+    x_g = jnp.stack([_x for _x in x_g], axis=-1)
+    x_g = x_g.reshape(-1, dim)
+
+    assert x_g.shape[0] == points_per_dim**dim
+    return x_g
 
 
 def build_grid_2d(low, high, points_per_dim):
-    x1, x2 = [jnp.linspace(low, high, points_per_dim), jnp.linspace(low, high, points_per_dim)]
-
-    x_g = jnp.meshgrid(*[x1, x2])
-    x_g = jnp.stack([_x for _x in x_g], axis=-1)
-    x_g = x_g.reshape(-1, 2)
-
-    assert x_g.shape[0] == points_per_dim**2
-    return x_g
+    return build_grid(2, low, high, points_per_dim)
 
 
 def build_grid_3d(low, high, points_per_dim):
-    x1, x2, x3 = [
-        jnp.linspace(low, high, points_per_dim),
-        jnp.linspace(low, high, points_per_dim),
-        jnp.linspace(low, high, points_per_dim),
-    ]
-
-    x_g = jnp.meshgrid(*[x1, x2, x3])
-    x_g = jnp.stack([_x for _x in x_g], axis=-1)
-    x_g = x_g.reshape(-1, 3)
-
-    assert x_g.shape[0] == points_per_dim**3
-    return x_g
+    return build_grid(3, low, high, points_per_dim)
