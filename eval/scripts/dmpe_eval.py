@@ -71,11 +71,6 @@ for seed in seeds:
     model_params["key"] = model_key
     exp_params["model_params"] = model_params
 
-    # save parameters
-    file_name = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
-    with open(f"../results/dmpe/params_{file_name}.json", "w") as fp:
-        safe_json_dump(exp_params, fp)
-
     # initial guess
     proposed_actions = aprbs(alg_params["n_prediction_steps"], env.batch_size, 1, 10, next(data_rng))[0]
 
@@ -83,6 +78,11 @@ for seed in seeds:
     observations, actions, model, density_estimate, losses = excite_with_dmpe(
         env, exp_params, proposed_actions, loader_key
     )
+
+    # save parameters
+    file_name = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+    with open(f"../results/dmpe/params_{file_name}.json", "w") as fp:
+        safe_json_dump(exp_params, fp)
 
     # save observations + actions
     with open(f"../results/dmpe/data_{file_name}.json", "w") as fp:

@@ -38,7 +38,7 @@ alg_params = dict(
     featurize=identity,
 )
 
-seeds = [124, 2]
+seeds = [124, 111, 52, 1, 0, 126, 227, 3331]
 ### End Experiment parameters
 
 for seed in seeds:
@@ -51,11 +51,6 @@ for seed in seeds:
     # setup PRNG
     rng = np.random.default_rng(seed=seed)
 
-    # save parameters
-    file_name = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
-    with open(f"../results/goats/params_{file_name}.json", "w") as fp:
-        safe_json_dump(exp_params, fp)
-
     # run excitation algorithm
     observations, actions = excite_with_GOATS(
         n_amplitudes=alg_params["n_amplitudes"],
@@ -67,6 +62,12 @@ for seed in seeds:
         rng=np.random.default_rng(seed=exp_params["seed"]),
         verbose=True,
     )
+
+    # save parameters
+    file_name = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+    with open(f"../results/goats/params_{file_name}.json", "w") as fp:
+        safe_json_dump(exp_params, fp)
+
     # save observations + actions
     with open(f"../results/goats/data_{file_name}.json", "w") as fp:
         json.dump(dict(observations=observations.tolist(), actions=actions.tolist()), fp)
