@@ -19,7 +19,7 @@ from exciting_exciting_systems.evaluation.plotting_utils import plot_sequence
 from exciting_exciting_systems.related_work.mixed_GA import MixedVariableMating, MixedVariableSampling
 
 
-def excite_with_GOATs(
+def excite_with_GOATS(
     n_amplitudes: np.ndarray,
     env,
     bounds_duration: tuple,
@@ -99,12 +99,10 @@ def generate_amplitude_groups(n_amplitudes, n_amplitude_groups, rng):
     return amplitude_groups
 
 
-def excite_with_sGOATs(
+def excite_with_sGOATS(
     n_amplitudes: np.ndarray,
     n_amplitude_groups: int,
     reuse_observations: bool,
-    all_observations: list,
-    all_actions: list,
     env,
     bounds_duration: tuple,
     population_size: int,
@@ -112,6 +110,7 @@ def excite_with_sGOATs(
     featurize: Callable,
     rng: np.random.Generator,
     verbose=True,
+    plot_every_subsequence=True,
 ):
     """System excitation using the sGOATs algorithm from [Smits2024].
 
@@ -146,6 +145,9 @@ def excite_with_sGOATs(
         all_observations: The finished observations list
         all_actions: The finished actions list
     """
+
+    all_observations = []
+    all_actions = []
 
     opt_algorithm = MixedVariableGA(
         pop_size=population_size,
@@ -198,19 +200,20 @@ def excite_with_sGOATs(
         all_observations.append(observations[:-1, :])
         all_actions.append(actions)
 
-        fig, axs = plot_sequence(
-            observations=np.concatenate(all_observations),
-            actions=np.concatenate(all_actions)[:-1, ...],
-            tau=env.tau,
-            obs_labels=[r"$\theta$", r"$\omega$"],
-            action_labels=[r"$u$"],
-        )
-        plt.show()
+        if plot_every_subsequence:
+            fig, axs = plot_sequence(
+                observations=np.concatenate(all_observations),
+                actions=np.concatenate(all_actions)[:-1, ...],
+                tau=env.tau,
+                obs_labels=[r"$\theta$", r"$\omega$"],
+                action_labels=[r"$u$"],
+            )
+            plt.show()
 
-    return all_observations, all_actions
+    return np.concatenate(all_observations), np.concatenate(all_actions)
 
 
-def excite_with_iGOATs(
+def excite_with_iGOATS(
     n_timesteps,
     env,
     actions,

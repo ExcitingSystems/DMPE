@@ -27,7 +27,7 @@ def safe_json_dump(obj, fp):
 
 
 ### Start Experiment parameters
-env_params = dict(batch_size=1, tau=2e-2, max_torque=8, g=9.81, l=1, m=1, env_solver=diffrax.Tsit5())
+env_params = dict(batch_size=1, tau=2e-2, max_torque=8, g=9.81, l=1, m=1, env_solver=diffrax.Euler())
 env = excenvs.make(
     env_id="Pendulum-v0",
     batch_size=env_params["batch_size"],
