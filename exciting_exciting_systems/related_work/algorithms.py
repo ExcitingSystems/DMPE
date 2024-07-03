@@ -80,6 +80,25 @@ def excite_with_GOATs(
     return observations, actions
 
 
+def generate_amplitude_groups(n_amplitudes, n_amplitude_groups):
+
+    assert n_amplitudes % n_amplitude_groups == 0
+    all_amplitudes = np.linspace(-1, 1, n_amplitudes)
+
+    amplitude_groups = [[] for _ in range(n_amplitude_groups)]
+
+    for idx, amplitude in enumerate(all_amplitudes):
+        i = idx % n_amplitude_groups
+        amplitude_groups[i].append(amplitude)
+
+    amplitude_groups = np.array(amplitude_groups)
+
+    for amplitude_group in amplitude_groups:
+        np.random.shuffle(amplitude_group)
+
+    return amplitude_groups
+
+
 def excite_with_sGOATs(
     n_amplitudes: np.ndarray,
     n_amplitude_groups: int,
@@ -139,8 +158,9 @@ def excite_with_sGOATs(
     obs = obs.astype(np.float32)[0]
     env_state = env_state.astype(np.float32)[0]
 
-    all_amplitudes = latin_hypercube_sampling(d=env.action_space.shape[-1], n=n_amplitudes, seed=seed)
-    amplitude_groups = np.split(all_amplitudes, n_amplitude_groups, axis=0)
+    # all_amplitudes = latin_hypercube_sampling(d=env.action_space.shape[-1], n=n_amplitudes, seed=seed)
+    # amplitude_groups = np.split(all_amplitudes, n_amplitude_groups, axis=0)
+    amplitude_groups = generate_amplitude_groups(n_amplitudes=n_amplitudes, n_amplitude_groups=n_amplitude_groups)
 
     for idx, amplitudes in enumerate(amplitude_groups):
 
