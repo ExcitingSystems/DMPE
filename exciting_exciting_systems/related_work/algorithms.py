@@ -26,7 +26,7 @@ def excite_with_GOATs(
     population_size: int,
     n_generations: int,
     featurize: Callable,
-    seed: int = 0,
+    rng: np.random.Generator,
     verbose: bool = True,
 ):
     """System excitation using the GOATs algorithm from [Smits2024].
@@ -44,7 +44,7 @@ def excite_with_GOATs(
         n_generations: The number of generations of the GA
         featurize: Featurization of the observations before computation of the metric. If
             this is not necessary for the environment/system, pass the identity function
-        seed: The seed for the genetic algorithm and LHS
+        rng: The random number generator for the genetic algorithm and LHS
         verbose: Whether the genetic algorithm print out its optimization progress
 
     Returns:
@@ -64,14 +64,14 @@ def excite_with_GOATs(
 
     observations, actions, _ = optimize_permutation_aprbs(
         opt_algorithm,
-        amplitudes=latin_hypercube_sampling(d=env.action_space.shape[-1], n=n_amplitudes, seed=seed),
+        amplitudes=latin_hypercube_sampling(d=env.action_space.shape[-1], n=n_amplitudes, rng=rng),
         env=env,
         obs=obs,
         env_state=env_state,
         bounds_duration=bounds_duration,
         n_generations=n_generations,
         featurize=featurize,
-        seed=seed,
+        rng=rng,
         verbose=verbose,
         starting_observations=None,
         starting_actions=None,
@@ -80,7 +80,7 @@ def excite_with_GOATs(
     return observations, actions
 
 
-def generate_amplitude_groups(n_amplitudes, n_amplitude_groups):
+def generate_amplitude_groups(n_amplitudes, n_amplitude_groups, rng):
 
     assert n_amplitudes % n_amplitude_groups == 0
     all_amplitudes = np.linspace(-1, 1, n_amplitudes)
@@ -94,7 +94,7 @@ def generate_amplitude_groups(n_amplitudes, n_amplitude_groups):
     amplitude_groups = np.array(amplitude_groups)
 
     for amplitude_group in amplitude_groups:
-        np.random.shuffle(amplitude_group)
+        rng.shuffle(amplitude_group)
 
     return amplitude_groups
 
@@ -110,7 +110,7 @@ def excite_with_sGOATs(
     population_size: int,
     n_generations: int,
     featurize: Callable,
-    seed=0,
+    rng: np.random.Generator,
     verbose=True,
 ):
     """System excitation using the sGOATs algorithm from [Smits2024].
@@ -139,8 +139,7 @@ def excite_with_sGOATs(
         n_generations: The number of generations of the GA
         featurize: Featurization of the observations before computation of the metric. If
             this is not necessary for the environment/system, pass the identity function
-        seed: The seed for the genetic algorithm. TODO: This currently does not apply for
-            the LHS which makes this kinda pointless to have a seed. To be fixed
+        rng: The rng for the genetic algorithm.
         verbose: Whether the genetic algorithm print out its optimization progress
 
     Returns:
@@ -158,9 +157,9 @@ def excite_with_sGOATs(
     obs = obs.astype(np.float32)[0]
     env_state = env_state.astype(np.float32)[0]
 
-    # all_amplitudes = latin_hypercube_sampling(d=env.action_space.shape[-1], n=n_amplitudes, seed=seed)
-    # amplitude_groups = np.split(all_amplitudes, n_amplitude_groups, axis=0)
-    amplitude_groups = generate_amplitude_groups(n_amplitudes=n_amplitudes, n_amplitude_groups=n_amplitude_groups)
+    amplitude_groups = generate_amplitude_groups(
+        n_amplitudes=n_amplitudes, n_amplitude_groups=n_amplitude_groups, rng=rng
+    )
 
     for idx, amplitudes in enumerate(amplitude_groups):
 
@@ -185,7 +184,7 @@ def excite_with_sGOATs(
             bounds_duration=bounds_duration,
             n_generations=n_generations,
             featurize=featurize,
-            seed=seed,
+            rng=rng,
             verbose=verbose,
             starting_observations=starting_observations,
             starting_actions=starting_actions,

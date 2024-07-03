@@ -16,9 +16,9 @@ from exciting_exciting_systems.related_work.np_reimpl.metrics import (
 from exciting_exciting_systems.related_work.mixed_GA import Permutation, Integer
 
 
-def latin_hypercube_sampling(d, n, seed=None):
+def latin_hypercube_sampling(d, n, rng):
     """Samples random points with latin hypercube sampling and normalizes between -1 and 1."""
-    return LatinHypercube(d=d, seed=seed).random(n=n) * 2 - 1
+    return LatinHypercube(d=d, seed=rng).random(n=n) * 2 - 1
 
 
 def soft_penalty(a, a_max=1):
@@ -265,7 +265,7 @@ def optimize_permutation_aprbs(
     bounds_duration: tuple,
     n_generations: int,
     featurize: Callable,
-    seed: int,
+    rng: np.random.Generator,
     verbose: bool,
     starting_observations: np.ndarray | None,
     starting_actions: np.ndarray | None,
@@ -287,7 +287,7 @@ def optimize_permutation_aprbs(
         problem=opt_problem,
         algorithm=opt_algorithm,
         termination=("n_gen", n_generations),
-        seed=seed,
+        seed=rng.integers(low=0, high=2**32 - 1, size=1).item(),
         save_history=False,
         verbose=verbose,
     )
