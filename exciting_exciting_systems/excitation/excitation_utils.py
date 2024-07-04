@@ -128,6 +128,7 @@ class Exciter(eqx.Module):
         model,
         density_estimate: DensityEstimate,
         proposed_actions: jnp.ndarray,
+        expl_key: jax.random.PRNGKey,
     ) -> tuple[jnp.ndarray, jnp.ndarray, DensityEstimate]:
         """Chooses the next action to take, updates the density estimate and
         proposes future actions.
@@ -161,12 +162,24 @@ class Exciter(eqx.Module):
         action = proposed_actions[0, :]
         next_proposed_actions = proposed_actions.at[:-1, :].set(proposed_actions[1:, :])
 
+        expl_key, expl_noise_key = jax.random.split(expl_key, 2)
+
+        # new_proposed_action = next_proposed_actions[-1, :] + jax.random.uniform(
+        #     key=expl_noise_key, minval=-0.3, maxval=0.3
+        # )
+        # new_proposed_action = jax.random.uniform(key=expl_noise_key, minval=-1, maxval=1)
+        # next_proposed_actions = next_proposed_actions.at[-1, :].set(new_proposed_action)
+
+        next_proposed_actions = next_proposed_actions + jax.random.normal(
+            key=expl_noise_key,
+            shape=next_proposed_actions.shape,
+        ) * jnp.sqrt(0.1)
+
+        next_proposed_actions = jnp.clip(next_proposed_actions, min=-1, max=1)
+
         # update grid KDE with x_k and u_k
         density_estimate = update_density_estimate_single_observation(
             density_estimate, jnp.concatenate([obs, action], axis=-1)
         )
-
-        # action = jnp.clip(action, min=-1, max=1)
-        # next_proposed_actions = jnp.clip(next_proposed_actions, min=-1, max=1)
 
         return action, next_proposed_actions, density_estimate, loss

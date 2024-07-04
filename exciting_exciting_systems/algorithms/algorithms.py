@@ -30,6 +30,7 @@ def excite_and_fit(
     actions: jnp.ndarray,
     opt_state_model: optax.OptState,
     loader_key: jax.random.PRNGKey,
+    expl_key: jax.random.PRNGKey,
     plot_every: int,
 ) -> Tuple[jnp.ndarray, jnp.ndarray, eqx.Module, DensityEstimate]:
     """
@@ -59,7 +60,11 @@ def excite_and_fit(
 
     for k in tqdm(range(n_timesteps)):
         action, proposed_actions, density_estimate, loss = exciter.choose_action(
-            obs=obs, model=model, density_estimate=density_estimate, proposed_actions=proposed_actions
+            obs=obs,
+            model=model,
+            density_estimate=density_estimate,
+            proposed_actions=proposed_actions,
+            expl_key=expl_key,
         )
         losses.append(loss)
 
@@ -90,7 +95,7 @@ def excite_and_fit(
             )
             plt.show()
 
-    return observations, actions, model, density_estimate, losses
+    return observations, actions, model, density_estimate, losses, proposed_actions
 
 
 def excite_with_dmpe(
@@ -98,6 +103,7 @@ def excite_with_dmpe(
     exp_params: dict,
     proposed_actions: jnp.ndarray,
     loader_key: jax.random.PRNGKey,
+    expl_key: jax.random.PRNGKey,
 ):
     """
     Excite the system using the Differentiable Model Predictive Excitation (DMPE) algorithm.
@@ -157,7 +163,7 @@ def excite_with_dmpe(
     model = NeuralEulerODEPendulum(**exp_params["model_params"])
     opt_state_model = model_trainer.model_optimizer.init(eqx.filter(model, eqx.is_inexact_array))
 
-    observations, actions, model, density_estimate, losses = excite_and_fit(
+    observations, actions, model, density_estimate, losses, proposed_actions = excite_and_fit(
         n_timesteps=exp_params["n_timesteps"],
         env=env,
         model=model,
@@ -171,7 +177,8 @@ def excite_with_dmpe(
         actions=actions,
         opt_state_model=opt_state_model,
         loader_key=loader_key,
+        expl_key=expl_key,
         plot_every=exp_params["n_timesteps"] + 1,
     )
 
-    return observations, actions, model, density_estimate, losses
+    return observations, actions, model, density_estimate, losses, proposed_actions
