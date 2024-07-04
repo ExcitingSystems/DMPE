@@ -1,8 +1,14 @@
 import json
 import datetime
+import os
 
 import jax
 import jax.numpy as jnp
+
+os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
+gpus = jax.devices()
+jax.config.update("jax_default_device", gpus[1])
+
 import diffrax
 from haiku import PRNGSequence
 
@@ -27,7 +33,7 @@ def safe_json_dump(obj, fp):
 
 
 ### Start Experiment parameters
-env_params = dict(batch_size=1, tau=2e-2, max_torque=8, g=9.81, l=1, m=1, env_solver=diffrax.Euler())
+env_params = dict(batch_size=1, tau=2e-2, max_torque=5, g=9.81, l=1, m=1, env_solver=diffrax.Euler())
 env = excenvs.make(
     env_id="Pendulum-v0",
     batch_size=env_params["batch_size"],
@@ -39,7 +45,7 @@ env = excenvs.make(
 
 
 alg_params = dict(
-    bandwidth=0.05, n_prediction_steps=50, points_per_dim=50, action_lr=1e-2, n_opt_steps=50, rho_obs=1e3, rho_act=1e3
+    bandwidth=0.05, n_prediction_steps=50, points_per_dim=50, action_lr=1e-1, n_opt_steps=50, rho_obs=1e3, rho_act=1e3
 )
 model_trainer_params = dict(
     start_learning=alg_params["n_prediction_steps"],
@@ -51,7 +57,7 @@ model_trainer_params = dict(
 )
 model_params = dict(obs_dim=env.physical_state_dim, action_dim=env.action_dim, width_size=128, depth=3, key=None)
 
-seeds = [124, 111, 52, 1, 0, 126, 227, 3331]
+seeds = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
 ### End Experiment parameters
 
 for seed in seeds:
@@ -65,7 +71,7 @@ for seed in seeds:
 
     # setup PRNG
     key = jax.random.PRNGKey(seed=exp_params["seed"])
-    data_key, model_key, loader_key, key = jax.random.split(key, 4)
+    data_key, model_key, loader_key, expl_key, key = jax.random.split(key, 5)
     data_rng = PRNGSequence(data_key)
 
     model_params["key"] = model_key
@@ -75,8 +81,8 @@ for seed in seeds:
     proposed_actions = aprbs(alg_params["n_prediction_steps"], env.batch_size, 1, 10, next(data_rng))[0]
 
     # run excitation algorithm
-    observations, actions, model, density_estimate, losses = excite_with_dmpe(
-        env, exp_params, proposed_actions, loader_key
+    observations, actions, model, density_estimate, losses, proposed_actions = excite_with_dmpe(
+        env, exp_params, proposed_actions, loader_key, expl_key
     )
 
     # save parameters
