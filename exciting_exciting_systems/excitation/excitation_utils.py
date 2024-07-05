@@ -56,8 +56,11 @@ def loss_function(
         p=predicted_density_estimate.p / jnp.sum(predicted_density_estimate.p),
         q=target_distribution / jnp.sum(target_distribution),
     )
-
-    penalty_terms = rho_obs * soft_penalty(a=observations, a_max=1) + rho_act * soft_penalty(a=actions, a_max=1)
+    penalty_terms = (
+        rho_obs * soft_penalty(a=observations, a_max=1)
+        + rho_act * soft_penalty(a=actions, a_max=1)
+        # + 5e-2 * jnp.sum(jnp.diff(actions, axis=0) ** 2)
+    )
 
     return loss + penalty_terms
 
@@ -162,20 +165,16 @@ class Exciter(eqx.Module):
         action = proposed_actions[0, :]
         next_proposed_actions = proposed_actions.at[:-1, :].set(proposed_actions[1:, :])
 
-        expl_key, expl_noise_key = jax.random.split(expl_key, 2)
+        expl_key, expl_action_key, expl_noise_key = jax.random.split(expl_key, 3)
 
-        # new_proposed_action = next_proposed_actions[-1, :] + jax.random.uniform(
-        #     key=expl_noise_key, minval=-0.3, maxval=0.3
-        # )
-        # new_proposed_action = jax.random.uniform(key=expl_noise_key, minval=-1, maxval=1)
-        # next_proposed_actions = next_proposed_actions.at[-1, :].set(new_proposed_action)
+        new_proposed_action = jax.random.uniform(key=expl_action_key, minval=-1, maxval=1)
+        next_proposed_actions = next_proposed_actions.at[-1, :].set(new_proposed_action)
+        # next_proposed_actions = next_proposed_actions + jax.random.normal(
+        #     key=expl_noise_key,
+        #     shape=next_proposed_actions.shape,
+        # ) * jnp.sqrt(0.1)
 
-        next_proposed_actions = next_proposed_actions + jax.random.normal(
-            key=expl_noise_key,
-            shape=next_proposed_actions.shape,
-        ) * jnp.sqrt(0.1)
-
-        next_proposed_actions = jnp.clip(next_proposed_actions, min=-1, max=1)
+        # next_proposed_actions = jnp.clip(next_proposed_actions, min=-1, max=1)
 
         # update grid KDE with x_k and u_k
         density_estimate = update_density_estimate_single_observation(

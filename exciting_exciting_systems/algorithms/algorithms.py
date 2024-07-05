@@ -83,6 +83,7 @@ def excite_and_fit(
             )
 
         if k % plot_every == 0 and k > 0:
+            print("last input opt loss:", losses[-1])
             fig, axs = plot_sequence_and_prediction(
                 observations=observations[: k + 2, :],
                 actions=actions[: k + 1, :],
