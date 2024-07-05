@@ -1,6 +1,8 @@
 import json
 import jax
 import jax.numpy as jnp
+from jax.tree_util import tree_flatten
+
 import equinox as eqx
 from exciting_exciting_systems.models import NeuralEulerODE
 
@@ -52,12 +54,12 @@ def simulate_ahead_with_env(
             already given through the initial observation
     """
 
+    action_denormalizer = jnp.array(tree_flatten(env.env_properties.action_constraints)[0], dtype=jnp.float32)
+
     def body_fun(carry, action):
         obs, state = carry
 
-        state = env._ode_solver_step(
-            state, action * env.env_properties.action_constraints.torque, env.env_properties.static_params
-        )
+        state = env._ode_solver_step(state, action * action_denormalizer, env.env_properties.static_params)
         obs = env.generate_observation(state, env.env_properties.physical_constraints)
         return (obs, state), obs
 
