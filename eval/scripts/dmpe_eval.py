@@ -16,6 +16,7 @@ import exciting_environments as excenvs
 
 from exciting_exciting_systems.utils.signals import aprbs
 from exciting_exciting_systems.algorithms import excite_with_dmpe
+from exciting_exciting_systems.models import NeuralEulerODEPendulum
 from exciting_exciting_systems.models.model_utils import save_model
 
 
@@ -64,6 +65,7 @@ for seed in seeds:
     exp_params = dict(
         seed=seed,
         n_timesteps=15_000,
+        model_class=NeuralEulerODEPendulum,
         env_params=env_params,
         alg_params=alg_params,
         model_trainer_params=model_trainer_params,

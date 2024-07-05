@@ -13,7 +13,7 @@ from exciting_exciting_systems.evaluation.plotting_utils import plot_sequence_an
 from exciting_exciting_systems.excitation import loss_function, Exciter
 from exciting_exciting_systems.models.model_training import ModelTrainer
 from exciting_exciting_systems.models import NeuralEulerODEPendulum
-from exciting_exciting_systems.utils.density_estimation import DensityEstimate, build_grid_3d
+from exciting_exciting_systems.utils.density_estimation import DensityEstimate, build_grid
 
 
 def excite_and_fit(
@@ -88,7 +88,7 @@ def excite_and_fit(
                 observations=observations[: k + 2, :],
                 actions=actions[: k + 1, :],
                 tau=exciter.tau,
-                obs_labels=[r"$\theta$", r"$\omega$"],
+                obs_labels=env.obs_description,
                 actions_labels=[r"$u$"],
                 model=model,
                 init_obs=obs,
@@ -105,6 +105,7 @@ def excite_with_dmpe(
     proposed_actions: jnp.ndarray,
     loader_key: jax.random.PRNGKey,
     expl_key: jax.random.PRNGKey,
+    plot_every=None,
 ):
     """
     Excite the system using the Differentiable Model Predictive Excitation (DMPE) algorithm.
@@ -156,12 +157,12 @@ def excite_with_dmpe(
 
     density_estimate = DensityEstimate(
         p=jnp.zeros([n_grid_points, 1]),
-        x_g=build_grid_3d(low=-1, high=1, points_per_dim=exp_params["alg_params"]["points_per_dim"]),
+        x_g=build_grid(dim, low=-1, high=1, points_per_dim=exp_params["alg_params"]["points_per_dim"]),
         bandwidth=jnp.array([exp_params["alg_params"]["bandwidth"]]),
         n_observations=jnp.array([0]),
     )
 
-    model = NeuralEulerODEPendulum(**exp_params["model_params"])
+    model = exp_params["model_class"](**exp_params["model_params"])
     opt_state_model = model_trainer.model_optimizer.init(eqx.filter(model, eqx.is_inexact_array))
 
     observations, actions, model, density_estimate, losses, proposed_actions = excite_and_fit(
@@ -179,7 +180,7 @@ def excite_with_dmpe(
         opt_state_model=opt_state_model,
         loader_key=loader_key,
         expl_key=expl_key,
-        plot_every=exp_params["n_timesteps"] + 1,
+        plot_every=plot_every if plot_every is not None else exp_params["n_timesteps"] + 1,
     )
 
     return observations, actions, model, density_estimate, losses, proposed_actions
