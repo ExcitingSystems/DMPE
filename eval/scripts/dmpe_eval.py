@@ -7,7 +7,7 @@ import jax.numpy as jnp
 
 os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
 gpus = jax.devices()
-jax.config.update("jax_default_device", gpus[1])
+jax.config.update("jax_default_device", gpus[0])
 
 import diffrax
 from haiku import PRNGSequence
@@ -46,7 +46,7 @@ env = excenvs.make(
 
 
 alg_params = dict(
-    bandwidth=0.05, n_prediction_steps=50, points_per_dim=50, action_lr=1e-1, n_opt_steps=25, rho_obs=1e3, rho_act=1e3
+    bandwidth=0.05, n_prediction_steps=50, points_per_dim=50, action_lr=None, n_opt_steps=10, rho_obs=1, rho_act=1
 )
 model_trainer_params = dict(
     start_learning=alg_params["n_prediction_steps"],

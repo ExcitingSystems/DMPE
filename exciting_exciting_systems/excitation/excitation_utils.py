@@ -1,4 +1,5 @@
 from typing import Callable
+from functools import partial
 
 import jax
 import jax.numpy as jnp
@@ -18,7 +19,9 @@ from exciting_exciting_systems.utils.metrics import JSDLoss
 
 def soft_penalty(a, a_max=1):
     """Computes penalty for the given input. Assumes symmetry in all dimensions."""
-    penalty = jnp.sum(jax.nn.relu(jnp.abs(a) - a_max), axis=(-2, -1)) ** 2
+    penalties = jax.nn.relu(jnp.abs(a) - a_max)
+
+    penalty = jnp.sum(penalties, axis=(-2, -1))
     return jnp.squeeze(penalty)
 
 
@@ -67,6 +70,7 @@ def loss_function(
 
 @eqx.filter_jit
 def optimize_actions(
+    loss_function,
     grad_loss_function,
     proposed_actions,
     model,
@@ -86,11 +90,27 @@ def optimize_actions(
 
     def body_fun(i, carry):
         proposed_actions, opt_state = carry
-        grad = grad_loss_function(
+        value, grad = grad_loss_function(
             model, init_obs, proposed_actions, density_estimate, tau, target_distribution, rho_obs, rho_act
         )
-        updates, opt_state = optimizer.update(grad, opt_state, proposed_actions)
+        # updates, opt_state = optimizer.update(grad, opt_state, proposed_actions)
+
+        f = partial(
+            loss_function,
+            model,
+            init_obs,
+            density_estimate=density_estimate,
+            tau=tau,
+            target_distribution=target_distribution,
+            rho_obs=rho_obs,
+            rho_act=rho_act,
+        )
+
+        updates, opt_state = optimizer.update(grad, opt_state, proposed_actions, value=value, grad=grad, value_fn=f)
         proposed_actions = optax.apply_updates(proposed_actions, updates)
+
+        # proposed_actions = proposed_actions - lr * grad
+
         return (proposed_actions, opt_state)
 
     proposed_actions, _ = jax.lax.fori_loop(0, n_opt_steps, body_fun, (proposed_actions, opt_state))
@@ -116,6 +136,7 @@ class Exciter(eqx.Module):
         rho_act: Weighting factor for action soft constraints
     """
 
+    loss_function: Callable
     grad_loss_function: Callable
     excitation_optimizer: optax._src.base.GradientTransformationExtraArgs
     tau: float
@@ -150,6 +171,7 @@ class Exciter(eqx.Module):
                 the current step k
         """
         proposed_actions, loss = optimize_actions(
+            loss_function=self.loss_function,
             grad_loss_function=self.grad_loss_function,
             proposed_actions=proposed_actions,
             model=model,

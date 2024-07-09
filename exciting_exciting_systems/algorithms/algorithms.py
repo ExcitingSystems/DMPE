@@ -136,8 +136,9 @@ def excite_with_dmpe(
     actions = jnp.zeros((exp_params["n_timesteps"] - 1, dim_action_space))
 
     exciter = Exciter(
-        grad_loss_function=jax.grad(loss_function, argnums=(2)),
-        excitation_optimizer=optax.adabelief(exp_params["alg_params"]["action_lr"]),
+        loss_function=loss_function,
+        grad_loss_function=jax.value_and_grad(loss_function, argnums=(2)),
+        excitation_optimizer=optax.lbfgs(exp_params["alg_params"]["action_lr"]),  # optax.adabelief(),
         tau=env.tau,
         n_opt_steps=exp_params["alg_params"]["n_opt_steps"],
         target_distribution=jnp.ones(shape=(n_grid_points, 1)) * 1 / (1 - (-1)) ** dim,
