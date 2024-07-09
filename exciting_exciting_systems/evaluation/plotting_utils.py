@@ -54,7 +54,7 @@ def plot_sequence(observations, actions, tau, obs_labels, action_labels, fig=Non
         axs[2].set_xlabel(r"$t$ in seconds")
 
     for ax in axs:
-        ax.grid()
+        ax.grid(True)
 
     fig.tight_layout()
     return fig, axs
