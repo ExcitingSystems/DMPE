@@ -7,6 +7,7 @@ from scipy.stats.qmc import LatinHypercube
 from pymoo.core.problem import ElementwiseProblem
 from pymoo.optimize import minimize
 
+import exciting_exciting_systems
 from exciting_exciting_systems.related_work.np_reimpl.env_utils import simulate_ahead_with_env
 from exciting_exciting_systems.related_work.np_reimpl.metrics import (
     MNNS_without_penalty,
@@ -14,6 +15,8 @@ from exciting_exciting_systems.related_work.np_reimpl.metrics import (
     audze_eglais,
 )
 from exciting_exciting_systems.related_work.mixed_GA import Permutation, Integer
+
+import exciting_environments as excenvs
 
 
 def latin_hypercube_sampling(d, n, rng):
@@ -218,12 +221,20 @@ class GoatsProblem(ElementwiseProblem):
 
         actions = generate_aprbs(amplitudes=applied_amplitudes, durations=durations)[:, None]
 
-        observations, _ = simulate_ahead_with_env(
-            self.env,
-            self.obs,
-            self.env_state,
-            actions,
-        )
+        if isinstance(self.env, excenvs.core_env.CoreEnvironment):
+            observations, _ = exciting_exciting_systems.models.model_utils.simulate_ahead_with_env(
+                self.env,
+                self.obs,
+                self.env_state,
+                actions,
+            )
+        else:
+            observations, _ = simulate_ahead_with_env(
+                self.env,
+                self.obs,
+                self.env_state,
+                actions,
+            )
 
         feat_observations = self.featurize(observations)
         if self.starting_observations is not None:

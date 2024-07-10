@@ -157,7 +157,8 @@ def excite_with_sGOATS(
 
     obs, env_state = env.reset()
     obs = obs.astype(np.float32)[0]
-    env_state = env_state.astype(np.float32)[0]
+    if isinstance(env_state, np.ndarray):
+        env_state = env_state.astype(np.float32)[0]
 
     amplitude_groups = generate_amplitude_groups(
         n_amplitudes=n_amplitudes, n_amplitude_groups=n_amplitude_groups, rng=rng

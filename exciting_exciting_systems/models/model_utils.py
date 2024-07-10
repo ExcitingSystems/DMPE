@@ -63,10 +63,10 @@ def simulate_ahead_with_env(
         obs = env.generate_observation(state, env.env_properties.physical_constraints)
         return (obs, state), obs
 
-    (_, _), observations = jax.lax.scan(body_fun, (init_obs, init_state), actions)
+    (_, last_state), observations = jax.lax.scan(body_fun, (init_obs, init_state), actions)
     observations = jnp.concatenate([init_obs[None, :], observations], axis=0)
 
-    return observations
+    return observations, last_state
 
 
 def save_model(filename, hyperparams, model):

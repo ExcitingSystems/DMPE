@@ -2,6 +2,7 @@ import json
 import datetime
 import os
 
+import numpy as np
 import jax
 import jax.numpy as jnp
 
@@ -58,10 +59,13 @@ model_trainer_params = dict(
 )
 model_params = dict(obs_dim=env.physical_state_dim, action_dim=env.action_dim, width_size=128, depth=3, key=None)
 
-seeds = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
+seeds = list(np.arange(1, 31))
 ### End Experiment parameters
 
-for seed in seeds:
+for exp_idx, seed in enumerate(seeds):
+
+    print("Experiment:", exp_idx)
+
     exp_params = dict(
         seed=seed,
         n_timesteps=15_000,
