@@ -106,10 +106,17 @@ def append_predictions_to_sequence_plot(
             s=1,
             color=mcolors.CSS4_COLORS["orange"],
         )
-    else:
+    elif pred_observations.shape[-1] > 2:
         axs[1].scatter(
             jnp.squeeze(pred_observations[..., -2]),
             jnp.squeeze(pred_observations[..., -1]),
+            s=1,
+            color=mcolors.CSS4_COLORS["orange"],
+        )
+    elif pred_observations.shape[-1] == 1 and proposed_actions.shape[-1] == 1:
+        axs[1].scatter(
+            jnp.squeeze(proposed_actions[..., 0]),
+            jnp.squeeze(pred_observations[:-1, 0]),
             s=1,
             color=mcolors.CSS4_COLORS["orange"],
         )
