@@ -184,7 +184,7 @@ class Exciter(eqx.Module):
             rho_obs=self.rho_obs,
             rho_act=self.rho_act,
         )
-        action = proposed_actions[0, :]
+        action = jnp.clip(proposed_actions[0, :], -1, 1)
         next_proposed_actions = proposed_actions.at[:-1, :].set(proposed_actions[1:, :])
 
         expl_key, expl_action_key, expl_noise_key = jax.random.split(expl_key, 3)
