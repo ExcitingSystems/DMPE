@@ -144,6 +144,7 @@ def excite_with_dmpe(
         target_distribution=jnp.ones(shape=(n_grid_points, 1)) * 1 / (1 - (-1)) ** dim,
         rho_obs=exp_params["alg_params"]["rho_obs"],
         rho_act=exp_params["alg_params"]["rho_act"],
+        penalty_order=exp_params["alg_params"]["penalty_order"],
     )
 
     model_trainer = ModelTrainer(

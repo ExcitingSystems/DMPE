@@ -17,9 +17,11 @@ from exciting_exciting_systems.utils.density_estimation import (
 from exciting_exciting_systems.utils.metrics import JSDLoss
 
 
-def soft_penalty(a, a_max=1):
+def soft_penalty(a, a_max=1, penalty_order=2):
     """Computes penalty for the given input. Assumes symmetry in all dimensions."""
     penalties = jax.nn.relu(jnp.abs(a) - a_max)
+
+    penalties = penalties**penalty_order
 
     penalty = jnp.sum(penalties, axis=(-2, -1))
     return jnp.squeeze(penalty)
@@ -35,6 +37,7 @@ def loss_function(
     target_distribution: jnp.ndarray,
     rho_obs: float,
     rho_act: float,
+    penalty_order: int,
 ) -> jnp.ndarray:
     """Predicts a trajectory based on the given actions and the model and computes the
     corresponding loss value.
@@ -60,8 +63,8 @@ def loss_function(
         q=target_distribution / jnp.sum(target_distribution),
     )
     penalty_terms = (
-        rho_obs * soft_penalty(a=observations, a_max=1)
-        + rho_act * soft_penalty(a=actions, a_max=1)
+        rho_obs * soft_penalty(a=observations, a_max=1, penalty_order=penalty_order)
+        + rho_act * soft_penalty(a=actions, a_max=1, penalty_order=penalty_order)
         # + 5e-2 * jnp.sum(jnp.diff(actions, axis=0) ** 2)
     )
 
@@ -82,6 +85,7 @@ def optimize_actions(
     target_distribution,
     rho_obs,
     rho_act,
+    penalty_order,
 ):
     """Uses the model to compute the effect of actions onto the observation trajectory to
     optimize the actions w.r.t. the given (gradient of the) loss function.
@@ -91,7 +95,15 @@ def optimize_actions(
     def body_fun(i, carry):
         proposed_actions, opt_state = carry
         value, grad = grad_loss_function(
-            model, init_obs, proposed_actions, density_estimate, tau, target_distribution, rho_obs, rho_act
+            model,
+            init_obs,
+            proposed_actions,
+            density_estimate,
+            tau,
+            target_distribution,
+            rho_obs,
+            rho_act,
+            penalty_order,
         )
         # updates, opt_state = optimizer.update(grad, opt_state, proposed_actions)
 
@@ -116,7 +128,15 @@ def optimize_actions(
     proposed_actions, _ = jax.lax.fori_loop(0, n_opt_steps, body_fun, (proposed_actions, opt_state))
 
     loss = loss_function(
-        model, init_obs, proposed_actions, density_estimate, tau, target_distribution, rho_obs, rho_act
+        model,
+        init_obs,
+        proposed_actions,
+        density_estimate,
+        tau,
+        target_distribution,
+        rho_obs,
+        rho_act,
+        penalty_order,
     )
 
     return proposed_actions, loss
@@ -144,6 +164,7 @@ class Exciter(eqx.Module):
     target_distribution: jnp.ndarray
     rho_obs: float
     rho_act: float
+    penalty_order: int
 
     @eqx.filter_jit
     def choose_action(
@@ -183,8 +204,10 @@ class Exciter(eqx.Module):
             target_distribution=self.target_distribution,
             rho_obs=self.rho_obs,
             rho_act=self.rho_act,
+            penalty_order=self.penalty_order,
         )
-        action = jnp.clip(proposed_actions[0, :], -1, 1)
+        # action = jnp.clip(proposed_actions[0, :], -1, 1)
+        action = proposed_actions[0, :]
         next_proposed_actions = proposed_actions.at[:-1, :].set(proposed_actions[1:, :])
 
         expl_key, expl_action_key, expl_noise_key = jax.random.split(expl_key, 3)
