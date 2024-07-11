@@ -59,12 +59,12 @@ model_trainer_params = dict(
 )
 model_params = dict(obs_dim=env.physical_state_dim, action_dim=env.action_dim, width_size=128, depth=3, key=None)
 
-seeds = list(np.arange(1, 31))
+seeds = list(np.arange(1, 101))
 ### End Experiment parameters
 
 for exp_idx, seed in enumerate(seeds):
 
-    print("Experiment:", exp_idx)
+    print("Experiment:", exp_idx, f"(seed: {seed})")
 
     exp_params = dict(
         seed=seed,
