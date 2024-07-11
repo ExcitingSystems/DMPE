@@ -32,18 +32,20 @@ def plot_sequence(observations, actions, tau, obs_labels, action_labels, fig=Non
     if observations.shape[-1] == 2:
         axs[1].scatter(jnp.squeeze(observations[..., 0]), jnp.squeeze(observations[..., 1]), s=1)
         axs[1].title.set_text("observation plane")
-        axs[1].set_ylabel(obs_labels[0])
-        axs[1].set_xlabel(obs_labels[1])
+        axs[1].set_ylabel(obs_labels[1])
+        axs[1].set_xlabel(obs_labels[0])
     elif observations.shape[-1] > 2:
         axs[1].scatter(jnp.squeeze(observations[..., -2]), jnp.squeeze(observations[..., -1]), s=1)
         axs[1].title.set_text("observation plane, last two obs")
-        axs[1].set_ylabel(obs_labels[-2])
-        axs[1].set_xlabel(obs_labels[-1])
+        axs[1].set_ylabel(obs_labels[-1])
+        axs[1].set_xlabel(obs_labels[-2])
 
     if actions is not None:
         if observations.shape[-1] == 1 and actions.shape[-1] == 1:
             axs[1].scatter(jnp.squeeze(actions[..., 0]), jnp.squeeze(observations[:-1, 0]), s=1)
-            axs[1].title.set_text("observation + action plane")
+            axs[1].title.set_text("observation $\\times$ action plane")
+            axs[1].set_ylabel(obs_labels[0])
+            axs[1].set_xlabel(action_labels[0])
 
         for action_idx in range(actions.shape[-1]):
             axs[2].plot(t[:-1], jnp.squeeze(actions[..., action_idx]), label=action_labels[action_idx])
