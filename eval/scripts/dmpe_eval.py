@@ -51,10 +51,11 @@ alg_params = dict(
     n_prediction_steps=50,
     points_per_dim=50,
     action_lr=1e-1,
-    n_opt_steps=10,
+    n_opt_steps=25,
     rho_obs=1,
     rho_act=1,
     penalty_order=2,
+    clip_action=False,
 )
 model_trainer_params = dict(
     start_learning=alg_params["n_prediction_steps"],

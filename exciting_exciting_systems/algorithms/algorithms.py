@@ -145,6 +145,7 @@ def excite_with_dmpe(
         rho_obs=exp_params["alg_params"]["rho_obs"],
         rho_act=exp_params["alg_params"]["rho_act"],
         penalty_order=exp_params["alg_params"]["penalty_order"],
+        clip_action=exp_params["alg_params"]["clip_action"],
     )
 
     model_trainer = ModelTrainer(

@@ -165,6 +165,7 @@ class Exciter(eqx.Module):
     rho_obs: float
     rho_act: float
     penalty_order: int
+    clip_action: bool
 
     @eqx.filter_jit
     def choose_action(
@@ -206,8 +207,19 @@ class Exciter(eqx.Module):
             rho_act=self.rho_act,
             penalty_order=self.penalty_order,
         )
-        # action = jnp.clip(proposed_actions[0, :], -1, 1)
+
         action = proposed_actions[0, :]
+
+        # clips the action to -1 and 1 if clip action is set to True
+        action = jax.lax.cond(
+            self.clip_action,
+            jnp.clip,
+            lambda action, min_val, max_val: action,
+            action,
+            -1,
+            1,
+        )
+
         next_proposed_actions = proposed_actions.at[:-1, :].set(proposed_actions[1:, :])
 
         expl_key, expl_action_key, expl_noise_key = jax.random.split(expl_key, 3)
