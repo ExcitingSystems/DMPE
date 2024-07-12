@@ -78,6 +78,7 @@ elif sys_name == "fluid_tank":
         n_generations=20,
         mean=np.hstack([np.zeros(h), np.ones(h) * 25]),
         sigma=2.0,
+        featurize=lambda x: x,
     )
 
     seeds = list(np.arange(1, 101))
@@ -110,7 +111,7 @@ for exp_idx, seed in enumerate(seeds):
         population_size=alg_params["population_size"],
         n_generations=alg_params["n_generations"],
         mean=alg_params["mean"],
-        mean=alg_params["sigma"],
+        sigma=alg_params["sigma"],
         featurize=alg_params["featurize"],
         seed=seed,
     )
