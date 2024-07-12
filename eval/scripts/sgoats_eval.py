@@ -3,6 +3,7 @@
 import json
 import datetime
 import argparse
+import warnings
 
 import numpy as np
 import jax
@@ -99,9 +100,15 @@ elif sys_name == "fluid_tank":
     seeds = list(np.arange(1, 101))
     ## End fluid_tank experiment parameters
 
-### End Experiment parameters
+### End experiment parameters #########################################################################################
 
-for seed in seeds:
+
+### Start experiments #################################################################################################
+
+for exp_idx, seed in enumerate(seeds):
+
+    print("Running experiment", exp_idx, f"(seed: {seed}) on '{sys_name}'")
+
     exp_params = dict(
         seed=seed,
         alg_params=alg_params,
@@ -112,27 +119,31 @@ for seed in seeds:
     rng = np.random.default_rng(seed=seed)
 
     # run excitation algorithm
-    observations, actions = excite_with_sGOATS(
-        n_amplitudes=alg_params["n_amplitudes"],
-        n_amplitude_groups=alg_params["n_amplitude_groups"],
-        reuse_observations=alg_params["reuse_observations"],
-        env=env,
-        bounds_duration=alg_params["bounds_duration"],
-        population_size=alg_params["population_size"],
-        n_generations=alg_params["n_generations"],
-        featurize=alg_params["featurize"],
-        rng=np.random.default_rng(seed=exp_params["seed"]),
-        verbose=True,
-        plot_every_subsequence=False,
-    )
+    # ignore divide by zero warnings -> maybe not optimal, but GA takes care of it
+    with warnings.catch_warnings(action="ignore", category=RuntimeWarning):
+        observations, actions = excite_with_sGOATS(
+            n_amplitudes=alg_params["n_amplitudes"],
+            n_amplitude_groups=alg_params["n_amplitude_groups"],
+            reuse_observations=alg_params["reuse_observations"],
+            env=env,
+            bounds_duration=alg_params["bounds_duration"],
+            population_size=alg_params["population_size"],
+            n_generations=alg_params["n_generations"],
+            featurize=alg_params["featurize"],
+            rng=np.random.default_rng(seed=exp_params["seed"]),
+            verbose=False,
+            plot_every_subsequence=False,
+        )
 
     # save parameters
     file_name = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
-    with open(f"../results/sgoats/params_{file_name}.json", "w") as fp:
+    with open(f"../results/sgoats/{sys_name}/params_{file_name}.json", "w") as fp:
         safe_json_dump(exp_params, fp)
 
     # save observations + actions
-    with open(f"../results/sgoats/data_{file_name}.json", "w") as fp:
+    with open(f"../results/sgoats/{sys_name}/data_{file_name}.json", "w") as fp:
         json.dump(dict(observations=observations.tolist(), actions=actions.tolist()), fp)
 
     jax.clear_caches()
+
+### End experiments ###################################################################################################
