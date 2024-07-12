@@ -114,7 +114,7 @@ elif sys_name == "fluid_tank":
         training_batch_size=128,
         n_train_steps=1,
         sequence_length=alg_params["n_prediction_steps"],
-        featurize=lambda obs: obs,
+        featurize=lambda x: x,
         model_lr=1e-4,
     )
     model_params = dict(obs_dim=env.physical_state_dim, action_dim=env.action_dim, width_size=128, depth=3, key=None)
