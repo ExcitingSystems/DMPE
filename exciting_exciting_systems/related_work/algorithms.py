@@ -2,7 +2,7 @@
 
 from typing import Callable
 
-from tqdm.notebook import tqdm
+from tqdm import tqdm
 import matplotlib.pyplot as plt
 import numpy as np
 from cmaes import CMAwM
@@ -217,8 +217,6 @@ def excite_with_sGOATS(
 def excite_with_iGOATS(
     n_timesteps,
     env,
-    actions,
-    observations,
     h,
     a,  # TODO: implement the possiblity to not apply the full signal to the system
     bounds_amplitude,
@@ -228,6 +226,7 @@ def excite_with_iGOATS(
     mean,
     sigma,
     featurize,
+    seed,
 ):
     """System excitation using the iGOATs algorithm from [Smits2024]."""
 
@@ -244,11 +243,17 @@ def excite_with_iGOATS(
 
     obs, env_state = env.reset()
     obs = obs.astype(np.float32)[0]
-    env_state = env_state.astype(np.float32)[0]
+    if isinstance(env_state, np.ndarray):
+        env_state = env_state.astype(np.float32)[0]
+
+    actions = []
+    observations = []
 
     pbar = tqdm(total=n_timesteps)
     while len(observations) < n_timesteps:
-        optimizer = CMAwM(mean=mean, sigma=sigma, population_size=population_size, bounds=bounds, steps=steps)
+        optimizer = CMAwM(
+            mean=mean, sigma=sigma, population_size=population_size, bounds=bounds, steps=steps, seed=seed
+        )
 
         proposed_aprbs_params, values, optimizer = optimize_continuous_aprbs(
             optimizer,
