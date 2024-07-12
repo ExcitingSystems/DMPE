@@ -94,8 +94,30 @@ if sys_name == "pendulum":
 elif sys_name == "fluid_tank":
     ## Start fluid_tank experiment parameters
 
-    env_params = dict(batch_size=1, tau=5e-1, env_solver=diffrax.Euler())
-    env = excenvs.make("FluidTank-v0", tau=env_params["tau"], solver=env_params["env_solver"])
+    env_params = dict(
+        batch_size=1,
+        tau=5e-1,
+        max_height=3,
+        max_inflow=0.2,
+        base_area=jnp.pi,
+        orifice_area=jnp.pi * 0.1**2,
+        c_d=0.6,
+        g=9.81,
+        env_solver=diffrax.Euler(),
+    )
+    env = excenvs.make(
+        "FluidTank-v0",
+        physical_constraints=dict(height=env_params["max_height"]),
+        action_constraints=dict(inflow=env_params["max_inflow"]),
+        static_params=dict(
+            base_area=env_params["base_area"],
+            orifice_area=env_params["orifice_area"],
+            c_d=env_params["c_d"],
+            g=env_params["g"],
+        ),
+        tau=env_params["tau"],
+        solver=env_params["env_solver"],
+    )
 
     alg_params = dict(
         bandwidth=0.05,
