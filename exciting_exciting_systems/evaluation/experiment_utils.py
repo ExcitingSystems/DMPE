@@ -85,6 +85,40 @@ def evaluate_metrics(algorithm_names, n_results, results_parent_path, featurize)
     return results
 
 
+def extract_metrics_over_timesteps(experiment_ids, results_path, lengths):
+    all_results = []
+    for idx, identifier in enumerate(experiment_ids):
+        print(f"Experiment {identifier} at index {idx}")
+
+        _, observations, actions, _ = load_experiment_results(
+            exp_id=identifier,
+            results_path=results_path,
+            model_class=None,
+        )
+        single_results = [evaluate_experiment_metrics(observations[:N], actions[:N]) for N in lengths]
+        metric_keys = single_results[0].keys()
+
+        results_by_metric = {key: [] for key in metric_keys}
+        for result in single_results:
+            for metric_key in metric_keys:
+                results_by_metric[metric_key].append(result[metric_key])
+
+        all_results.append(results_by_metric)
+
+    print("Reshape to results by metric...")
+    all_results_by_metric = {key: [] for key in metric_keys}
+    for result in all_results:
+        for metric_key in metric_keys:
+            all_results_by_metric[metric_key].append(result[metric_key])
+
+    for metric_key in all_results_by_metric.keys():
+        all_results_by_metric[metric_key] = jnp.stack(jnp.array(all_results_by_metric[metric_key]))
+
+    print("Done")
+
+    return all_results_by_metric
+
+
 def quick_eval_pendulum(env, identifier, results_path, model_class=None):
     params, observations, actions, model = load_experiment_results(
         exp_id=identifier, results_path=results_path, model_class=model_class

@@ -206,3 +206,100 @@ def plot_2d_kde_as_surface(p_est, x, observation_labels):
     axs.set_ylabel(observation_labels[1])
 
     return fig, axs
+
+
+def plot_metrics_by_sequence_length(results_by_metric, lengths):
+    metric_keys = results_by_metric.keys()
+
+    fig, axs = plt.subplots(3, figsize=(16, 12))
+    colors = plt.rcParams["axes.prop_cycle"]()
+
+    for metric_idx, metric_key in enumerate(metric_keys):
+        axs[metric_idx].plot(
+            lengths,
+            jnp.array(results_by_metric[metric_key]),
+            label=metric_key,
+            color=next(colors)["color"],
+        )
+
+    [ax.grid(True) for ax in axs]
+    [ax.legend() for ax in axs]
+
+    return fig
+
+
+def plot_mean_and_std_by_sequence_length(all_results_by_metric, lengths, use_log=False):
+    metric_keys = all_results_by_metric.keys()
+
+    fig, axs = plt.subplots(3, figsize=(16, 12), sharex=True)
+    colors = plt.rcParams["axes.prop_cycle"]()
+
+    for metric_idx, metric_key in enumerate(metric_keys):
+        mean = jnp.mean(all_results_by_metric[metric_key], axis=0)
+        std = jnp.std(all_results_by_metric[metric_key], axis=0)
+
+        c = next(colors)["color"]
+
+        axs[metric_idx].plot(
+            lengths,
+            jnp.log(mean) if use_log else mean,
+            label=("log " if use_log else "") + metric_key,
+            color=c,
+        )
+        axs[metric_idx].fill_between(
+            lengths,
+            jnp.log(mean - std) if use_log else mean - std,
+            jnp.log(mean + std) if use_log else mean + std,
+            color=c,
+            alpha=0.2,
+        )
+        # axs[metric_idx].set_ylabel(("log " if use_log else "") + metric_key)
+    axs[-1].set_xlabel("timesteps")
+    axs[-1].set_xlim(lengths[0] - 100, lengths[-1] + 100)
+    [ax.grid(True) for ax in axs]
+    [ax.legend() for ax in axs]
+    plt.tight_layout()
+
+    return fig
+
+
+def plot_metrics_by_sequence_length_for_all_algos(data_per_algo, lengths, algo_names, use_log=False):
+    assert len(data_per_algo) == len(algo_names), "Mismatch in number of algo results and number of algo names"
+
+    metric_keys = data_per_algo[0].keys()
+
+    fig, axs = plt.subplots(3, figsize=(16, 12), sharex=True)
+    colors = plt.rcParams["axes.prop_cycle"]()
+
+    for algo_name, data in zip(algo_names, data_per_algo):
+        c = next(colors)["color"]
+
+        for metric_idx, metric_key in enumerate(metric_keys):
+            mean = jnp.mean(data[metric_key], axis=0)
+            std = jnp.std(data[metric_key], axis=0)
+
+            axs[metric_idx].plot(
+                lengths,
+                jnp.log(mean) if use_log else mean,
+                label=algo_name,
+                color=c,
+            )
+            axs[metric_idx].fill_between(
+                lengths,
+                jnp.log(mean - std) if use_log else mean - std,
+                jnp.log(mean + std) if use_log else mean + std,
+                color=c,
+                alpha=0.2,
+            )
+            # axs[metric_idx].set_ylabel(("log " if use_log else "") + metric_key)
+
+    for idx, metric_key in enumerate(metric_keys):
+        axs[idx].title.set_text(("log " if use_log else "") + metric_key)
+
+    axs[-1].set_xlabel("timesteps")
+    axs[-1].set_xlim(lengths[0] - 100, lengths[-1] + 100)
+    [ax.grid(True) for ax in axs]
+    [ax.legend() for ax in axs]
+    plt.tight_layout()
+
+    return fig
