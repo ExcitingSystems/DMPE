@@ -123,8 +123,8 @@ elif sys_name == "fluid_tank":
         bandwidth=0.05,
         n_prediction_steps=100,
         points_per_dim=50,
-        action_lr=1e-3,
-        n_opt_steps=100,
+        action_lr=1e-1,
+        n_opt_steps=10,
         rho_obs=1,
         rho_act=1,
         penalty_order=1,
@@ -161,7 +161,7 @@ elif sys_name == "fluid_tank":
 for exp_idx, seed in enumerate(seeds):
 
     print("Running experiment", exp_idx, f"(seed: {seed}) on '{sys_name}'")
-    exp_params["seed"] = seed
+    exp_params["seed"] = int(seed)
 
     # setup PRNG
     key = jax.random.PRNGKey(seed=exp_params["seed"])
