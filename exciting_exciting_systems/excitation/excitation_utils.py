@@ -105,20 +105,7 @@ def optimize_actions(
             rho_act,
             penalty_order,
         )
-        # updates, opt_state = optimizer.update(grad, opt_state, proposed_actions)
-
-        f = partial(
-            loss_function,
-            model,
-            init_obs,
-            density_estimate=density_estimate,
-            tau=tau,
-            target_distribution=target_distribution,
-            rho_obs=rho_obs,
-            rho_act=rho_act,
-        )
-
-        updates, opt_state = optimizer.update(grad, opt_state, proposed_actions, value=value, grad=grad, value_fn=f)
+        updates, opt_state = optimizer.update(grad, opt_state, proposed_actions)
         proposed_actions = optax.apply_updates(proposed_actions, updates)
 
         # proposed_actions = proposed_actions - lr * grad

@@ -4,6 +4,8 @@ import jax.numpy as jnp
 from jax.tree_util import tree_flatten
 
 import equinox as eqx
+
+import exciting_environments as excenvs
 from exciting_exciting_systems.models import NeuralEulerODE
 
 
@@ -67,6 +69,25 @@ def simulate_ahead_with_env(
     observations = jnp.concatenate([init_obs[None, :], observations], axis=0)
 
     return observations, last_state
+
+
+class ModelEnvWrapper(eqx.Module):
+    env: excenvs.CoreEnvironment
+
+    def __call__(self, init_obs, actions, tau):
+
+        # assumes full observability
+        # assumes tau == env.tau
+        # practical denormilization for fluid tank yikes
+        # TODO: sort this out, error-prone
+        init_state = self.env.State(
+            physical_state=self.env.PhysicalState((init_obs + 1) * 3 / 2),
+            PRNGKey=None,
+            optional=None,
+        )
+
+        observations, _ = simulate_ahead_with_env(self.env, init_obs, init_state, actions)
+        return observations
 
 
 def save_model(filename, hyperparams, model):

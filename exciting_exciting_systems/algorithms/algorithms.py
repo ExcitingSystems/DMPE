@@ -8,11 +8,10 @@ import equinox as eqx
 import optax
 
 from exciting_exciting_systems.algorithms.algorithm_utils import interact_and_observe
-from exciting_exciting_systems.models.model_training import precompute_starting_points, fit
 from exciting_exciting_systems.evaluation.plotting_utils import plot_sequence_and_prediction
 from exciting_exciting_systems.excitation import loss_function, Exciter
 from exciting_exciting_systems.models.model_training import ModelTrainer
-from exciting_exciting_systems.models import NeuralEulerODEPendulum
+from exciting_exciting_systems.models.model_utils import ModelEnvWrapper
 from exciting_exciting_systems.utils.density_estimation import DensityEstimate, build_grid
 
 
@@ -72,15 +71,16 @@ def excite_and_fit(
             env=env, k=jnp.array([k]), action=action, state=state, actions=actions, observations=observations
         )
 
-        if k > model_trainer.start_learning:
-            model, opt_state_model, loader_key = model_trainer.fit(
-                model=model,
-                k=jnp.array([k]),
-                observations=observations,
-                actions=actions,
-                opt_state=opt_state_model,
-                loader_key=loader_key,
-            )
+        if model_trainer is not None:
+            if k > model_trainer.start_learning:
+                model, opt_state_model, loader_key = model_trainer.fit(
+                    model=model,
+                    k=jnp.array([k]),
+                    observations=observations,
+                    actions=actions,
+                    opt_state=opt_state_model,
+                    loader_key=loader_key,
+                )
 
         if k % plot_every == 0 and k > 0:
             print("last input opt loss:", losses[-1])
@@ -148,15 +148,22 @@ def excite_with_dmpe(
         clip_action=exp_params["alg_params"]["clip_action"],
     )
 
-    model_trainer = ModelTrainer(
-        start_learning=exp_params["model_trainer_params"]["start_learning"],
-        training_batch_size=exp_params["model_trainer_params"]["training_batch_size"],
-        n_train_steps=exp_params["model_trainer_params"]["n_train_steps"],
-        sequence_length=exp_params["model_trainer_params"]["sequence_length"],
-        featurize=exp_params["model_trainer_params"]["featurize"],
-        model_optimizer=optax.adabelief(exp_params["model_trainer_params"]["model_lr"]),
-        tau=env.tau,
-    )
+    if exp_params["model_trainer_params"] is None or exp_params["model_params"] is None:
+        model_trainer = None
+        model = ModelEnvWrapper(env)
+        opt_state_model = None
+    else:
+        model_trainer = ModelTrainer(
+            start_learning=exp_params["model_trainer_params"]["start_learning"],
+            training_batch_size=exp_params["model_trainer_params"]["training_batch_size"],
+            n_train_steps=exp_params["model_trainer_params"]["n_train_steps"],
+            sequence_length=exp_params["model_trainer_params"]["sequence_length"],
+            featurize=exp_params["model_trainer_params"]["featurize"],
+            model_optimizer=optax.adabelief(exp_params["model_trainer_params"]["model_lr"]),
+            tau=env.tau,
+        )
+        model = exp_params["model_class"](**exp_params["model_params"])
+        opt_state_model = model_trainer.model_optimizer.init(eqx.filter(model, eqx.is_inexact_array))
 
     density_estimate = DensityEstimate(
         p=jnp.zeros([n_grid_points, 1]),
@@ -164,9 +171,6 @@ def excite_with_dmpe(
         bandwidth=jnp.array([exp_params["alg_params"]["bandwidth"]]),
         n_observations=jnp.array([0]),
     )
-
-    model = exp_params["model_class"](**exp_params["model_params"])
-    opt_state_model = model_trainer.model_optimizer.init(eqx.filter(model, eqx.is_inexact_array))
 
     observations, actions, model, density_estimate, losses, proposed_actions = excite_and_fit(
         n_timesteps=exp_params["n_timesteps"],
