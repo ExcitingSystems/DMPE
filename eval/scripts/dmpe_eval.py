@@ -120,7 +120,7 @@ elif sys_name == "fluid_tank":
     )
 
     alg_params = dict(
-        bandwidth=0.05,
+        bandwidth=0.025,
         n_prediction_steps=100,
         points_per_dim=50,
         action_lr=1e-1,
@@ -143,14 +143,14 @@ elif sys_name == "fluid_tank":
 
     exp_params = dict(
         seed=None,
-        n_timesteps=5_000,
+        n_timesteps=15_000,
         model_class=NeuralEulerODE,
         env_params=env_params,
         alg_params=alg_params,
         model_trainer_params=model_trainer_params,
         model_params=model_params,
     )
-    seeds = list(np.arange(1, 101))
+    seeds = list(np.arange(101, 201))
     ## End fluid_tank experiment parameters
 
 ### End experiment parameters #########################################################################################
@@ -179,15 +179,15 @@ for exp_idx, seed in enumerate(seeds):
 
     # save parameters
     file_name = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
-    with open(f"../results/dmpe/{sys_name}/params_{file_name}.json", "w") as fp:
+    with open(f"../results/dmpe/{sys_name}/15k/params_{file_name}.json", "w") as fp:
         safe_json_dump(exp_params, fp)
 
     # save observations + actions
-    with open(f"../results/dmpe/{sys_name}/data_{file_name}.json", "w") as fp:
+    with open(f"../results/dmpe/{sys_name}/15k/data_{file_name}.json", "w") as fp:
         json.dump(dict(observations=observations.tolist(), actions=actions.tolist()), fp)
 
     model_params["key"] = model_params["key"].tolist()
-    save_model(f"../results/dmpe/{sys_name}/model_{file_name}.json", hyperparams=model_params, model=model)
+    save_model(f"../results/dmpe/{sys_name}/15k/model_{file_name}.json", hyperparams=model_params, model=model)
 
     jax.clear_caches()
 
