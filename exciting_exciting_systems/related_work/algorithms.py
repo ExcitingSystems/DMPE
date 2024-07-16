@@ -14,6 +14,8 @@ from exciting_exciting_systems.related_work.excitation_utils import (
     generate_aprbs,
     latin_hypercube_sampling,
 )
+
+import exciting_environments as exenvs
 from exciting_exciting_systems.related_work.np_reimpl.env_utils import simulate_ahead_with_env
 from exciting_exciting_systems.evaluation.plotting_utils import plot_sequence
 from exciting_exciting_systems.related_work.mixed_GA import MixedVariableMating, MixedVariableSampling
@@ -27,6 +29,12 @@ def excite_with_GOATS(
     n_generations: int,
     featurize: Callable,
     rng: np.random.Generator,
+    compress_data: bool,
+    compression_target_N: int,
+    rho_act: float,
+    rho_obs: float,
+    compression_dist_th: float,
+    compression_feat_dim: int,
     verbose: bool = True,
 ):
     """System excitation using the GOATs algorithm from [Smits2024].
@@ -75,13 +83,34 @@ def excite_with_GOATS(
         verbose=verbose,
         starting_observations=None,
         starting_actions=None,
+        compress_data=compress_data,
+        compression_target_N=compression_target_N,
+        rho_act=rho_act,
+        rho_obs=rho_obs,
+        compression_dist_th=compression_dist_th,
+        compression_feat_dim=compression_feat_dim,
     )
 
     return observations, actions
 
 
-def generate_amplitude_groups(n_amplitudes, n_amplitude_groups, rng):
+def generate_amplitude_groups(n_amplitudes: int, n_amplitude_groups: int, rng: np.random.Generator) -> np.ndarray:
+    """
+    Generate amplitude groups from a given number of amplitudes where each group in itself is
+    "space-filling" in the sense that it is uniform on the interval [-1, 1].
 
+    Args:
+        n_amplitudes (int): The total number of amplitudes.
+        n_amplitude_groups (int): The number of amplitude groups to generate.
+        rng (np.random.Generator): The random number generator.
+
+    Returns:
+        amplitude_groups (np.ndarray): An array of amplitude groups, where each group contains a subset of amplitudes.
+
+    Raises:
+        AssertionError: If n_amplitudes is not divisible by n_amplitude_groups.
+
+    """
     assert n_amplitudes % n_amplitude_groups == 0
     all_amplitudes = np.linspace(-1, 1, n_amplitudes)
 
@@ -91,6 +120,7 @@ def generate_amplitude_groups(n_amplitudes, n_amplitude_groups, rng):
         i = idx % n_amplitude_groups
         amplitude_groups[i].append(amplitude)
 
+    rng.shuffle(amplitude_groups)
     amplitude_groups = np.array(amplitude_groups)
 
     for amplitude_group in amplitude_groups:
@@ -103,14 +133,20 @@ def excite_with_sGOATS(
     n_amplitudes: np.ndarray,
     n_amplitude_groups: int,
     reuse_observations: bool,
-    env,
+    env: exenvs.CoreEnvironment,
     bounds_duration: tuple,
     population_size: int,
     n_generations: int,
     featurize: Callable,
     rng: np.random.Generator,
-    verbose=True,
-    plot_every_subsequence=True,
+    compress_data: bool,
+    compression_target_N: int,
+    rho_act: float,
+    rho_obs: float,
+    compression_dist_th: float,
+    compression_feat_dim: int,
+    verbose: bool = True,
+    plot_every_subsequence: bool = True,
 ):
     """System excitation using the sGOATs algorithm from [Smits2024].
 
@@ -164,7 +200,7 @@ def excite_with_sGOATS(
         n_amplitudes=n_amplitudes, n_amplitude_groups=n_amplitude_groups, rng=rng
     )
 
-    for idx, amplitudes in enumerate(amplitude_groups):
+    for amplitudes in tqdm(amplitude_groups):
 
         if len(all_observations) > 0 and reuse_observations:
             starting_observations = np.concatenate(all_observations)
@@ -175,8 +211,6 @@ def excite_with_sGOATS(
             starting_actions = np.concatenate(all_actions)
         else:
             starting_actions = None
-
-        print(f"amplitude group {idx+1} of {len(amplitude_groups)}")
 
         observations, actions, last_env_state = optimize_permutation_aprbs(
             opt_algorithm=opt_algorithm,
@@ -191,6 +225,12 @@ def excite_with_sGOATS(
             verbose=verbose,
             starting_observations=starting_observations,
             starting_actions=starting_actions,
+            compress_data=compress_data,
+            compression_target_N=compression_target_N,
+            rho_act=rho_act,
+            rho_obs=rho_obs,
+            compression_dist_th=compression_dist_th,
+            compression_feat_dim=compression_feat_dim,
         )
 
         # update obs and env_state as the starting point for the next amplitude group

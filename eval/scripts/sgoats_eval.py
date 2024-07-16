@@ -90,12 +90,18 @@ elif sys_name == "fluid_tank":
         solver=env_params["env_solver"],
     )
     alg_params = dict(
-        n_amplitudes=200,
-        n_amplitude_groups=10,
+        n_amplitudes=260,
+        n_amplitude_groups=13,
         reuse_observations=True,
-        bounds_duration=(1, 50),
+        bounds_duration=(20, 100),
         population_size=50,
         n_generations=100,
+        compress_data=True,
+        compression_target_N=500,
+        compression_dist_th=0.1,
+        compression_feature_dim=-2,
+        rho_obs=1e3,
+        rho_act=1e3,
         featurize=lambda x: x,
     )
     seeds = list(np.arange(1, 101))
@@ -120,21 +126,25 @@ for exp_idx, seed in enumerate(seeds):
     rng = np.random.default_rng(seed=seed)
 
     # run excitation algorithm
-    # ignore divide by zero warnings -> maybe not optimal, but GA takes care of it
-    with warnings.catch_warnings(action="ignore", category=RuntimeWarning):
-        observations, actions = excite_with_sGOATS(
-            n_amplitudes=alg_params["n_amplitudes"],
-            n_amplitude_groups=alg_params["n_amplitude_groups"],
-            reuse_observations=alg_params["reuse_observations"],
-            env=env,
-            bounds_duration=alg_params["bounds_duration"],
-            population_size=alg_params["population_size"],
-            n_generations=alg_params["n_generations"],
-            featurize=alg_params["featurize"],
-            rng=np.random.default_rng(seed=exp_params["seed"]),
-            verbose=False,
-            plot_every_subsequence=False,
-        )
+    observations, actions = excite_with_sGOATS(
+        n_amplitudes=alg_params["n_amplitudes"],
+        n_amplitude_groups=alg_params["n_amplitude_groups"],
+        reuse_observations=alg_params["reuse_observations"],
+        env=env,
+        bounds_duration=alg_params["bounds_duration"],
+        population_size=alg_params["population_size"],
+        n_generations=alg_params["n_generations"],
+        featurize=alg_params["featurize"],
+        compress_data=alg_params["compress_data"],
+        compression_target_N=alg_params["compression_target_N"],
+        compression_dist_th=alg_params["compression_dist_th"],
+        compression_feat_dim=alg_params["compression_feature_dim"],
+        rho_obs=alg_params["rho_obs"],
+        rho_act=alg_params["rho_act"],
+        rng=np.random.default_rng(seed=exp_params["seed"]),
+        verbose=False,
+        plot_every_subsequence=False,
+    )
 
     # save parameters
     file_name = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")

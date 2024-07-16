@@ -36,7 +36,7 @@ def generate_aprbs(amplitudes, durations):
     return np.concatenate([np.ones(duration) * amplitude for (amplitude, duration) in zip(amplitudes, durations)])
 
 
-def compress_datapoints(datapoints, N_c, feature_dimension):
+def compress_datapoints(datapoints, N_c, feature_dimension, dist_th):
 
     # split data
     considered_data = datapoints[..., feature_dimension]
@@ -56,7 +56,6 @@ def compress_datapoints(datapoints, N_c, feature_dimension):
     support_abs_distances = np.abs(support_distances)
     n_per_subsequence = np.zeros(support_distances.shape)
 
-    dist_th = 0.1
     n_per_subsequence[support_abs_distances > dist_th] = support_abs_distances[support_abs_distances > dist_th]
     n_per_subsequence *= N_c / np.sum(n_per_subsequence)
     n_per_subsequence = n_per_subsequence.astype(np.int32)
@@ -179,8 +178,12 @@ class GoatsProblem(ElementwiseProblem):
         bounds_duration=(1, 50),
         starting_observations=None,
         starting_actions=None,
-        compress_data=True,
-        target_N=500,
+        compress_data: bool = True,
+        compression_target_N: int = 500,
+        rho_obs: float = 1e3,
+        rho_act: float = 1e3,
+        compression_feat_dim: int = 0,
+        compression_dist_th: float = 0.1,
     ):
 
         n_amplitudes = amplitudes.shape[0]
@@ -211,7 +214,11 @@ class GoatsProblem(ElementwiseProblem):
             self.starting_observations = None
         self.starting_actions = starting_actions
         self.compress_data = compress_data
-        self.target_N = target_N
+        self.compression_target_N = compression_target_N
+        self.rho_obs = rho_obs
+        self.rho_act = rho_act
+        self.compression_feat_dim = compression_feat_dim
+        self.compression_dist_th = compression_dist_th
 
     def _evaluate(self, x, out, *args, **kwargs):
         indices = np.array(itemgetter(*self.permutation_keys)(x))
@@ -249,20 +256,21 @@ class GoatsProblem(ElementwiseProblem):
         feat_datapoints = np.concatenate([feat_observations[:-1, ...], all_actions], axis=-1)
 
         if self.compress_data:
-            feat_datapoints, indices = compress_datapoints(feat_datapoints, N_c=self.target_N, feature_dimension=-2)
-
-        # N = observations.shape[0]
-        # plt.plot(np.linspace(0, N - 1, N), feat_observations[:N, 2])
-        # plt.plot(np.linspace(0, N - 1, N)[indices], compressed_feat_datapoints[..., 2], "r.")
-        # plt.show()
+            feat_datapoints, indices = compress_datapoints(
+                feat_datapoints,
+                N_c=self.compression_target_N,
+                feature_dimension=self.compression_feat_dim,
+                dist_th=self.compression_dist_th,
+            )
 
         score = audze_eglais(feat_datapoints)
 
-        N = observations.shape[0]
+        # TODO: should the number of steps be included in the loss? This is to incite shorter trajectories..?
+        # N = observations.shape[0]
 
-        rho_obs = 1e3
-        rho_act = 1e3
-        penalty_terms = rho_obs * soft_penalty(a=observations, a_max=1) + rho_act * soft_penalty(a=actions, a_max=1)
+        penalty_terms = self.rho_obs * soft_penalty(a=observations, a_max=1) + self.rho_act * soft_penalty(
+            a=actions, a_max=1
+        )
 
         out["F"] = 1 * score + penalty_terms.item()
 
@@ -280,6 +288,12 @@ def optimize_permutation_aprbs(
     verbose: bool,
     starting_observations: np.ndarray | None,
     starting_actions: np.ndarray | None,
+    compress_data: bool,
+    compression_target_N: int,
+    rho_obs: float,
+    rho_act: float,
+    compression_feat_dim: int,
+    compression_dist_th: float,
 ):
     """Optimize an APRBS signal with predefined amplitude levels for system excitiation."""
 
@@ -292,6 +306,12 @@ def optimize_permutation_aprbs(
         bounds_duration=bounds_duration,
         starting_observations=starting_observations,
         starting_actions=starting_actions,
+        compress_data=compress_data,
+        compression_target_N=compression_target_N,
+        rho_act=rho_act,
+        rho_obs=rho_obs,
+        compression_dist_th=compression_dist_th,
+        compression_feat_dim=compression_feat_dim,
     )
 
     res = minimize(
