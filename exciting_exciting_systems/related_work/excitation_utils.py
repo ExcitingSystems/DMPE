@@ -129,7 +129,7 @@ def fitness_function(env, obs, state, prev_observations, prev_actions, action_pa
 
         prev_datapoints = np.concatenate([feat_previous_observations, prev_actions], axis=-1)
         if prev_datapoints.shape[0] > 2000:
-            prev_datapoints, _ = compress_datapoints(prev_datapoints, N_c=500, feature_dimension=-2)
+            prev_datapoints, _ = compress_datapoints(prev_datapoints, N_c=500, feature_dimension=-2, dist_th=0.1)
 
         score = MNNS_without_penalty(
             data_points=prev_datapoints,

@@ -248,8 +248,8 @@ def excite_with_sGOATS(
                 observations=np.concatenate(all_observations),
                 actions=np.concatenate(all_actions)[:-1, ...],
                 tau=env.tau,
-                obs_labels=[r"$\theta$", r"$\omega$"],
-                action_labels=[r"$u$"],
+                obs_labels=env.obs_description,
+                action_labels=env.action_description,
             )
             plt.show()
 
@@ -259,8 +259,8 @@ def excite_with_sGOATS(
 def excite_with_iGOATS(
     n_timesteps,
     env,
-    h,
-    a,  # TODO: implement the possiblity to not apply the full signal to the system
+    prediction_horizon,
+    application_horizon,
     bounds_amplitude,
     bounds_duration,
     population_size,
@@ -269,11 +269,14 @@ def excite_with_iGOATS(
     sigma,
     featurize,
     seed,
+    plot_subsequences=False,
 ):
     """System excitation using the iGOATs algorithm from [Smits2024]."""
 
-    continuous_dim = h
-    discrete_dim = h
+    assert application_horizon <= prediction_horizon
+
+    continuous_dim = prediction_horizon
+    discrete_dim = prediction_horizon
 
     bounds = np.concatenate(
         [
@@ -293,6 +296,9 @@ def excite_with_iGOATS(
 
     pbar = tqdm(total=n_timesteps)
     while len(observations) < n_timesteps:
+
+        ## replace with MixedGA -------------------------------------------------------------------------
+
         optimizer = CMAwM(
             mean=mean, sigma=sigma, population_size=population_size, bounds=bounds, steps=steps, seed=seed
         )
@@ -305,19 +311,15 @@ def excite_with_iGOATS(
             actions,
             n_generations=n_generations,
             env=env,
-            h=h,
+            h=prediction_horizon,
             featurize=featurize,
         )
+        ## ----------------------------------------------------------------------------------------------
 
-        amplitudes = proposed_aprbs_params[:h]
-        durations = proposed_aprbs_params[h:].astype(np.int32)
-
+        amplitudes = proposed_aprbs_params[:application_horizon]
+        all_durations = proposed_aprbs_params[prediction_horizon:]
+        durations = all_durations[:application_horizon].astype(np.int32)
         new_actions = generate_aprbs(amplitudes=amplitudes, durations=durations)[:, None]
-
-        # TODO: is this fair? The goal is to not go past the maximum number of steps
-        # IMO needs to be reconsidered or discussed
-        if new_actions.shape[1] + len(observations) > n_timesteps:
-            new_actions = new_actions[: (n_timesteps - len(observations) + 1), :]
 
         new_observations, env_state = simulate_ahead_with_env(
             env,
@@ -329,6 +331,16 @@ def excite_with_iGOATS(
 
         observations = observations + new_observations[:-1, :].tolist()
         actions = actions + new_actions.tolist()
+
+        if plot_subsequences:
+            fig, axs = plot_sequence(
+                observations=np.array(observations),
+                actions=np.array(actions[:-1]),
+                tau=env.tau,
+                obs_labels=env.obs_description,
+                action_labels=env.action_description,
+            )
+            plt.show()
 
         pbar.update(new_actions.shape[0])
     pbar.close()
