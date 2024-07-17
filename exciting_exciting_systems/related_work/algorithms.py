@@ -89,6 +89,7 @@ def excite_with_GOATS(
         rho_obs=rho_obs,
         compression_dist_th=compression_dist_th,
         compression_feat_dim=compression_feat_dim,
+        share_of_current_sequence=1,
     )
 
     return observations, actions
@@ -200,7 +201,7 @@ def excite_with_sGOATS(
         n_amplitudes=n_amplitudes, n_amplitude_groups=n_amplitude_groups, rng=rng
     )
 
-    for amplitudes in tqdm(amplitude_groups):
+    for idx, amplitudes in enumerate(tqdm(amplitude_groups)):
 
         if len(all_observations) > 0 and reuse_observations:
             starting_observations = np.concatenate(all_observations)
@@ -231,6 +232,7 @@ def excite_with_sGOATS(
             rho_obs=rho_obs,
             compression_dist_th=compression_dist_th,
             compression_feat_dim=compression_feat_dim,
+            share_of_current_sequence=1 / (idx + 1),
         )
 
         # update obs and env_state as the starting point for the next amplitude group
