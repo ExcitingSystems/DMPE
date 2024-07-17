@@ -37,7 +37,20 @@ def generate_aprbs(amplitudes, durations):
 
 
 def compress_datapoints(datapoints, N_c, feature_dimension, dist_th):
+    """
+    Compresses a sequence of datapoints based for the GOATS algorthims.
 
+    Args:
+        datapoints (ndarray): The sequence of datapoints to be compressed.
+        N_c (int): The number of extra points per sequence.
+        feature_dimension (int): The index of the feature dimension in the datapoints array.
+        dist_th (float): The threshold distance for determining the number of extra points.
+
+    Returns:
+        compressed_data (ndarray): The compressed sequence of datapoints.
+        indices (list): The indices of the selected datapoints in the original sequence.
+
+    """
     # split data
     considered_data = datapoints[..., feature_dimension]
     support_mask = np.diff(np.sign(considered_data)) != 0
@@ -184,6 +197,7 @@ class GoatsProblem(ElementwiseProblem):
         rho_act: float = 1e3,
         compression_feat_dim: int = 0,
         compression_dist_th: float = 0.1,
+        share_of_current_sequence: float = 1,
     ):
 
         n_amplitudes = amplitudes.shape[0]
@@ -208,17 +222,29 @@ class GoatsProblem(ElementwiseProblem):
 
         self.amplitudes = amplitudes
         self.n_amplitudes = n_amplitudes
-        if starting_observations is not None:
-            self.starting_observations = featurize(starting_observations)
+        if starting_observations is not None and starting_actions is not None:
+            starting_observations = featurize(starting_observations)
+            starting_actions = starting_actions
+
+            self.starting_feat_datapoints = np.concatenate([starting_observations, starting_actions], axis=-1)
+            if compress_data:
+                self.starting_feat_datapoints, indices = compress_datapoints(
+                    self.starting_feat_datapoints,
+                    N_c=int(compression_target_N * (1 - share_of_current_sequence)),
+                    feature_dimension=compression_feat_dim,
+                    dist_th=compression_dist_th,
+                )
+
         else:
-            self.starting_observations = None
-        self.starting_actions = starting_actions
+            self.starting_feat_datapoints = None
+
         self.compress_data = compress_data
         self.compression_target_N = compression_target_N
         self.rho_obs = rho_obs
         self.rho_act = rho_act
         self.compression_feat_dim = compression_feat_dim
         self.compression_dist_th = compression_dist_th
+        self.share_of_current_sequence = share_of_current_sequence
 
     def _evaluate(self, x, out, *args, **kwargs):
         indices = np.array(itemgetter(*self.permutation_keys)(x))
@@ -244,24 +270,18 @@ class GoatsProblem(ElementwiseProblem):
             )
 
         feat_observations = self.featurize(observations)
-        if self.starting_observations is not None:
-            assert (
-                self.starting_actions is not None
-            ), "There are starting observations, but no corresponding starting actions!"
-            feat_observations = np.concatenate([feat_observations, self.starting_observations])
-            all_actions = np.concatenate([actions, self.starting_actions])
-        else:
-            all_actions = actions
-
-        feat_datapoints = np.concatenate([feat_observations[:-1, ...], all_actions], axis=-1)
+        feat_datapoints = np.concatenate([feat_observations[:-1], actions], axis=-1)
 
         if self.compress_data:
             feat_datapoints, indices = compress_datapoints(
                 feat_datapoints,
-                N_c=self.compression_target_N,
+                N_c=int(self.compression_target_N * self.share_of_current_sequence),
                 feature_dimension=self.compression_feat_dim,
                 dist_th=self.compression_dist_th,
             )
+
+        if self.starting_feat_datapoints is not None:
+            feat_datapoints = np.concatenate([self.starting_feat_datapoints, feat_datapoints])
 
         score = audze_eglais(feat_datapoints)
 
@@ -294,6 +314,7 @@ def optimize_permutation_aprbs(
     rho_act: float,
     compression_feat_dim: int,
     compression_dist_th: float,
+    share_of_current_sequence: float,
 ):
     """Optimize an APRBS signal with predefined amplitude levels for system excitiation."""
 
@@ -312,6 +333,7 @@ def optimize_permutation_aprbs(
         rho_obs=rho_obs,
         compression_dist_th=compression_dist_th,
         compression_feat_dim=compression_feat_dim,
+        share_of_current_sequence=share_of_current_sequence,
     )
 
     res = minimize(
