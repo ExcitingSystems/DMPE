@@ -204,8 +204,69 @@ class ContinuousGoatsProblem(ElementwiseProblem):
         return np.squeeze(score).item() + penalty_terms.item()
 
 
-def optimize_continuous_aprbs():
-    raise NotImplementedError("This function is not implemented yet.")
+def optimize_continuous_aprbs(
+    opt_algorithm,
+    prediction_horizon: int,
+    application_horizon: int,
+    env,
+    obs: np.ndarray,
+    env_state: np.ndarray,
+    bounds_amplitude: tuple,
+    bounds_duration: tuple,
+    n_generations: int,
+    featurize: Callable,
+    rng: np.random.Generator,
+    starting_observations: np.ndarray,
+    starting_actions: np.ndarray,
+    compress_data: bool,
+    compression_target_N: int,
+    rho_obs: float,
+    rho_act: float,
+    compression_feat_dim: int,
+    compression_dist_th: float,
+):
+    """Optimize an APRBS signal with continuous amplitude levels for system excitiation."""
+
+    opt_problem = ContinuousGoatsProblem(
+        prediction_horizon,
+        env,
+        obs,
+        env_state,
+        featurize,
+        bounds_amplitude,
+        bounds_duration,
+        starting_observations=starting_observations,
+        starting_actions=starting_actions,
+        compress_data=compress_data,
+        compression_target_N=compression_target_N,
+        rho_obs=rho_obs,
+        rho_act=rho_act,
+        compression_feat_dim=compression_feat_dim,
+        compression_dist_th=compression_dist_th,
+    )
+
+    res = minimize(
+        problem=opt_problem,
+        algorithm=opt_algorithm,
+        termination=("n_gen", n_generations),
+        seed=rng.integers(low=0, high=2**32 - 1, size=1).item(),
+        save_history=False,
+        verbose=False,
+    )
+    proposed_aprbs_params = np.fromiter(res.X.values(), dtype=np.float64)
+
+    amplitudes = proposed_aprbs_params[:application_horizon]
+    all_durations = proposed_aprbs_params[prediction_horizon:]
+    durations = all_durations[:application_horizon].astype(np.int32)
+    new_actions = generate_aprbs(amplitudes=amplitudes, durations=durations)[:, None]
+
+    new_observations, env_state = simulate_ahead_with_env(
+        env,
+        obs,
+        env_state,
+        new_actions,
+    )
+    return new_observations, new_actions, env_state
 
 
 class GoatsProblem(ElementwiseProblem):

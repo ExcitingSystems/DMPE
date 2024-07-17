@@ -297,44 +297,26 @@ def excite_with_iGOATS(
     pbar = tqdm(total=n_timesteps)
     while len(observations) < n_timesteps:
 
-        opt_problem = ContinuousGoatsProblem(
-            prediction_horizon,
-            env,
-            obs,
-            env_state,
-            featurize,
-            bounds_amplitude,
-            bounds_duration,
+        new_observations, new_actions, _ = optimize_continuous_aprbs(
+            opt_algorithm,
+            prediction_horizon=prediction_horizon,
+            application_horizon=application_horizon,
+            env=env,
+            obs=obs,
+            env_state=env_state,
+            bounds_amplitude=bounds_amplitude,
+            bounds_duration=bounds_duration,
+            n_generations=n_generations,
+            featurize=featurize,
+            rng=rng,
             starting_observations=observations,
             starting_actions=actions,
             compress_data=compress_data,
             compression_target_N=compression_target_N,
-            rho_obs=rho_obs,
             rho_act=rho_act,
-            compression_feat_dim=compression_feat_dim,
+            rho_obs=rho_obs,
             compression_dist_th=compression_dist_th,
-        )
-
-        res = minimize(
-            problem=opt_problem,
-            algorithm=opt_algorithm,
-            termination=("n_gen", n_generations),
-            seed=rng.integers(low=0, high=2**32 - 1, size=1).item(),
-            save_history=False,
-            verbose=False,
-        )
-        proposed_aprbs_params = np.fromiter(res.X.values(), dtype=np.float64)
-
-        amplitudes = proposed_aprbs_params[:application_horizon]
-        all_durations = proposed_aprbs_params[prediction_horizon:]
-        durations = all_durations[:application_horizon].astype(np.int32)
-        new_actions = generate_aprbs(amplitudes=amplitudes, durations=durations)[:, None]
-
-        new_observations, env_state = simulate_ahead_with_env(
-            env,
-            obs,
-            env_state,
-            new_actions,
+            compression_feat_dim=compression_feat_dim,
         )
 
         obs = new_observations[-1]
