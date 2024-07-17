@@ -7,12 +7,14 @@ import matplotlib.pyplot as plt
 import numpy as np
 from cmaes import CMAwM
 from pymoo.core.mixed import MixedVariableGA, MixedVariableDuplicateElimination
+from pymoo.optimize import minimize
 
 from exciting_exciting_systems.related_work.excitation_utils import (
     optimize_continuous_aprbs,
     optimize_permutation_aprbs,
     generate_aprbs,
     latin_hypercube_sampling,
+    ContinuousGoatsProblem,
 )
 
 import exciting_environments as exenvs
@@ -265,27 +267,19 @@ def excite_with_iGOATS(
     bounds_duration,
     population_size,
     n_generations,
-    mean,
-    sigma,
     featurize,
-    seed,
+    rng,
+    compress_data,
+    compression_target_N,
+    rho_obs,
+    rho_act,
+    compression_feat_dim,
+    compression_dist_th,
     plot_subsequences=False,
 ):
     """System excitation using the iGOATs algorithm from [Smits2024]."""
 
     assert application_horizon <= prediction_horizon
-
-    continuous_dim = prediction_horizon
-    discrete_dim = prediction_horizon
-
-    bounds = np.concatenate(
-        [
-            np.tile(bounds_amplitude, (continuous_dim, 1)),
-            np.tile(bounds_duration, (discrete_dim, 1)),
-        ]
-    )
-    steps = np.concatenate([np.zeros(continuous_dim), np.ones(discrete_dim)])
-
     obs, env_state = env.reset()
     obs = obs.astype(np.float32)[0]
     if isinstance(env_state, np.ndarray):
@@ -294,27 +288,42 @@ def excite_with_iGOATS(
     actions = []
     observations = []
 
+    opt_algorithm = MixedVariableGA(
+        pop_size=population_size,
+        sampling=MixedVariableSampling(),
+        mating=MixedVariableMating(eliminate_duplicates=MixedVariableDuplicateElimination()),
+    )
+
     pbar = tqdm(total=n_timesteps)
     while len(observations) < n_timesteps:
 
-        ## replace with MixedGA -------------------------------------------------------------------------
-
-        optimizer = CMAwM(
-            mean=mean, sigma=sigma, population_size=population_size, bounds=bounds, steps=steps, seed=seed
-        )
-
-        proposed_aprbs_params, values, optimizer = optimize_continuous_aprbs(
-            optimizer,
+        opt_problem = ContinuousGoatsProblem(
+            prediction_horizon,
+            env,
             obs,
             env_state,
-            observations,
-            actions,
-            n_generations=n_generations,
-            env=env,
-            h=prediction_horizon,
-            featurize=featurize,
+            featurize,
+            bounds_amplitude,
+            bounds_duration,
+            starting_observations=observations,
+            starting_actions=actions,
+            compress_data=compress_data,
+            compression_target_N=compression_target_N,
+            rho_obs=rho_obs,
+            rho_act=rho_act,
+            compression_feat_dim=compression_feat_dim,
+            compression_dist_th=compression_dist_th,
         )
-        ## ----------------------------------------------------------------------------------------------
+
+        res = minimize(
+            problem=opt_problem,
+            algorithm=opt_algorithm,
+            termination=("n_gen", n_generations),
+            seed=rng.integers(low=0, high=2**32 - 1, size=1).item(),
+            save_history=False,
+            verbose=False,
+        )
+        proposed_aprbs_params = np.fromiter(res.X.values(), dtype=np.float64)
 
         amplitudes = proposed_aprbs_params[:application_horizon]
         all_durations = proposed_aprbs_params[prediction_horizon:]
@@ -327,6 +336,7 @@ def excite_with_iGOATS(
             env_state,
             new_actions,
         )
+
         obs = new_observations[-1]
 
         observations = observations + new_observations[:-1, :].tolist()

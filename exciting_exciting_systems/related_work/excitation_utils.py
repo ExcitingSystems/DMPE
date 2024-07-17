@@ -14,7 +14,7 @@ from exciting_exciting_systems.related_work.np_reimpl.metrics import (
     MC_uniform_sampling_distribution_approximation,
     audze_eglais,
 )
-from exciting_exciting_systems.related_work.mixed_GA import Permutation, Integer
+from exciting_exciting_systems.related_work.mixed_GA import Permutation, Integer, Real
 
 import exciting_environments as excenvs
 
@@ -106,70 +106,106 @@ def compress_datapoints(datapoints, N_c, feature_dimension, dist_th):
     return compressed_data, indices
 
 
-def fitness_function(env, obs, state, prev_observations, prev_actions, action_parameters, h, featurize):
-    actions = generate_aprbs(amplitudes=action_parameters[:h], durations=action_parameters[h:].astype(np.int32))[
-        :, None
-    ]
+class ContinuousGoatsProblem(ElementwiseProblem):
+    """pymoo-API optimization problem for the iGOATs algorithm.
 
-    observations, _ = simulate_ahead_with_env(
+    Optimizes amplitude permutations and durations of each specific amplitude.
+    The amplitude levels are chosen beforehand.
+    """
+
+    def __init__(
+        self,
+        prediction_horizon,
         env,
         obs,
-        state,
-        actions,
-    )
-    feat_observations = featurize(observations)
-    new_datapoints = np.concatenate([feat_observations[:-1], actions], axis=-1)
+        env_state,
+        featurize,
+        bounds_amplitude,
+        bounds_duration,
+        starting_observations,
+        starting_actions,
+        compress_data,
+        compression_target_N,
+        rho_obs,
+        rho_act,
+        compression_feat_dim,
+        compression_dist_th,
+    ):
 
-    if len(prev_actions) == 0 and len(prev_observations) == 0:
-        score = audze_eglais(new_datapoints)
-    else:
-        prev_observations = np.stack(prev_observations)
-        prev_actions = np.stack(prev_actions)
-        feat_previous_observations = featurize(prev_observations)
+        self.env = env
+        self.obs = obs
+        self.env_state = env_state
+        self.featurize = featurize
 
-        prev_datapoints = np.concatenate([feat_previous_observations, prev_actions], axis=-1)
-        if prev_datapoints.shape[0] > 2000:
-            prev_datapoints, _ = compress_datapoints(prev_datapoints, N_c=500, feature_dimension=-2, dist_th=0.1)
+        amplitude_variables = {f"a_{number}": Real(bounds=bounds_amplitude) for number in range(prediction_horizon)}
+        duration_variables = {f"d_{number}": Integer(bounds=bounds_duration) for number in range(prediction_horizon)}
+        all_vars = dict(amplitude_variables, **duration_variables)
 
-        score = MNNS_without_penalty(
-            data_points=prev_datapoints,
-            new_data_points=new_datapoints,
+        self.permutation_keys = tuple()
+        self.non_permutation_keys = tuple(all_vars.keys())
+
+        super().__init__(
+            vars=all_vars,
+            n_obj=1,
         )
 
-    rho_obs = 1e10
-    rho_act = 1e10
-    penalty_terms = rho_obs * soft_penalty(a=observations, a_max=1) + rho_act * soft_penalty(a=actions, a_max=1)
-    return np.squeeze(score).item() + penalty_terms.item()
+        self.prediction_horizon = prediction_horizon
 
+        if len(starting_observations) > 0 and len(starting_actions) > 0:
+            starting_observations = featurize(np.stack(starting_observations))
+            starting_actions = np.stack(starting_actions)
 
-def optimize_continuous_aprbs(
-    optimizer, obs, env_state, prev_observations, prev_actions, n_generations, env, h, featurize
-):
-    """Optimize an APRBS signal with chooseable amplitude levels for system excitiation."""
-    for generation in range(n_generations):
-        solutions = []
-        x_for_eval_list = []
+            self.starting_feat_datapoints = np.concatenate([starting_observations, starting_actions], axis=-1)
+            if compress_data and len(starting_observations) > 2000:
+                self.starting_feat_datapoints, _ = compress_datapoints(
+                    self.starting_feat_datapoints,
+                    N_c=int(compression_target_N),
+                    feature_dimension=compression_feat_dim,
+                    dist_th=compression_dist_th,
+                )
 
-        for i in range(optimizer.population_size):
-            x_for_eval, x_for_tell = optimizer.ask()
-            value = fitness_function(
-                env, obs, env_state, prev_observations, prev_actions, x_for_eval, h, featurize=featurize
+        else:
+            self.starting_feat_datapoints = None
+
+        self.compress_data = compress_data
+        self.compression_target_N = compression_target_N
+        self.rho_obs = rho_obs
+        self.rho_act = rho_act
+        self.compression_feat_dim = compression_feat_dim
+        self.compression_dist_th = compression_dist_th
+
+    def _evaluate(self, x, out, *args, **kwargs):
+        action_parameters = np.fromiter(x.values(), dtype=np.float64)
+        actions = generate_aprbs(
+            amplitudes=action_parameters[: self.prediction_horizon],
+            durations=action_parameters[self.prediction_horizon :].astype(np.int32),
+        )[:, None]
+
+        observations, _ = simulate_ahead_with_env(
+            self.env,
+            self.obs,
+            self.env_state,
+            actions,
+        )
+        feat_observations = self.featurize(observations)
+        new_datapoints = np.concatenate([feat_observations[:-1], actions], axis=-1)
+
+        if self.starting_feat_datapoints is None:
+            score = audze_eglais(new_datapoints)
+        else:
+            score = MNNS_without_penalty(
+                data_points=self.starting_feat_datapoints,
+                new_data_points=new_datapoints,
             )
 
-            solutions.append((x_for_tell, value))
-            x_for_eval_list.append(x_for_eval)
+        penalty_terms = self.rho_obs * soft_penalty(a=observations, a_max=1) + self.rho_act * soft_penalty(
+            a=actions, a_max=1
+        )
+        return np.squeeze(score).item() + penalty_terms.item()
 
-        optimizer.tell(solutions)
 
-    values = []
-    for x, value in solutions:
-        values.append(value)
-
-    xs = np.stack(x_for_eval_list)
-    values = np.stack(values)
-    min_idx = np.argmin(values)
-
-    return xs[min_idx], values[min_idx], optimizer
+def optimize_continuous_aprbs():
+    raise NotImplementedError("This function is not implemented yet.")
 
 
 class GoatsProblem(ElementwiseProblem):
@@ -228,13 +264,12 @@ class GoatsProblem(ElementwiseProblem):
 
             self.starting_feat_datapoints = np.concatenate([starting_observations, starting_actions], axis=-1)
             if compress_data:
-                self.starting_feat_datapoints, indices = compress_datapoints(
+                self.starting_feat_datapoints, _ = compress_datapoints(
                     self.starting_feat_datapoints,
                     N_c=int(compression_target_N * (1 - share_of_current_sequence)),
                     feature_dimension=compression_feat_dim,
                     dist_th=compression_dist_th,
                 )
-
         else:
             self.starting_feat_datapoints = None
 
