@@ -11,7 +11,6 @@ from exciting_exciting_systems.algorithms.algorithm_utils import interact_and_ob
 from exciting_exciting_systems.evaluation.plotting_utils import plot_sequence_and_prediction
 from exciting_exciting_systems.excitation import loss_function, Exciter
 from exciting_exciting_systems.models.model_training import ModelTrainer
-from exciting_exciting_systems.models.model_utils import ModelEnvWrapper
 from exciting_exciting_systems.utils.density_estimation import DensityEstimate, build_grid
 
 
@@ -150,7 +149,7 @@ def excite_with_dmpe(
 
     if exp_params["model_trainer_params"] is None or exp_params["model_params"] is None:
         model_trainer = None
-        model = ModelEnvWrapper(env)
+        model = exp_params["model_env_wrapper"](env)
         opt_state_model = None
     else:
         model_trainer = ModelTrainer(

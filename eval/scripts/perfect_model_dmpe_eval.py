@@ -18,8 +18,7 @@ import exciting_environments as excenvs
 
 from exciting_exciting_systems.utils.signals import aprbs
 from exciting_exciting_systems.algorithms import excite_with_dmpe
-from exciting_exciting_systems.models import NeuralEulerODEPendulum, NeuralEulerODE
-from exciting_exciting_systems.models.model_utils import save_model
+from exciting_exciting_systems.models.model_utils import ModelEnvWrapperFluidTank, ModelEnvWrapperPendulum
 
 
 def safe_json_dump(obj, fp):
@@ -56,14 +55,12 @@ if sys_name == "pendulum":
         n_prediction_steps=50,
         points_per_dim=50,
         action_lr=1e-1,
-        n_opt_steps=25,
+        n_opt_steps=10,
         rho_obs=1,
         rho_act=1,
         penalty_order=2,
         clip_action=False,
     )
-    model_trainer_params = dict()
-    model_params = dict()
 
     exp_params = dict(
         seed=None,
@@ -71,10 +68,11 @@ if sys_name == "pendulum":
         model_class=None,
         env_params=env_params,
         alg_params=alg_params,
-        model_trainer_params=model_trainer_params,
-        model_params=model_params,
+        model_trainer_params=None,
+        model_params=None,
+        model_env_wrapper=ModelEnvWrapperPendulum,
     )
-    seeds = list(np.arange(1, 101))
+    seeds = list(np.arange(101, 201))
     ## End pendulum experiment parameters
 
 elif sys_name == "fluid_tank":
@@ -125,6 +123,7 @@ elif sys_name == "fluid_tank":
         alg_params=alg_params,
         model_trainer_params=None,
         model_params=None,
+        model_env_wrapper=ModelEnvWrapperFluidTank,
     )
     seeds = list(np.arange(101, 201))
     ## End fluid_tank experiment parameters
@@ -145,16 +144,20 @@ for exp_idx, seed in enumerate(seeds):
 
     # run excitation algorithm
     observations, actions, model, density_estimate, losses, proposed_actions = excite_with_dmpe(
-        env, exp_params, proposed_actions, None, expl_key
+        env,
+        exp_params,
+        proposed_actions,
+        None,
+        expl_key,
     )
 
     # save parameters
     file_name = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
-    with open(f"../results/perfect_model_dmpe/{sys_name}/15k/params_{file_name}.json", "w") as fp:
+    with open(f"../results/perfect_model_dmpe/{sys_name}/params_{file_name}.json", "w") as fp:
         safe_json_dump(exp_params, fp)
 
     # save observations + actions
-    with open(f"../results/perfect_model_dmpe/{sys_name}/15k/data_{file_name}.json", "w") as fp:
+    with open(f"../results/perfect_model_dmpe/{sys_name}/data_{file_name}.json", "w") as fp:
         json.dump(dict(observations=observations.tolist(), actions=actions.tolist()), fp)
 
     jax.clear_caches()

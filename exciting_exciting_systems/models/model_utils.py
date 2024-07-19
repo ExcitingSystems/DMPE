@@ -71,7 +71,7 @@ def simulate_ahead_with_env(
     return observations, last_state
 
 
-class ModelEnvWrapper(eqx.Module):
+class ModelEnvWrapperFluidTank(eqx.Module):
     env: excenvs.CoreEnvironment
 
     def __call__(self, init_obs, actions, tau):
@@ -82,6 +82,28 @@ class ModelEnvWrapper(eqx.Module):
         # TODO: sort this out, error-prone
         init_state = self.env.State(
             physical_state=self.env.PhysicalState((init_obs + 1) * 3 / 2),
+            PRNGKey=None,
+            optional=None,
+        )
+
+        observations, _ = simulate_ahead_with_env(self.env, init_obs, init_state, actions)
+        return observations
+
+
+class ModelEnvWrapperPendulum(eqx.Module):
+    env: excenvs.CoreEnvironment
+
+    def __call__(self, init_obs, actions, tau):
+
+        # assumes full observability
+        # assumes tau == env.tau
+        # practical denormilization for fluid tank yikes
+        # TODO: sort this out, error-prone
+        init_state = self.env.State(
+            physical_state=self.env.PhysicalState(
+                theta=init_obs[..., 0] * self.env.env_properties.physical_constraints.theta,
+                omega=init_obs[..., 1] * self.env.env_properties.physical_constraints.omega,
+            ),
             PRNGKey=None,
             optional=None,
         )

@@ -63,7 +63,7 @@ if sys_name == "pendulum":
         n_prediction_steps=50,
         points_per_dim=50,
         action_lr=1e-1,
-        n_opt_steps=25,
+        n_opt_steps=10,
         rho_obs=1,
         rho_act=1,
         penalty_order=2,
@@ -88,7 +88,7 @@ if sys_name == "pendulum":
         model_trainer_params=model_trainer_params,
         model_params=model_params,
     )
-    seeds = list(np.arange(1, 101))
+    seeds = list(np.arange(101, 201))
     ## End pendulum experiment parameters
 
 elif sys_name == "fluid_tank":
@@ -179,15 +179,15 @@ for exp_idx, seed in enumerate(seeds):
 
     # save parameters
     file_name = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
-    with open(f"../results/dmpe/{sys_name}/15k/params_{file_name}.json", "w") as fp:
+    with open(f"../results/dmpe/{sys_name}/params_{file_name}.json", "w") as fp:
         safe_json_dump(exp_params, fp)
 
     # save observations + actions
-    with open(f"../results/dmpe/{sys_name}/15k/data_{file_name}.json", "w") as fp:
+    with open(f"../results/dmpe/{sys_name}/data_{file_name}.json", "w") as fp:
         json.dump(dict(observations=observations.tolist(), actions=actions.tolist()), fp)
 
     model_params["key"] = model_params["key"].tolist()
-    save_model(f"../results/dmpe/{sys_name}/15k/model_{file_name}.json", hyperparams=model_params, model=model)
+    save_model(f"../results/dmpe/{sys_name}/model_{file_name}.json", hyperparams=model_params, model=model)
 
     jax.clear_caches()
 
