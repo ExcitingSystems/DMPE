@@ -74,4 +74,4 @@ def audze_eglais(data_points: np.ndarray) -> np.ndarray:
     distance_matrix = np.linalg.norm(data_points[:, None, :] - data_points[None, ...], axis=-1)
     distances = distance_matrix[np.triu_indices(N, k=1)]
 
-    return 2 / (N * (N - 1)) * np.sum(1 / distances**2)
+    return 2 / (N * (N - 1)) * np.sum(1 / (distances**2 + 0.001))

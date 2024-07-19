@@ -4,6 +4,7 @@ import pathlib
 import glob
 
 import matplotlib.pyplot as plt
+import numpy as np
 import jax.numpy as jnp
 
 from exciting_exciting_systems.models.model_utils import load_model
@@ -23,8 +24,13 @@ def load_experiment_results(exp_id: str, results_path: pathlib.Path, model_class
 
     with open(results_path / pathlib.Path(f"data_{exp_id}.json"), "rb") as fp:
         data = json.load(fp)
-        observations = jnp.array(data["observations"])
-        actions = jnp.array(data["actions"])
+
+        try:
+            observations = jnp.array(data["observations"])
+            actions = jnp.array(data["actions"])
+        except:
+            observations = jnp.array(np.concatenate(data["observations"]))
+            actions = jnp.array(np.concatenate(data["actions"]))
 
     if model_class is not None:
         model = load_model(results_path / pathlib.Path(f"model_{exp_id}.json"), model_class)

@@ -146,6 +146,9 @@ for exp_idx, seed in enumerate(seeds):
         plot_every_subsequence=False,
     )
 
+    observations = [obs.tolist() for obs in observations]
+    actions = [act.tolist() for act in actions]
+
     # save parameters
     file_name = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
     with open(f"../results/sgoats/{sys_name}/15k/params_{file_name}.json", "w") as fp:
@@ -153,7 +156,7 @@ for exp_idx, seed in enumerate(seeds):
 
     # save observations + actions
     with open(f"../results/sgoats/{sys_name}/15k/data_{file_name}.json", "w") as fp:
-        json.dump(dict(observations=observations.tolist(), actions=actions.tolist()), fp)
+        json.dump(dict(observations=observations, actions=actions), fp)
 
     jax.clear_caches()
 

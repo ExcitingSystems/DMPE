@@ -35,8 +35,6 @@ sys_name = args.sys_name
 
 ### Start experiment parameters #######################################################################################
 
-# TODO: Create experiment parameters for pendulum and fluid tank
-
 if sys_name == "pendulum":
     raise NotImplementedError()
 
@@ -68,17 +66,24 @@ elif sys_name == "fluid_tank":
         solver=env_params["env_solver"],
     )
 
-    h = 2
+    h = 4
+    a = 4
 
     alg_params = dict(
-        h=h,
+        prediction_horizon=h,
+        application_horizon=a,
         bounds_amplitude=(-1, 1),
-        bounds_duration=(1, 50),
+        bounds_duration=(1, 100),
         population_size=50,
-        n_generations=20,
-        mean=np.hstack([np.zeros(h), np.ones(h) * 25]),
-        sigma=2.0,
+        n_generations=50,
         featurize=lambda x: x,
+        rng=None,
+        compress_data=True,
+        compression_target_N=500,
+        rho_obs=1e3,
+        rho_act=1e3,
+        compression_feat_dim=-2,
+        compression_dist_th=0.1,
     )
 
     seeds = list(np.arange(1, 101))
@@ -94,7 +99,7 @@ for exp_idx, seed in enumerate(seeds):
     print("Running experiment", exp_idx, f"(seed: {seed}) on '{sys_name}'")
 
     exp_params = dict(
-        n_timesteps=5000,
+        n_timesteps=15000,
         seed=seed,
         alg_params=alg_params,
         env_params=env_params,
@@ -104,16 +109,21 @@ for exp_idx, seed in enumerate(seeds):
     observations, actions = excite_with_iGOATS(
         n_timesteps=exp_params["n_timesteps"],
         env=env,
-        h=alg_params["h"],
-        a=alg_params["h"],
+        prediction_horizon=alg_params["prediction_horizon"],
+        application_horizon=alg_params["application_horizon"],
         bounds_amplitude=alg_params["bounds_amplitude"],
         bounds_duration=alg_params["bounds_duration"],
         population_size=alg_params["population_size"],
         n_generations=alg_params["n_generations"],
-        mean=alg_params["mean"],
-        sigma=alg_params["sigma"],
         featurize=alg_params["featurize"],
-        seed=seed,
+        rng=np.random.default_rng(seed),
+        compress_data=alg_params["compress_data"],
+        compression_target_N=alg_params["compression_target_N"],
+        rho_obs=alg_params["rho_obs"],
+        rho_act=alg_params["rho_act"],
+        compression_feat_dim=alg_params["compression_feat_dim"],
+        compression_dist_th=alg_params["compression_dist_th"],
+        plot_subsequences=False,
     )
 
     # save parameters

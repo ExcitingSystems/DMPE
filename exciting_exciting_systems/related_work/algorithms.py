@@ -255,7 +255,7 @@ def excite_with_sGOATS(
             )
             plt.show()
 
-    return np.concatenate(all_observations), np.concatenate(all_actions)
+    return all_observations, all_actions
 
 
 def excite_with_iGOATS(
