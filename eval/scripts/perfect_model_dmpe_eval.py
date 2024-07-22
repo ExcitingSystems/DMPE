@@ -18,7 +18,11 @@ import exciting_environments as excenvs
 
 from exciting_exciting_systems.utils.signals import aprbs
 from exciting_exciting_systems.algorithms import excite_with_dmpe
-from exciting_exciting_systems.models.model_utils import ModelEnvWrapperFluidTank, ModelEnvWrapperPendulum
+from exciting_exciting_systems.models.model_utils import (
+    ModelEnvWrapperFluidTank,
+    ModelEnvWrapperPendulum,
+    ModelEnvWrapperCartPole,
+)
 
 
 def safe_json_dump(obj, fp):
@@ -127,6 +131,68 @@ elif sys_name == "fluid_tank":
     )
     seeds = list(np.arange(101, 201))
     ## End fluid_tank experiment parameters
+
+elif sys_name == "cart_pole":
+    ## Start cart_pole experiment parameters
+
+    env_params = dict(
+        batch_size=1,
+        tau=2e-2,
+        max_force=10,
+        static_params={
+            "mu_p": 0,
+            "mu_c": 0,
+            "l": 1,
+            "m_p": 1,
+            "m_c": 1,
+            "g": 9.81,
+        },
+        physical_constraints={
+            "deflection": 10,
+            "velocity": 10,
+            "theta": jnp.pi,
+            "omega": 10,
+        },
+        env_solver=diffrax.Euler(),
+    )
+    env = excenvs.make(
+        env_id="CartPole-v0",
+        batch_size=env_params["batch_size"],
+        action_constraints={"force": env_params["max_force"]},
+        physical_constraints=env_params["physical_constraints"],
+        static_params=env_params["static_params"],
+        solver=env_params["env_solver"],
+        tau=env_params["tau"],
+    )
+
+    alg_params = dict(
+        bandwidth=0.05,
+        n_prediction_steps=50,
+        points_per_dim=20,
+        action_lr=1e-1,
+        n_opt_steps=10,
+        rho_obs=1e3,
+        rho_act=1e3,
+        penalty_order=1,
+        clip_action=True,
+    )
+
+    exp_params = dict(
+        seed=None,
+        n_timesteps=15_000,
+        model_class=None,
+        env_params=env_params,
+        alg_params=alg_params,
+        model_trainer_params=None,
+        model_params=None,
+        model_env_wrapper=ModelEnvWrapperCartPole,
+    )
+    seeds = list(np.arange(1, 101))
+
+    ## End cart_pole experiment parameters
+
+else:
+    raise NotImplementedError(f"System '{sys_name}' is unknown. Choose from ['pendulum', 'fluid_tank', 'cart_pole'].")
 
 ### End experiment parameters #########################################################################################
 
