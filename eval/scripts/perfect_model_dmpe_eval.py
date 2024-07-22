@@ -59,7 +59,7 @@ if sys_name == "pendulum":
         rho_obs=1,
         rho_act=1,
         penalty_order=2,
-        clip_action=False,
+        clip_action=True,
     )
 
     exp_params = dict(

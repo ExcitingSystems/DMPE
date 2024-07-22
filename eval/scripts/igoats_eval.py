@@ -66,14 +66,14 @@ elif sys_name == "fluid_tank":
         solver=env_params["env_solver"],
     )
 
-    h = 4
-    a = 4
+    h = 2
+    a = 2
 
     alg_params = dict(
         prediction_horizon=h,
         application_horizon=a,
         bounds_amplitude=(-1, 1),
-        bounds_duration=(1, 100),
+        bounds_duration=(1, 50),
         population_size=50,
         n_generations=50,
         featurize=lambda x: x,
