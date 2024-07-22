@@ -66,8 +66,8 @@ elif sys_name == "fluid_tank":
         solver=env_params["env_solver"],
     )
 
-    h = 2
-    a = 2
+    h = 10
+    a = 10
 
     alg_params = dict(
         prediction_horizon=h,
@@ -100,7 +100,7 @@ for exp_idx, seed in enumerate(seeds):
 
     exp_params = dict(
         n_timesteps=15000,
-        seed=seed,
+        seed=int(seed),
         alg_params=alg_params,
         env_params=env_params,
     )

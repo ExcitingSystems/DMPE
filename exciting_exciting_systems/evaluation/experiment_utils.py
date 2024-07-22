@@ -18,19 +18,23 @@ def get_experiment_ids(results_path: pathlib.Path):
     return sorted(list(identifiers))
 
 
-def load_experiment_results(exp_id: str, results_path: pathlib.Path, model_class=None):
+def load_experiment_results(exp_id: str, results_path: pathlib.Path, model_class=None, to_array=True):
     with open(results_path / pathlib.Path(f"params_{exp_id}.json"), "rb") as fp:
         params = json.load(fp)
 
     with open(results_path / pathlib.Path(f"data_{exp_id}.json"), "rb") as fp:
         data = json.load(fp)
 
-        try:
-            observations = jnp.array(data["observations"])
-            actions = jnp.array(data["actions"])
-        except:
-            observations = jnp.array(np.concatenate(data["observations"]))
-            actions = jnp.array(np.concatenate(data["actions"]))
+        if to_array:
+            try:
+                observations = jnp.array(data["observations"])
+                actions = jnp.array(data["actions"])
+            except:
+                observations = jnp.array(np.concatenate(data["observations"]))
+                actions = jnp.array(np.concatenate(data["actions"]))
+        else:
+            observations = data["observations"]
+            actions = data["actions"]
 
     if model_class is not None:
         model = load_model(results_path / pathlib.Path(f"model_{exp_id}.json"), model_class)

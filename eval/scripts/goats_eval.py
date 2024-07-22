@@ -43,7 +43,7 @@ seeds = [124, 111, 52, 1, 0, 126, 227, 3331]
 
 for seed in seeds:
     exp_params = dict(
-        seed=seed,
+        seed=int(seed),
         alg_params=alg_params,
         env_params=env_params,
     )
