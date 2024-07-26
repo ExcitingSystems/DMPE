@@ -5,20 +5,15 @@ from typing import Callable
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 import numpy as np
-from cmaes import CMAwM
 from pymoo.core.mixed import MixedVariableGA, MixedVariableDuplicateElimination
-from pymoo.optimize import minimize
 
 from exciting_exciting_systems.related_work.excitation_utils import (
     optimize_continuous_aprbs,
     optimize_permutation_aprbs,
-    generate_aprbs,
     latin_hypercube_sampling,
-    ContinuousGoatsProblem,
 )
 
 import exciting_environments as exenvs
-from exciting_exciting_systems.related_work.np_reimpl.env_utils import simulate_ahead_with_env
 from exciting_exciting_systems.evaluation.plotting_utils import plot_sequence
 from exciting_exciting_systems.related_work.mixed_GA import MixedVariableMating, MixedVariableSampling
 

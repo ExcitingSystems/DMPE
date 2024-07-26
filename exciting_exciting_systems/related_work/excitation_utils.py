@@ -11,7 +11,6 @@ import exciting_exciting_systems
 from exciting_exciting_systems.related_work.np_reimpl.env_utils import simulate_ahead_with_env
 from exciting_exciting_systems.related_work.np_reimpl.metrics import (
     MNNS_without_penalty,
-    MC_uniform_sampling_distribution_approximation,
     audze_eglais,
 )
 from exciting_exciting_systems.related_work.mixed_GA import Permutation, Integer, Real
