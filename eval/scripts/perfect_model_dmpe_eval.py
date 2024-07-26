@@ -48,7 +48,7 @@ sys_name = args.sys_name
 if sys_name == "pendulum":
     ## Start pendulum experiment parameters
 
-    env_params = dict(batch_size=1, tau=2e-2, max_torque=5, g=9.81, l=1, m=1, env_solver=diffrax.Euler())
+    env_params = dict(batch_size=1, tau=2e-2, max_torque=5, g=9.81, l=1, m=1, env_solver=diffrax.Tsit5())
     env = excenvs.make(
         env_id="Pendulum-v0",
         batch_size=env_params["batch_size"],
@@ -100,7 +100,7 @@ elif sys_name == "fluid_tank":
         orifice_area=jnp.pi * 0.1**2,
         c_d=0.6,
         g=9.81,
-        env_solver=diffrax.Euler(),
+        env_solver=diffrax.Tsit5(),
     )
     env = excenvs.make(
         "FluidTank-v0",
@@ -168,7 +168,7 @@ elif sys_name == "cart_pole":
             "theta": jnp.pi,
             "omega": 8,
         },
-        env_solver=diffrax.Euler(),
+        env_solver=diffrax.Tsit5(),
     )
     env = excenvs.make(
         env_id="CartPole-v0",

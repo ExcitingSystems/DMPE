@@ -50,7 +50,7 @@ elif sys_name == "fluid_tank":
         orifice_area=jnp.pi * 0.1**2,
         c_d=0.6,
         g=9.81,
-        env_solver=diffrax.Euler(),
+        env_solver=diffrax.Tsit5(),
     )
     env = excenvs.make(
         "FluidTank-v0",

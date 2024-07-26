@@ -52,7 +52,7 @@ if sys_name == "pendulum":
         feat_obs = jnp.stack([jnp.sin(obs[..., 0] * jnp.pi), jnp.cos(obs[..., 0] * jnp.pi), obs[..., 1]], axis=-1)
         return feat_obs
 
-    env_params = dict(batch_size=1, tau=2e-2, max_torque=5, g=9.81, l=1, m=1, env_solver=diffrax.Euler())
+    env_params = dict(batch_size=1, tau=2e-2, max_torque=5, g=9.81, l=1, m=1, env_solver=diffrax.Tsit5())
     env = excenvs.make(
         env_id="Pendulum-v0",
         batch_size=env_params["batch_size"],
@@ -113,7 +113,7 @@ elif sys_name == "fluid_tank":
         orifice_area=jnp.pi * 0.1**2,
         c_d=0.6,
         g=9.81,
-        env_solver=diffrax.Euler(),
+        env_solver=diffrax.Tsit5(),
     )
     env = excenvs.make(
         "FluidTank-v0",
