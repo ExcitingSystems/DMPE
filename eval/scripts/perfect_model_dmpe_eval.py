@@ -19,6 +19,7 @@ from haiku import PRNGSequence
 import exciting_environments as excenvs
 
 from exciting_exciting_systems.utils.signals import aprbs
+from exciting_exciting_systems.utils.density_estimation import select_bandwidth
 from exciting_exciting_systems.algorithms import excite_with_dmpe
 from exciting_exciting_systems.models.model_utils import (
     ModelEnvWrapperFluidTank,
@@ -57,7 +58,7 @@ if sys_name == "pendulum":
         tau=env_params["tau"],
     )
     alg_params = dict(
-        bandwidth=0.05,
+        bandwidth=None,
         n_prediction_steps=50,
         points_per_dim=50,
         action_lr=1e-1,
@@ -66,6 +67,12 @@ if sys_name == "pendulum":
         rho_act=1,
         penalty_order=2,
         clip_action=True,
+    )
+    alg_params["bandwidth"] = select_bandwidth(
+        delta_x=2,
+        dim=env.physical_state_dim + env.action_dim,
+        n_g=alg_params["points_per_dim"],
+        percentage=0.3,
     )
 
     exp_params = dict(
@@ -110,7 +117,7 @@ elif sys_name == "fluid_tank":
     )
 
     alg_params = dict(
-        bandwidth=0.025,  # 0.05
+        bandwidth=None,
         n_prediction_steps=100,
         points_per_dim=50,
         action_lr=1e-1,
@@ -119,6 +126,12 @@ elif sys_name == "fluid_tank":
         rho_act=1,
         penalty_order=1,
         clip_action=True,
+    )
+    alg_params["bandwidth"] = select_bandwidth(
+        delta_x=2,
+        dim=env.physical_state_dim + env.action_dim,
+        n_g=alg_params["points_per_dim"],
+        percentage=0.3,
     )
 
     exp_params = dict(

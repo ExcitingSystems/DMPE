@@ -4,6 +4,28 @@ import jax.numpy as jnp
 import equinox as eqx
 
 
+def select_bandwidth(
+    delta_x: float,
+    dim: int,
+    n_g: int,
+    percentage: float,
+):
+    """Select a bandwidth for the kernel density estimate by a rough heuristic.
+
+    The bandwidth is designed so that the kernel is still at a given percentage of
+    its maximum value at the when a step is taken in each dimension of the underlying
+    grid.
+
+    Args:
+        delta_x: The size of the space in each dimension.
+        dim: The dimension of the space.
+        n_g: Number of grid points per dimension.
+        percentage: The percentage of the maximum value of the kernel at the other
+            grid point reached by stepping once in each dimension on the grid.
+    """
+    return delta_x * jnp.sqrt(dim) / (n_g * jnp.sqrt(-2 * jnp.log(percentage)))
+
+
 @jax.jit
 def gaussian_kernel(x: jnp.ndarray, bandwidth: float) -> jnp.ndarray:
     """Evaluates the Gaussian RBF kernel at x with given bandwidth. This can take arbitrary
