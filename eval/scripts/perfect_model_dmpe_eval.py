@@ -1,7 +1,9 @@
 import json
 import datetime
-import os
 import argparse
+import os
+
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 import numpy as np
 import jax
@@ -9,7 +11,7 @@ import jax.numpy as jnp
 
 os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
 gpus = jax.devices()
-jax.config.update("jax_default_device", gpus[0])
+jax.config.update("jax_default_device", gpus[1])
 
 import diffrax
 from haiku import PRNGSequence
@@ -138,7 +140,7 @@ elif sys_name == "cart_pole":
     env_params = dict(
         batch_size=1,
         tau=2e-2,
-        max_force=10,
+        max_force=5,
         static_params={
             "mu_p": 0,
             "mu_c": 0,
@@ -148,10 +150,10 @@ elif sys_name == "cart_pole":
             "g": 9.81,
         },
         physical_constraints={
-            "deflection": 10,
-            "velocity": 10,
+            "deflection": 1,
+            "velocity": 8,
             "theta": jnp.pi,
-            "omega": 10,
+            "omega": 8,
         },
         env_solver=diffrax.Euler(),
     )
@@ -166,13 +168,13 @@ elif sys_name == "cart_pole":
     )
 
     alg_params = dict(
-        bandwidth=0.05,
-        n_prediction_steps=50,
+        bandwidth=1,
+        n_prediction_steps=100,
         points_per_dim=20,
         action_lr=1e-1,
         n_opt_steps=10,
-        rho_obs=1e3,
-        rho_act=1e3,
+        rho_obs=1,
+        rho_act=1,
         penalty_order=1,
         clip_action=True,
     )

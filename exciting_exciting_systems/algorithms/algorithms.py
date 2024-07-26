@@ -1,6 +1,7 @@
 from typing import Tuple
 import matplotlib.pyplot as plt
 from tqdm import tqdm
+import numpy as np
 
 import jax
 import jax.numpy as jnp
@@ -12,6 +13,7 @@ from exciting_exciting_systems.evaluation.plotting_utils import plot_sequence_an
 from exciting_exciting_systems.excitation import loss_function, Exciter
 from exciting_exciting_systems.models.model_training import ModelTrainer
 from exciting_exciting_systems.utils.density_estimation import DensityEstimate, build_grid
+from exciting_exciting_systems.utils.metrics import JSDLoss
 
 
 def excite_and_fit(
@@ -54,17 +56,18 @@ def excite_and_fit(
         Tuple[jnp.ndarray, jnp.ndarray, eqx.Module, DensityEstimate]: A tuple containing the updated history of observations,
         the updated history of actions, the updated model, and the updated density estimate.
     """
-    losses = []
+    prediction_losses = []
+    data_losses = []
 
     for k in tqdm(range(n_timesteps)):
-        action, proposed_actions, density_estimate, loss = exciter.choose_action(
+        action, proposed_actions, density_estimate, prediction_loss = exciter.choose_action(
             obs=obs,
             model=model,
             density_estimate=density_estimate,
             proposed_actions=proposed_actions,
             expl_key=expl_key,
         )
-        losses.append(loss)
+        prediction_losses.append(prediction_loss)
 
         obs, state, actions, observations = interact_and_observe(
             env=env, k=jnp.array([k]), action=action, state=state, actions=actions, observations=observations
@@ -81,8 +84,15 @@ def excite_and_fit(
                     loader_key=loader_key,
                 )
 
+        data_loss = JSDLoss(
+            density_estimate.p / jnp.sum(density_estimate.p),
+            exciter.target_distribution / jnp.sum(exciter.target_distribution),
+        )
+        data_losses.append(data_loss)
+
         if k % plot_every == 0 and k > 0:
-            print("last input opt loss:", losses[-1])
+            print("last input opt loss:", prediction_losses[-1])
+            print("current data loss:", data_loss)
             fig, axs = plot_sequence_and_prediction(
                 observations=observations[: k + 2, :],
                 actions=actions[: k + 1, :],
@@ -95,7 +105,11 @@ def excite_and_fit(
             )
             plt.show()
 
-    return observations, actions, model, density_estimate, losses, proposed_actions
+            plt.plot(np.log(data_losses))
+            plt.grid(True)
+            plt.show()
+
+    return observations, actions, model, density_estimate, prediction_losses, proposed_actions
 
 
 def excite_with_dmpe(

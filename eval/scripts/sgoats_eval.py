@@ -51,7 +51,7 @@ if sys_name == "pendulum":
     )
 
     alg_params = dict(
-        n_amplitudes=300,
+        n_amplitudes=360,
         n_amplitude_groups=12,
         reuse_observations=True,
         bounds_duration=(10, 100),

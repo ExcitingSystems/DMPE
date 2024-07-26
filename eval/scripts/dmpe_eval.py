@@ -1,7 +1,9 @@
 import json
+import argparse
 import datetime
 import os
-import argparse
+
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 import numpy as np
 import jax

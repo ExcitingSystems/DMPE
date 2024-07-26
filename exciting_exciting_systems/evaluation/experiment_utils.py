@@ -129,7 +129,7 @@ def extract_metrics_over_timesteps(experiment_ids, results_path, lengths):
     return all_results_by_metric
 
 
-def quick_eval_pendulum(env, identifier, results_path, model_class=None):
+def quick_eval(env, identifier, results_path, model_class=None):
     params, observations, actions, model = load_experiment_results(
         exp_id=identifier, results_path=results_path, model_class=model_class
     )
@@ -144,7 +144,7 @@ def quick_eval_pendulum(env, identifier, results_path, model_class=None):
         observations=observations,
         actions=actions,
         tau=env.tau,
-        obs_labels=[r"$\theta$", r"$\omega$"],
+        obs_labels=env.obs_description,
         action_labels=[r"$u$"],
     )
     plt.show()
@@ -155,7 +155,7 @@ def quick_eval_pendulum(env, identifier, results_path, model_class=None):
             true_observations=observations[:1000],
             actions=actions[:999],
             tau=env.tau,
-            obs_labels=[r"$\theta$", r"$\omega$"],
+            obs_labels=env.obs_description,
             action_labels=[r"$u$"],
         )
         plt.show()
