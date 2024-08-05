@@ -14,8 +14,6 @@ jax.config.update("jax_platform_name", "cpu")
 import diffrax
 
 import exciting_environments as excenvs
-
-from exciting_exciting_systems.related_work.np_reimpl.pendulum import Pendulum
 from exciting_exciting_systems.related_work.algorithms import excite_with_sGOATS
 
 
@@ -52,11 +50,11 @@ if sys_name == "pendulum":
 
     alg_params = dict(
         n_amplitudes=360,
-        n_amplitude_groups=12,
+        n_amplitude_groups=36,
         reuse_observations=True,
         bounds_duration=(10, 100),
         population_size=50,
-        n_generations=50,
+        n_generations=25,
         featurize=lambda x: x,
         compress_data=True,
         compression_target_N=500,
