@@ -11,7 +11,7 @@ import jax.numpy as jnp
 
 os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
 gpus = jax.devices()
-jax.config.update("jax_default_device", gpus[1])
+jax.config.update("jax_default_device", gpus[0])
 
 import diffrax
 from haiku import PRNGSequence
