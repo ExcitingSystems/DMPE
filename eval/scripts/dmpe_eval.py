@@ -106,7 +106,7 @@ elif sys_name == "fluid_tank":
 
     env_params = dict(
         batch_size=1,
-        tau=5e-1,
+        tau=5,
         max_height=3,
         max_inflow=0.2,
         base_area=jnp.pi,
@@ -131,7 +131,7 @@ elif sys_name == "fluid_tank":
 
     alg_params = dict(
         bandwidth=None,
-        n_prediction_steps=100,
+        n_prediction_steps=10,
         points_per_dim=50,
         action_lr=1e-1,
         n_opt_steps=10,
