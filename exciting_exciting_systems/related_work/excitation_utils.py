@@ -200,7 +200,7 @@ class ContinuousGoatsProblem(ElementwiseProblem):
         penalty_terms = self.rho_obs * soft_penalty(a=observations, a_max=1) + self.rho_act * soft_penalty(
             a=actions, a_max=1
         )
-        return np.squeeze(score).item() + penalty_terms.item()
+        out["F"] = np.squeeze(score).item() + penalty_terms.item()
 
 
 def optimize_continuous_aprbs(
@@ -323,7 +323,7 @@ class GoatsProblem(ElementwiseProblem):
             starting_actions = starting_actions
 
             self.starting_feat_datapoints = np.concatenate([starting_observations, starting_actions], axis=-1)
-            if compress_data:
+            if compress_data and len(self.starting_feat_datapoints) > 2000:
                 self.starting_feat_datapoints, _ = compress_datapoints(
                     self.starting_feat_datapoints,
                     N_c=int(compression_target_N * (1 - share_of_current_sequence)),

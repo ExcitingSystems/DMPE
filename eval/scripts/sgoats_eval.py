@@ -4,6 +4,9 @@ import json
 import datetime
 import argparse
 import warnings
+import os
+
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 import numpy as np
 import jax
@@ -71,7 +74,7 @@ elif sys_name == "fluid_tank":
 
     env_params = dict(
         batch_size=1,
-        tau=5e-1,
+        tau=5,
         max_height=3,
         max_inflow=0.2,
         base_area=jnp.pi,
@@ -94,12 +97,12 @@ elif sys_name == "fluid_tank":
         solver=env_params["env_solver"],
     )
     alg_params = dict(
-        n_amplitudes=260,
-        n_amplitude_groups=13,
+        n_amplitudes=779,
+        n_amplitude_groups=41,
         reuse_observations=True,
-        bounds_duration=(20, 100),
+        bounds_duration=(5, 50),
         population_size=50,
-        n_generations=100,
+        n_generations=25,
         compress_data=True,
         compression_target_N=500,
         compression_dist_th=0.1,

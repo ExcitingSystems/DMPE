@@ -12,7 +12,6 @@ import diffrax
 
 import exciting_environments as excenvs
 
-from exciting_exciting_systems.related_work.np_reimpl.pendulum import Pendulum
 from exciting_exciting_systems.related_work.algorithms import excite_with_iGOATS
 
 
@@ -43,7 +42,7 @@ elif sys_name == "fluid_tank":
 
     env_params = dict(
         batch_size=1,
-        tau=5e-1,
+        tau=5,
         max_height=3,
         max_inflow=0.2,
         base_area=jnp.pi,
@@ -73,9 +72,9 @@ elif sys_name == "fluid_tank":
         prediction_horizon=h,
         application_horizon=a,
         bounds_amplitude=(-1, 1),
-        bounds_duration=(1, 50),
+        bounds_duration=(5, 50),
         population_size=50,
-        n_generations=50,
+        n_generations=25,
         featurize=lambda x: x,
         rng=None,
         compress_data=True,
@@ -86,7 +85,7 @@ elif sys_name == "fluid_tank":
         compression_dist_th=0.1,
     )
 
-    seeds = list(np.arange(1, 101))
+    seeds = list(np.arange(101, 201))
     ## End fluid_tank experiment parameters
 
 ### End experiment parameters #########################################################################################

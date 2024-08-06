@@ -59,7 +59,8 @@ def excite_with_GOATS(
 
     obs, env_state = env.reset()
     obs = obs.astype(np.float32)[0]
-    env_state = env_state.astype(np.float32)[0]
+    if isinstance(env_state, np.ndarray):
+        env_state = env_state.astype(np.float32)[0]
 
     opt_algorithm = MixedVariableGA(
         pop_size=population_size,
@@ -69,7 +70,7 @@ def excite_with_GOATS(
 
     observations, actions, _ = optimize_permutation_aprbs(
         opt_algorithm,
-        amplitudes=latin_hypercube_sampling(d=env.action_space.shape[-1], n=n_amplitudes, rng=rng),
+        amplitudes=latin_hypercube_sampling(d=env.action_dim, n=n_amplitudes, rng=rng),
         env=env,
         obs=obs,
         env_state=env_state,
