@@ -153,17 +153,17 @@ elif sys_name == "cart_pole":
     env_params = dict(
         batch_size=1,
         tau=2e-2,
-        max_force=5,
+        max_force=10,
         static_params={
-            "mu_p": 0,
-            "mu_c": 0,
-            "l": 1,
-            "m_p": 1,
+            "mu_p": 0.002,
+            "mu_c": 0.5,
+            "l": 0.5,
+            "m_p": 0.1,
             "m_c": 1,
             "g": 9.81,
         },
         physical_constraints={
-            "deflection": 1,
+            "deflection": 2.4,
             "velocity": 8,
             "theta": jnp.pi,
             "omega": 8,
@@ -181,20 +181,20 @@ elif sys_name == "cart_pole":
     )
 
     alg_params = dict(
-        bandwidth=1,
-        n_prediction_steps=100,
+        bandwidth=select_bandwidth(2, 5, 20, 0.3),
+        n_prediction_steps=50,
         points_per_dim=20,
         action_lr=1e-1,
-        n_opt_steps=10,
+        n_opt_steps=5,
         rho_obs=1,
         rho_act=1,
-        penalty_order=1,
+        penalty_order=2,
         clip_action=True,
     )
 
     exp_params = dict(
         seed=None,
-        n_timesteps=15_000,
+        n_timesteps=45_000,
         model_class=None,
         env_params=env_params,
         alg_params=alg_params,

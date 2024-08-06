@@ -21,7 +21,7 @@ import exciting_environments as excenvs
 from exciting_exciting_systems.utils.signals import aprbs
 from exciting_exciting_systems.utils.density_estimation import select_bandwidth
 from exciting_exciting_systems.algorithms import excite_with_dmpe
-from exciting_exciting_systems.models import NeuralEulerODEPendulum, NeuralEulerODE
+from exciting_exciting_systems.models import NeuralEulerODEPendulum, NeuralEulerODE, NeuralEulerODECartpole
 from exciting_exciting_systems.models.model_utils import save_model
 
 
@@ -168,6 +168,82 @@ elif sys_name == "fluid_tank":
     )
     seeds = list(np.arange(101, 201))
     ## End fluid_tank experiment parameters
+
+elif sys_name == "cart_pole":
+    ## Start cart_pole experiment parameters
+
+    def featurize_theta_cart_pole(obs):
+        """The angle itself is difficult to properly interpret in the loss as angles
+        such as 1.99 * pi and 0 are essentially the same. Therefore the angle is
+        transformed to sin(phi) and cos(phi) for comparison in the loss."""
+        feat_obs = jnp.stack(
+            [obs[..., 0], obs[..., 1], jnp.sin(obs[..., 2] * jnp.pi), jnp.cos(obs[..., 2] * jnp.pi), obs[..., 3]],
+            axis=-1,
+        )
+        return feat_obs
+
+    env_params = dict(
+        batch_size=1,
+        tau=2e-2,
+        max_force=10,
+        static_params={
+            "mu_p": 0.002,
+            "mu_c": 0.5,
+            "l": 0.5,
+            "m_p": 0.1,
+            "m_c": 1,
+            "g": 9.81,
+        },
+        physical_constraints={
+            "deflection": 2.4,
+            "velocity": 8,
+            "theta": jnp.pi,
+            "omega": 8,
+        },
+        env_solver=diffrax.Tsit5(),
+    )
+    env = excenvs.make(
+        env_id="CartPole-v0",
+        batch_size=env_params["batch_size"],
+        action_constraints={"force": env_params["max_force"]},
+        physical_constraints=env_params["physical_constraints"],
+        static_params=env_params["static_params"],
+        solver=env_params["env_solver"],
+        tau=env_params["tau"],
+    )
+
+    alg_params = dict(
+        bandwidth=select_bandwidth(2, 5, 20, 0.3),
+        n_prediction_steps=50,
+        points_per_dim=20,
+        action_lr=1e-1,
+        n_opt_steps=5,
+        rho_obs=1,
+        rho_act=1,
+        penalty_order=2,
+        clip_action=True,
+    )
+    model_trainer_params = dict(
+        start_learning=alg_params["n_prediction_steps"],
+        training_batch_size=128,
+        n_train_steps=10,
+        sequence_length=alg_params["n_prediction_steps"],
+        featurize=featurize_theta_cart_pole,
+        model_lr=1e-4,
+    )
+    model_params = dict(obs_dim=env.physical_state_dim, action_dim=env.action_dim, width_size=128, depth=3, key=None)
+
+    exp_params = dict(
+        seed=None,
+        n_timesteps=45_000,
+        model_class=NeuralEulerODECartpole,
+        env_params=env_params,
+        alg_params=alg_params,
+        model_trainer_params=model_trainer_params,
+        model_params=model_params,
+    )
+    seeds = list(np.arange(1, 101))
+    ## End cart_pole experiment parameters
 
 ### End experiment parameters #########################################################################################
 
