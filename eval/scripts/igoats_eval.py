@@ -5,6 +5,9 @@ import argparse
 import numpy as np
 import jax
 import jax.numpy as jnp
+import os
+
+os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 jax.config.update("jax_platform_name", "cpu")
 
