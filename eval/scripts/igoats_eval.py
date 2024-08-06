@@ -35,7 +35,39 @@ sys_name = args.sys_name
 ### Start experiment parameters #######################################################################################
 
 if sys_name == "pendulum":
-    raise NotImplementedError()
+    ## Start pendulum experiment parameters
+
+    env_params = dict(batch_size=1, tau=2e-2, max_torque=5, g=9.81, l=1, m=1, env_solver=diffrax.Tsit5())
+    env = excenvs.make(
+        env_id="Pendulum-v0",
+        batch_size=env_params["batch_size"],
+        action_constraints={"torque": env_params["max_torque"]},
+        static_params={"g": env_params["g"], "l": env_params["l"], "m": env_params["m"]},
+        solver=env_params["env_solver"],
+        tau=env_params["tau"],
+    )
+
+    h = 10
+    a = 10
+
+    alg_params = dict(
+        prediction_horizon=h,
+        application_horizon=a,
+        bounds_amplitude=(-1, 1),
+        bounds_duration=(10, 100),
+        population_size=50,
+        n_generations=25,
+        featurize=lambda x: x,
+        rng=None,
+        compress_data=True,
+        compression_target_N=500,
+        rho_obs=1e3,
+        rho_act=1e3,
+        compression_feat_dim=-2,
+        compression_dist_th=0.1,
+    )
+    seeds = list(np.arange(101, 201))
+    ## End pendulum experiment parameters
 
 elif sys_name == "fluid_tank":
     ## Start pendulum experiment parameters
