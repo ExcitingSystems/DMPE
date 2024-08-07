@@ -293,7 +293,7 @@ def excite_with_iGOATS(
     pbar = tqdm(total=n_timesteps)
     while len(observations) < n_timesteps:
 
-        new_observations, new_actions, _ = optimize_continuous_aprbs(
+        new_observations, new_actions, env_state = optimize_continuous_aprbs(
             opt_algorithm,
             prediction_horizon=prediction_horizon,
             application_horizon=application_horizon,
