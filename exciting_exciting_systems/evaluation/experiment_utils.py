@@ -43,14 +43,15 @@ def load_experiment_results(exp_id: str, results_path: pathlib.Path, model_class
         return params, observations, actions, None
 
 
-def evaluate_experiment_metrics(observations, actions, featurize=None):
+def evaluate_experiment_metrics(observations, actions, metrics, featurize=None):
     results = {}
 
-    metrics = {
-        "jsd": default_jsd,
-        "ae": default_ae,
-        "mcudsa": default_mcudsa,
-    }
+    if metrics is None:
+        metrics = {
+            "jsd": default_jsd,
+            "ae": default_ae,
+            "mcudsa": default_mcudsa,
+        }
 
     for name, metric in metrics.items():
         results[name] = metric(observations, actions).item()
@@ -95,7 +96,7 @@ def evaluate_metrics(algorithm_names, n_results, results_parent_path, featurize)
     return results
 
 
-def extract_metrics_over_timesteps(experiment_ids, results_path, lengths):
+def extract_metrics_over_timesteps(experiment_ids, results_path, lengths, metrics=None):
     all_results = []
     for idx, identifier in enumerate(experiment_ids):
         print(f"Experiment {identifier} at index {idx}")
@@ -105,7 +106,7 @@ def extract_metrics_over_timesteps(experiment_ids, results_path, lengths):
             results_path=results_path,
             model_class=None,
         )
-        single_results = [evaluate_experiment_metrics(observations[:N], actions[:N]) for N in lengths]
+        single_results = [evaluate_experiment_metrics(observations[:N], actions[:N], metrics=metrics) for N in lengths]
         metric_keys = single_results[0].keys()
 
         results_by_metric = {key: [] for key in metric_keys}

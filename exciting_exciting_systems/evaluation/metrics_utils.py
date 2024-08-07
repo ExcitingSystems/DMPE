@@ -1,3 +1,5 @@
+from tqdm import tqdm
+
 import jax
 import jax.numpy as jnp
 
@@ -29,10 +31,19 @@ def default_jsd(observations, actions, points_per_dim=50, bounds=(-1, 1), bandwi
         n_observations=jnp.array([0]),
     )
 
-    density_estimate = update_density_estimate_multiple_observations(
-        density_estimate,
-        data_points,
-    )
+    if data_points.shape[0] > 1000:
+        # if there are too many datapoints at once, split them up and add
+        # them in smaller chunks to the density estimate
+        for n in tqdm(range(0, data_points.shape[0] + 1, 100)):
+            density_estimate = update_density_estimate_multiple_observations(
+                density_estimate,
+                data_points[n : min(n + 100, data_points.shape[0])],
+            )
+    else:
+        density_estimate = update_density_estimate_multiple_observations(
+            density_estimate,
+            data_points,
+        )
 
     target_distribution = jnp.ones(density_estimate.p.shape)
     target_distribution /= jnp.sum(target_distribution)
