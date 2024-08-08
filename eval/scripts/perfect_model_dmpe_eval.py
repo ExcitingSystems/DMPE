@@ -68,11 +68,13 @@ if sys_name == "pendulum":
         penalty_order=2,
         clip_action=True,
     )
-    alg_params["bandwidth"] = select_bandwidth(
-        delta_x=2,
-        dim=env.physical_state_dim + env.action_dim,
-        n_g=alg_params["points_per_dim"],
-        percentage=0.3,
+    alg_params["bandwidth"] = float(
+        select_bandwidth(
+            delta_x=2,
+            dim=env.physical_state_dim + env.action_dim,
+            n_g=alg_params["points_per_dim"],
+            percentage=0.3,
+        )
     )
 
     exp_params = dict(
@@ -127,11 +129,13 @@ elif sys_name == "fluid_tank":
         penalty_order=1,
         clip_action=True,
     )
-    alg_params["bandwidth"] = select_bandwidth(
-        delta_x=2,
-        dim=env.physical_state_dim + env.action_dim,
-        n_g=alg_params["points_per_dim"],
-        percentage=0.3,
+    alg_params["bandwidth"] = float(
+        select_bandwidth(
+            delta_x=2,
+            dim=env.physical_state_dim + env.action_dim,
+            n_g=alg_params["points_per_dim"],
+            percentage=0.3,
+        )
     )
 
     exp_params = dict(
@@ -181,11 +185,11 @@ elif sys_name == "cart_pole":
     )
 
     alg_params = dict(
-        bandwidth=select_bandwidth(2, 5, 20, 0.3),
+        bandwidth=float(select_bandwidth(2, 5, 20, 0.3)),
         n_prediction_steps=50,
         points_per_dim=20,
         action_lr=1e-1,
-        n_opt_steps=5,
+        n_opt_steps=10,
         rho_obs=1,
         rho_act=1,
         penalty_order=2,
