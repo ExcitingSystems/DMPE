@@ -50,7 +50,7 @@ def MNNS_without_penalty(data_points: jnp.ndarray, new_data_points: jnp.ndarray)
     return -jnp.sum(minimal_distances) / L
 
 
-def audze_eglais(data_points: jnp.ndarray) -> jnp.ndarray:
+def audze_eglais(data_points: jnp.ndarray, eps: float = 0.001) -> jnp.ndarray:
     """From [Smits2024]. The maximin-desing penalizes points that
     are too close in the point distribution.
 
@@ -60,7 +60,7 @@ def audze_eglais(data_points: jnp.ndarray) -> jnp.ndarray:
     distance_matrix = jnp.linalg.norm(data_points[:, None, :] - data_points[None, ...], axis=-1)
     distances = distance_matrix[jax.numpy.triu_indices(N, k=1)]
 
-    return 2 / (N * (N - 1)) * jnp.sum(1 / (distances**2 + 0.001))
+    return 2 / (N * (N - 1)) * jnp.sum(1 / (distances**2 + eps))
 
 
 def MC_uniform_sampling_distribution_approximation(
@@ -76,3 +76,22 @@ def MC_uniform_sampling_distribution_approximation(
     distance_matrix = jnp.linalg.norm(data_points[:, None, :] - support_points[None, ...], axis=-1)
     minimal_distances = jnp.min(distance_matrix, axis=0)
     return jnp.sum(minimal_distances) / M
+
+
+def kiss_space_filling_cost(
+    data_points: jnp.ndarray,
+    support_points: jnp.ndarray,
+    covariance_matrix: jnp.ndarray,
+    eps: float = 1e-16,
+) -> jnp.ndarray:
+    """From [Kiss2024]. Slightly modified to use the mean instead of the sum in the denominator.
+    The goal is to have the same metric value for identical data distributions with different number
+    of data points.
+    """
+    difference = data_points[None, ...] - support_points[:, None, :]
+    weighted_difference = jnp.matmul(difference, jnp.linalg.inv(covariance_matrix))
+    exponent = -0.5 * (jnp.matmul(weighted_difference[:, :, None, :], difference[..., None])).squeeze()
+
+    denominator = eps + jnp.mean(jnp.exp(exponent), axis=-1)
+
+    return jnp.mean(1 / denominator, axis=0)
