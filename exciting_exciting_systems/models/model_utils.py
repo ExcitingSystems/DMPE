@@ -131,6 +131,22 @@ class ModelEnvWrapperCartPole(eqx.Module):
         return observations
 
 
+class ModelWrapperMassSpringDamper(eqx.Module):
+    env: excenvs.CoreEnvironment
+
+    def __call__(self, init_obs, actions, tau):
+        init_state = self.env.State(
+            physical_state=self.env.PhysicalState(
+                init_obs[..., 0] * self.env.env_properties.physical_constraints.deflection,
+                init_obs[..., 1] * self.env.env_properties.physical_constraints.velocity,
+            ),
+            PRNGKey=None,
+            optional=None,
+        )
+        observations, _ = simulate_ahead_with_env(self.env, init_obs, init_state, actions)
+        return observations
+
+
 def save_model(filename, hyperparams, model):
     with open(filename, "wb") as f:
         hyperparam_str = json.dumps(hyperparams)
