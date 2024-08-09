@@ -198,7 +198,7 @@ elif sys_name == "cart_pole":
 
     exp_params = dict(
         seed=None,
-        n_timesteps=45_000,
+        n_timesteps=15_000,
         model_class=None,
         env_params=env_params,
         alg_params=alg_params,
@@ -206,7 +206,7 @@ elif sys_name == "cart_pole":
         model_params=None,
         model_env_wrapper=ModelEnvWrapperCartPole,
     )
-    seeds = list(np.arange(1, 101))
+    seeds = list(np.arange(101, 201))
 
     ## End cart_pole experiment parameters
 
