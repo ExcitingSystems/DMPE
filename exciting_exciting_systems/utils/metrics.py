@@ -81,7 +81,7 @@ def MC_uniform_sampling_distribution_approximation(
 def kiss_space_filling_cost(
     data_points: jnp.ndarray,
     support_points: jnp.ndarray,
-    covariance_matrix: jnp.ndarray,
+    variances: jnp.ndarray,
     eps: float = 1e-16,
 ) -> jnp.ndarray:
     """From [Kiss2024]. Slightly modified to use the mean instead of the sum in the denominator.
@@ -89,8 +89,7 @@ def kiss_space_filling_cost(
     of data points.
     """
     difference = data_points[None, ...] - support_points[:, None, :]
-    weighted_difference = jnp.matmul(difference, jnp.linalg.inv(covariance_matrix))
-    exponent = -0.5 * (jnp.matmul(weighted_difference[:, :, None, :], difference[..., None])).squeeze()
+    exponent = -0.5 * jnp.sum(difference**2 * 1 / variances, axis=-1)
 
     denominator = eps + jnp.mean(jnp.exp(exponent), axis=-1)
 

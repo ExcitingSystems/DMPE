@@ -9,7 +9,7 @@ import jax.numpy as jnp
 
 from exciting_exciting_systems.models.model_utils import load_model
 from exciting_exciting_systems.evaluation.plotting_utils import plot_sequence, plot_model_performance
-from exciting_exciting_systems.evaluation.metrics_utils import default_jsd, default_ae, default_mcudsa
+from exciting_exciting_systems.evaluation.metrics_utils import default_jsd, default_ae, default_mcudsa, default_ksfc
 
 
 def get_experiment_ids(results_path: pathlib.Path):
@@ -51,6 +51,7 @@ def evaluate_experiment_metrics(observations, actions, metrics, featurize=None):
             "jsd": default_jsd,
             "ae": default_ae,
             "mcudsa": default_mcudsa,
+            "ksfc": default_ksfc,
         }
 
     for name, metric in metrics.items():
