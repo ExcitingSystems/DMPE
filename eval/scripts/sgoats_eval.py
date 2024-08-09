@@ -114,6 +114,59 @@ elif sys_name == "fluid_tank":
     seeds = list(np.arange(101, 201))
     ## End fluid_tank experiment parameters
 
+elif sys_name == "cart_pole":
+    ## Start cart_pole experiment parameters
+
+    env_params = dict(
+        batch_size=1,
+        tau=2e-2,
+        max_force=10,
+        static_params={
+            "mu_p": 0.002,
+            "mu_c": 0.5,
+            "l": 0.5,
+            "m_p": 0.1,
+            "m_c": 1,
+            "g": 9.81,
+        },
+        physical_constraints={
+            "deflection": 2.4,
+            "velocity": 8,
+            "theta": jnp.pi,
+            "omega": 8,
+        },
+        env_solver=diffrax.Tsit5(),
+    )
+    env = excenvs.make(
+        env_id="CartPole-v0",
+        batch_size=env_params["batch_size"],
+        action_constraints={"force": env_params["max_force"]},
+        physical_constraints=env_params["physical_constraints"],
+        static_params=env_params["static_params"],
+        solver=env_params["env_solver"],
+        tau=env_params["tau"],
+    )
+
+    alg_params = dict(
+        n_amplitudes=360,
+        n_amplitude_groups=36,
+        reuse_observations=True,
+        bounds_duration=(10, 100),
+        population_size=50,
+        n_generations=25,
+        featurize=lambda x: x,
+        compress_data=True,
+        compression_target_N=500,
+        compression_dist_th=0.1,
+        compression_feature_dim=-2,
+        rho_obs=1e3,
+        rho_act=1e3,
+    )
+
+    seeds = list(np.arange(1, 101))
+
+    ## End cart_pole experiment parameters
+
 ### End experiment parameters #########################################################################################
 
 

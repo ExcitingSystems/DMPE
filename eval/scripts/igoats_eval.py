@@ -163,7 +163,7 @@ elif sys_name == "cart_pole":
         prediction_horizon=h,
         application_horizon=a,
         bounds_amplitude=(-1, 1),
-        bounds_duration=(5, 50),
+        bounds_duration=(10, 100),
         population_size=50,
         n_generations=25,
         featurize=lambda x: x,
@@ -176,7 +176,7 @@ elif sys_name == "cart_pole":
         compression_dist_th=0.1,
     )
 
-    seeds = list(np.arange(101, 201))
+    seeds = list(np.arange(1, 101))
 
     ## End cart_pole experiment parameters
 
