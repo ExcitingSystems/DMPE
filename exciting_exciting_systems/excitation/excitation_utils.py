@@ -129,6 +129,51 @@ def optimize_actions(
     return proposed_actions, loss
 
 
+def optimize_actions_multistart(
+    loss_function,
+    grad_loss_function,
+    all_proposed_actions,
+    model,
+    optimizer,
+    init_obs,
+    density_estimate,
+    n_opt_steps,
+    tau,
+    target_distribution,
+    rho_obs,
+    rho_act,
+    penalty_order,
+):
+    """Uses the model to compute the effect of actions onto the observation trajectory to
+    optimize the actions w.r.t. the given (gradient of the) loss function. This is done for
+    multiple sets of proposed actions and the best set is returned.
+
+    """
+    assert all_proposed_actions.ndim == 3, "proposed_actions must have shape (n_starts, n_opt_steps, action_dim)"
+
+    all_optimized_actions, all_losses = jax.vmap(
+        optimize_actions,
+        in_axes=(None, None, 0, None, None, None, None, None, None, None, None, None, None),
+    )(
+        loss_function,
+        grad_loss_function,
+        all_proposed_actions,
+        model,
+        optimizer,
+        init_obs,
+        density_estimate,
+        n_opt_steps,
+        tau,
+        target_distribution,
+        rho_obs,
+        rho_act,
+        penalty_order,
+    )
+
+    best_idx = jnp.argmin(all_losses)
+    return all_optimized_actions[best_idx], all_losses[best_idx]
+
+
 class Exciter(eqx.Module):
     """A class that carries the necessary tools for excitation input computations.
 
@@ -153,6 +198,8 @@ class Exciter(eqx.Module):
     rho_act: float
     penalty_order: int
     clip_action: bool
+    n_starts: int
+    reuse_proposed_actions: bool
 
     @eqx.filter_jit
     def choose_action(
@@ -179,10 +226,28 @@ class Exciter(eqx.Module):
             density_estimate: The updated density estimate now incorporating
                 the current step k
         """
-        proposed_actions, loss = optimize_actions(
+
+        if self.reuse_proposed_actions:
+            n_random_starts = self.n_starts - 1
+
+        expl_key, new_proposed_actions_key, expl_action_key, _ = jax.random.split(expl_key, 4)
+
+        if n_random_starts > 0:
+            random_proposed_actions = jax.random.uniform(
+                key=new_proposed_actions_key, shape=(n_random_starts, *proposed_actions.shape), minval=-1, maxval=1
+            )
+
+            if self.reuse_proposed_actions:
+                all_proposed_actions = jnp.concatenate([proposed_actions[None, :], random_proposed_actions], axis=0)
+            else:
+                all_proposed_actions = random_proposed_actions
+        else:
+            all_proposed_actions = proposed_actions[None, :]
+
+        proposed_actions, loss = optimize_actions_multistart(
             loss_function=self.loss_function,
             grad_loss_function=self.grad_loss_function,
-            proposed_actions=proposed_actions,
+            all_proposed_actions=all_proposed_actions,
             model=model,
             optimizer=self.excitation_optimizer,
             init_obs=obs,
@@ -196,33 +261,17 @@ class Exciter(eqx.Module):
         )
 
         action = proposed_actions[0, :]
-
-        # clips the action to -1 and 1 if clip action is set to True
-        action = jax.lax.cond(
-            self.clip_action,
-            jnp.clip,
-            lambda action, min_val, max_val: action,
-            action,
-            -1,
-            1,
-        )
+        if self.clip_action:
+            action = jnp.clip(action, -1, 1)
 
         next_proposed_actions = proposed_actions.at[:-1, :].set(proposed_actions[1:, :])
 
-        expl_key, expl_action_key, expl_noise_key = jax.random.split(expl_key, 3)
-
         new_proposed_action = jax.random.uniform(key=expl_action_key, minval=-1, maxval=1)
         next_proposed_actions = next_proposed_actions.at[-1, :].set(new_proposed_action)
-        # next_proposed_actions = next_proposed_actions + jax.random.normal(
-        #     key=expl_noise_key,
-        #     shape=next_proposed_actions.shape,
-        # ) * jnp.sqrt(0.1)
-
-        # next_proposed_actions = jnp.clip(next_proposed_actions, min=-1, max=1)
 
         # update grid KDE with x_k and u_k
         density_estimate = update_density_estimate_single_observation(
             density_estimate, jnp.concatenate([obs, action], axis=-1)
         )
 
-        return action, next_proposed_actions, density_estimate, loss
+        return action, next_proposed_actions, density_estimate, loss, expl_key

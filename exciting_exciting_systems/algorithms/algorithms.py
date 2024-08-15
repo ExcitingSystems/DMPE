@@ -60,7 +60,7 @@ def excite_and_fit(
     data_losses = []
 
     for k in tqdm(range(n_timesteps)):
-        action, proposed_actions, density_estimate, prediction_loss = exciter.choose_action(
+        action, proposed_actions, density_estimate, prediction_loss, expl_key = exciter.choose_action(
             obs=obs,
             model=model,
             density_estimate=density_estimate,
@@ -159,6 +159,8 @@ def excite_with_dmpe(
         rho_act=exp_params["alg_params"]["rho_act"],
         penalty_order=exp_params["alg_params"]["penalty_order"],
         clip_action=exp_params["alg_params"]["clip_action"],
+        n_starts=exp_params["alg_params"]["n_starts"],
+        reuse_proposed_actions=exp_params["alg_params"]["reuse_proposed_actions"],
     )
 
     if exp_params["model_trainer_params"] is None or exp_params["model_params"] is None:
