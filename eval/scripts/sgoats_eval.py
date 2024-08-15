@@ -148,10 +148,10 @@ elif sys_name == "cart_pole":
     )
 
     alg_params = dict(
-        n_amplitudes=360,
-        n_amplitude_groups=36,
+        n_amplitudes=720,
+        n_amplitude_groups=72,
         reuse_observations=True,
-        bounds_duration=(10, 100),
+        bounds_duration=(1, 100),
         population_size=50,
         n_generations=25,
         featurize=lambda x: x,

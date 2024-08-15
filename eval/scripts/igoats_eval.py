@@ -163,7 +163,7 @@ elif sys_name == "cart_pole":
         prediction_horizon=h,
         application_horizon=a,
         bounds_amplitude=(-1, 1),
-        bounds_duration=(10, 100),
+        bounds_duration=(1, 100),
         population_size=50,
         n_generations=25,
         featurize=lambda x: x,
