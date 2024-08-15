@@ -3,7 +3,7 @@ import datetime
 import argparse
 import os
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 
 import numpy as np
 import jax
@@ -184,16 +184,20 @@ elif sys_name == "cart_pole":
         tau=env_params["tau"],
     )
 
+    points_per_dim = 20
+
     alg_params = dict(
-        bandwidth=float(select_bandwidth(2, 5, 20, 0.3)),
+        bandwidth=select_bandwidth(2, 5, points_per_dim, 0.1),
         n_prediction_steps=50,
-        points_per_dim=20,
+        points_per_dim=points_per_dim,
         action_lr=1e-1,
-        n_opt_steps=10,
+        n_opt_steps=5,
         rho_obs=1,
         rho_act=1,
         penalty_order=2,
         clip_action=True,
+        n_starts=5,
+        reuse_proposed_actions=True,
     )
 
     exp_params = dict(
