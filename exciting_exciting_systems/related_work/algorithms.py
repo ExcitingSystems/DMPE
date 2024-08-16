@@ -341,4 +341,4 @@ def excite_with_iGOATS(
 
     observations.append(obs)
 
-    return np.stack(observations), np.stack(actions)
+    return observations, actions
