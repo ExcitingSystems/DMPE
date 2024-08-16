@@ -71,6 +71,8 @@ if sys_name == "pendulum":
         rho_act=1,
         penalty_order=2,
         clip_action=True,
+        n_starts=5,
+        reuse_proposed_actions=True,
     )
     alg_params["bandwidth"] = float(
         select_bandwidth(
@@ -139,8 +141,10 @@ elif sys_name == "fluid_tank":
         n_opt_steps=10,
         rho_obs=1,
         rho_act=1,
-        penalty_order=1,
+        penalty_order=2,
         clip_action=True,
+        n_starts=5,
+        reuse_proposed_actions=True,
     )
     alg_params["bandwidth"] = float(
         select_bandwidth(
