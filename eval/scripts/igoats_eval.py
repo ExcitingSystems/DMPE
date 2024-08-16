@@ -68,6 +68,7 @@ if sys_name == "pendulum":
         rho_act=1e3,
         compression_feat_dim=-2,
         compression_dist_th=0.1,
+        penalty_order=2,
     )
     seeds = list(np.arange(101, 201))
     ## End pendulum experiment parameters
@@ -118,6 +119,7 @@ elif sys_name == "fluid_tank":
         rho_act=1e3,
         compression_feat_dim=-2,
         compression_dist_th=0.1,
+        penalty_order=2,
     )
 
     seeds = list(np.arange(101, 201))
@@ -172,6 +174,7 @@ elif sys_name == "cart_pole":
         compression_target_N=500,
         rho_obs=1e3,
         rho_act=1e3,
+        penalty_order=2,
         compression_feat_dim=-2,
         compression_dist_th=0.1,
     )

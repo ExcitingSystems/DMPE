@@ -23,9 +23,12 @@ def latin_hypercube_sampling(d, n, rng):
     return LatinHypercube(d=d, seed=rng).random(n=n) * 2 - 1
 
 
-def soft_penalty(a, a_max=1):
+def soft_penalty(a, a_max=1, penalty_order=2):
     """Computes penalty for the given input. Assumes symmetry in all dimensions."""
     relued_a = np.maximum(np.abs(a) - a_max, np.zeros(a.shape))
+
+    relued_a = relued_a**penalty_order
+
     penalty = np.sum(relued_a, axis=(-2, -1))
     return np.squeeze(penalty)
 
@@ -127,6 +130,7 @@ class ContinuousGoatsProblem(ElementwiseProblem):
         compression_target_N,
         rho_obs,
         rho_act,
+        penalty_order,
         compression_feat_dim,
         compression_dist_th,
     ):
@@ -170,6 +174,7 @@ class ContinuousGoatsProblem(ElementwiseProblem):
         self.compression_target_N = compression_target_N
         self.rho_obs = rho_obs
         self.rho_act = rho_act
+        self.penalty_order = penalty_order
         self.compression_feat_dim = compression_feat_dim
         self.compression_dist_th = compression_dist_th
 
@@ -197,9 +202,9 @@ class ContinuousGoatsProblem(ElementwiseProblem):
                 new_data_points=new_datapoints,
             )
 
-        penalty_terms = self.rho_obs * soft_penalty(a=observations, a_max=1) + self.rho_act * soft_penalty(
-            a=actions, a_max=1
-        )
+        penalty_terms = self.rho_obs * soft_penalty(
+            a=observations, a_max=1, penalty_order=self.penalty_order
+        ) + self.rho_act * soft_penalty(a=actions, a_max=1, penalty_order=self.penalty_order)
         out["F"] = np.squeeze(score).item() + penalty_terms.item()
 
 
@@ -221,6 +226,7 @@ def optimize_continuous_aprbs(
     compression_target_N: int,
     rho_obs: float,
     rho_act: float,
+    penalty_order: int,
     compression_feat_dim: int,
     compression_dist_th: float,
 ):
@@ -240,6 +246,7 @@ def optimize_continuous_aprbs(
         compression_target_N=compression_target_N,
         rho_obs=rho_obs,
         rho_act=rho_act,
+        penalty_order=penalty_order,
         compression_feat_dim=compression_feat_dim,
         compression_dist_th=compression_dist_th,
     )
@@ -291,6 +298,7 @@ class GoatsProblem(ElementwiseProblem):
         compression_target_N: int = 500,
         rho_obs: float = 1e3,
         rho_act: float = 1e3,
+        penalty_order: int = 2,
         compression_feat_dim: int = 0,
         compression_dist_th: float = 0.1,
         share_of_current_sequence: float = 1,
@@ -337,6 +345,7 @@ class GoatsProblem(ElementwiseProblem):
         self.compression_target_N = compression_target_N
         self.rho_obs = rho_obs
         self.rho_act = rho_act
+        self.penalty_order = penalty_order
         self.compression_feat_dim = compression_feat_dim
         self.compression_dist_th = compression_dist_th
         self.share_of_current_sequence = share_of_current_sequence
@@ -383,9 +392,9 @@ class GoatsProblem(ElementwiseProblem):
         # TODO: should the number of steps be included in the loss? This is to incite shorter trajectories..?
         # N = observations.shape[0]
 
-        penalty_terms = self.rho_obs * soft_penalty(a=observations, a_max=1) + self.rho_act * soft_penalty(
-            a=actions, a_max=1
-        )
+        penalty_terms = self.rho_obs * soft_penalty(
+            a=observations, a_max=1, penalty_order=self.penalty_order
+        ) + self.rho_act * soft_penalty(a=actions, a_max=1, penalty_order=self.penalty_order)
 
         out["F"] = 1 * score + penalty_terms.item()
 
@@ -407,6 +416,7 @@ def optimize_permutation_aprbs(
     compression_target_N: int,
     rho_obs: float,
     rho_act: float,
+    penalty_order: int,
     compression_feat_dim: int,
     compression_dist_th: float,
     share_of_current_sequence: float,
@@ -426,6 +436,7 @@ def optimize_permutation_aprbs(
         compression_target_N=compression_target_N,
         rho_act=rho_act,
         rho_obs=rho_obs,
+        penalty_order=penalty_order,
         compression_dist_th=compression_dist_th,
         compression_feat_dim=compression_feat_dim,
         share_of_current_sequence=share_of_current_sequence,
