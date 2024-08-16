@@ -102,7 +102,7 @@ if sys_name == "pendulum":
         model_trainer_params=model_trainer_params,
         model_params=model_params,
     )
-    seeds = list(np.arange(101, 201))
+    seeds = list(np.arange(101, 131))
     ## End pendulum experiment parameters
 
 elif sys_name == "fluid_tank":
@@ -174,7 +174,7 @@ elif sys_name == "fluid_tank":
         model_trainer_params=model_trainer_params,
         model_params=model_params,
     )
-    seeds = list(np.arange(101, 201))
+    seeds = list(np.arange(101, 131))
     ## End fluid_tank experiment parameters
 
 elif sys_name == "cart_pole":
@@ -254,7 +254,7 @@ elif sys_name == "cart_pole":
         model_trainer_params=model_trainer_params,
         model_params=model_params,
     )
-    seeds = list(np.arange(101, 201))
+    seeds = list(np.arange(101, 131))
     ## End cart_pole experiment parameters
 
 ### End experiment parameters #########################################################################################

@@ -70,7 +70,7 @@ if sys_name == "pendulum":
         compression_dist_th=0.1,
         penalty_order=2,
     )
-    seeds = list(np.arange(101, 201))
+    seeds = list(np.arange(101, 131))
     ## End pendulum experiment parameters
 
 elif sys_name == "fluid_tank":
@@ -122,7 +122,7 @@ elif sys_name == "fluid_tank":
         penalty_order=2,
     )
 
-    seeds = list(np.arange(101, 201))
+    seeds = list(np.arange(101, 131))
     ## End fluid_tank experiment parameters
 
 elif sys_name == "cart_pole":
@@ -159,7 +159,7 @@ elif sys_name == "cart_pole":
     )
 
     h = 10
-    a = 10
+    a = 5  # to help with stabilization?
 
     alg_params = dict(
         prediction_horizon=h,
@@ -179,7 +179,7 @@ elif sys_name == "cart_pole":
         compression_dist_th=0.1,
     )
 
-    seeds = list(np.arange(1, 101))
+    seeds = list(np.arange(101, 131))
 
     ## End cart_pole experiment parameters
 
@@ -215,6 +215,7 @@ for exp_idx, seed in enumerate(seeds):
         compression_target_N=alg_params["compression_target_N"],
         rho_obs=alg_params["rho_obs"],
         rho_act=alg_params["rho_act"],
+        penalty_order=alg_params["penalty_order"],
         compression_feat_dim=alg_params["compression_feat_dim"],
         compression_dist_th=alg_params["compression_dist_th"],
         plot_subsequences=False,

@@ -67,7 +67,7 @@ if sys_name == "pendulum":
         rho_act=1e3,
         penalty_order=2,
     )
-    seeds = list(np.arange(101, 201))
+    seeds = list(np.arange(101, 131))
     ## End pendulum experiment parameters
 
 elif sys_name == "fluid_tank":
@@ -113,7 +113,7 @@ elif sys_name == "fluid_tank":
         penalty_order=2,
         featurize=lambda x: x,
     )
-    seeds = list(np.arange(101, 201))
+    seeds = list(np.arange(101, 131))
     ## End fluid_tank experiment parameters
 
 elif sys_name == "cart_pole":
@@ -166,7 +166,7 @@ elif sys_name == "cart_pole":
         penalty_order=2,
     )
 
-    seeds = list(np.arange(1, 101))
+    seeds = list(np.arange(101, 131))
 
     ## End cart_pole experiment parameters
 
@@ -204,6 +204,7 @@ for exp_idx, seed in enumerate(seeds):
         compression_feat_dim=alg_params["compression_feature_dim"],
         rho_obs=alg_params["rho_obs"],
         rho_act=alg_params["rho_act"],
+        penalty_order=alg_params["penalty_order"],
         rng=np.random.default_rng(seed=exp_params["seed"]),
         verbose=False,
         plot_every_subsequence=False,
