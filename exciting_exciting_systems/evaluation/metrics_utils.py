@@ -13,21 +13,9 @@ from exciting_exciting_systems.utils.metrics import (
     audze_eglais,
     MC_uniform_sampling_distribution_approximation,
     kiss_space_filling_cost,
+    blockwise_ksfc,
+    blockwise_mcudsa,
 )
-
-
-def default_ksfc(observations, actions, points_per_dim=20, bounds=(-1, 1), variance=0.01):
-    if observations.shape[0] == actions.shape[0] + 1:
-        observations = observations[0:-1, :]
-
-    data_points = jnp.concatenate([observations, actions], axis=-1)
-    dim = data_points.shape[-1]
-
-    support_points = build_grid(dim, low=bounds[0], high=bounds[1], points_per_dim=points_per_dim)
-
-    return kiss_space_filling_cost(
-        data_points=data_points, support_points=support_points, variances=jnp.ones([dim]) * variance
-    )
 
 
 def default_jsd(observations, actions, points_per_dim=50, bounds=(-1, 1), bandwidth=0.05):
@@ -88,4 +76,26 @@ def default_mcudsa(observations, actions, bounds=(-1, 1), points_per_dim=20):
 
     support_points = build_grid(dim, low=bounds[0], high=bounds[1], points_per_dim=points_per_dim)
 
-    return MC_uniform_sampling_distribution_approximation(data_points=data_points, support_points=support_points)
+    if dim > 2:
+        return blockwise_mcudsa(data_points=data_points, support_points=support_points)
+    else:
+        return MC_uniform_sampling_distribution_approximation(data_points=data_points, support_points=support_points)
+
+
+def default_ksfc(observations, actions, points_per_dim=20, bounds=(-1, 1), variance=0.01, eps=1e-16):
+    if observations.shape[0] == actions.shape[0] + 1:
+        observations = observations[0:-1, :]
+
+    data_points = jnp.concatenate([observations, actions], axis=-1)
+    dim = data_points.shape[-1]
+
+    support_points = build_grid(dim, low=bounds[0], high=bounds[1], points_per_dim=points_per_dim)
+
+    if dim > 2:
+        return blockwise_ksfc(
+            data_points=data_points, support_points=support_points, variances=jnp.ones([dim]) * variance, eps=eps
+        )
+    else:
+        return kiss_space_filling_cost(
+            data_points=data_points, support_points=support_points, variances=jnp.ones([dim]) * variance, eps=eps
+        )

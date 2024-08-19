@@ -30,8 +30,17 @@ def load_experiment_results(exp_id: str, results_path: pathlib.Path, model_class
                 observations = jnp.array(data["observations"])
                 actions = jnp.array(data["actions"])
             except:
-                observations = jnp.array(np.concatenate(data["observations"]))
-                actions = jnp.array(np.concatenate(data["actions"]))
+                try:
+                    observations = jnp.array(np.concatenate(data["observations"]))
+                    actions = jnp.array(np.concatenate(data["actions"]))
+                except:
+                    obs_dim = np.array(data["observations"][0]).shape[0]
+
+                    observations = np.stack(data["observations"][:-obs_dim], axis=0)
+                    observations = jnp.array(
+                        np.concatenate([observations, np.array(data["observations"][-obs_dim:])[None, ...]])
+                    )
+                    actions = jnp.array(np.stack(data["actions"]))
         else:
             observations = data["observations"]
             actions = data["actions"]

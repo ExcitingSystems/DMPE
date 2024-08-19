@@ -339,6 +339,6 @@ def excite_with_iGOATS(
         pbar.update(new_actions.shape[0])
     pbar.close()
 
-    observations.append(obs)
+    observations = observations + obs.tolist()
 
     return observations, actions

@@ -63,6 +63,7 @@ def audze_eglais(data_points: jnp.ndarray, eps: float = 0.001) -> jnp.ndarray:
     return 2 / (N * (N - 1)) * jnp.sum(1 / (distances**2 + eps))
 
 
+@jax.jit
 def MC_uniform_sampling_distribution_approximation(
     data_points: jnp.ndarray, support_points: jnp.ndarray
 ) -> jnp.ndarray:
@@ -75,9 +76,31 @@ def MC_uniform_sampling_distribution_approximation(
     M = support_points.shape[0]
     distance_matrix = jnp.linalg.norm(data_points[:, None, :] - support_points[None, ...], axis=-1)
     minimal_distances = jnp.min(distance_matrix, axis=0)
+
     return jnp.sum(minimal_distances) / M
 
 
+def blockwise_mcudsa(data_points: jnp.ndarray, support_points: jnp.ndarray) -> jnp.ndarray:
+    M = support_points.shape[0]
+
+    block_size = 1_000
+    value = jnp.zeros(1)
+
+    for m in range(0, M, block_size):
+
+        value = value + (
+            MC_uniform_sampling_distribution_approximation(
+                data_points=data_points,
+                support_points=support_points[m : min(m + block_size, M)],
+            )
+            * block_size
+            / M
+        )
+
+    return value
+
+
+@jax.jit
 def kiss_space_filling_cost(
     data_points: jnp.ndarray,
     support_points: jnp.ndarray,
@@ -94,3 +117,30 @@ def kiss_space_filling_cost(
     denominator = eps + jnp.mean(jnp.exp(exponent), axis=-1)
 
     return jnp.mean(1 / denominator, axis=0)
+
+
+def blockwise_ksfc(
+    data_points: jnp.ndarray,
+    support_points: jnp.ndarray,
+    variances: jnp.ndarray,
+    eps: float = 1e-16,
+) -> jnp.ndarray:
+    M = support_points.shape[0]
+
+    block_size = 1_000
+    value = jnp.zeros(1)
+
+    for m in range(0, M, block_size):
+
+        value = value + (
+            kiss_space_filling_cost(
+                data_points=data_points,
+                support_points=support_points[m : min(m + block_size, M)],
+                variances=variances,
+                eps=eps,
+            )
+            * block_size
+            / M
+        )
+
+    return value
