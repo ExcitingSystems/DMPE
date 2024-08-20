@@ -91,7 +91,7 @@ def blockwise_mcudsa(data_points: jnp.ndarray, support_points: jnp.ndarray) -> j
         value = value + (
             MC_uniform_sampling_distribution_approximation(
                 data_points=data_points,
-                support_points=support_points[m : min(m + block_size, M)],
+                support_points=support_points[m:end],
             )
             * (end - m)  # denormalizing mean inside loss computation
             / M

@@ -221,8 +221,8 @@ for exp_idx, seed in enumerate(seeds):
         plot_subsequences=False,
     )
 
-    # observations = [obs.tolist() for obs in observations]
-    # actions = [act.tolist() for act in actions]
+    observations = [obs.tolist() for obs in observations]
+    actions = [act.tolist() for act in actions]
 
     # save parameters
     file_name = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")

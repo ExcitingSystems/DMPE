@@ -154,7 +154,7 @@ class ContinuousGoatsProblem(ElementwiseProblem):
 
         self.prediction_horizon = prediction_horizon
 
-        if len(starting_observations) > 0 and len(starting_actions) > 0:
+        if starting_observations is not None and starting_actions is not None:
             starting_observations = featurize(np.stack(starting_observations))
             starting_actions = np.stack(starting_actions)
 

@@ -82,7 +82,7 @@ def default_mcudsa(observations, actions, bounds=(-1, 1), points_per_dim=20):
         return MC_uniform_sampling_distribution_approximation(data_points=data_points, support_points=support_points)
 
 
-def default_ksfc(observations, actions, points_per_dim=20, bounds=(-1, 1), variance=0.01, eps=1e-16):
+def default_ksfc(observations, actions, points_per_dim=20, bounds=(-1, 1), variance=0.01, eps=1e-6):
     if observations.shape[0] == actions.shape[0] + 1:
         observations = observations[0:-1, :]
 

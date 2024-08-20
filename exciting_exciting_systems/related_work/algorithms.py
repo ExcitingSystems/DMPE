@@ -286,8 +286,8 @@ def excite_with_iGOATS(
     if isinstance(env_state, np.ndarray):
         env_state = env_state.astype(np.float32)[0]
 
-    actions = []
-    observations = []
+    all_actions = []
+    all_observations = []
 
     opt_algorithm = MixedVariableGA(
         pop_size=population_size,
@@ -296,7 +296,15 @@ def excite_with_iGOATS(
     )
 
     pbar = tqdm(total=n_timesteps)
-    while len(observations) < n_timesteps:
+    while True:
+
+        if len(all_observations) > 0 and len(all_actions) > 0:
+            starting_observations = np.concatenate(all_observations)
+            starting_actions = np.concatenate(all_actions)
+
+        else:
+            starting_observations = None
+            starting_actions = None
 
         new_observations, new_actions, env_state = optimize_continuous_aprbs(
             opt_algorithm,
@@ -310,8 +318,8 @@ def excite_with_iGOATS(
             n_generations=n_generations,
             featurize=featurize,
             rng=rng,
-            starting_observations=observations,
-            starting_actions=actions,
+            starting_observations=starting_observations,
+            starting_actions=starting_actions,
             compress_data=compress_data,
             compression_target_N=compression_target_N,
             rho_act=rho_act,
@@ -323,13 +331,13 @@ def excite_with_iGOATS(
 
         obs = new_observations[-1]
 
-        observations = observations + new_observations[:-1, :].tolist()
-        actions = actions + new_actions.tolist()
+        all_observations.append(new_observations[:-1, :])
+        all_actions.append(new_actions)
 
         if plot_subsequences:
             fig, axs = plot_sequence(
-                observations=np.array(observations),
-                actions=np.array(actions[:-1]),
+                observations=np.array(all_observations),
+                actions=np.array(all_actions[:-1]),
                 tau=env.tau,
                 obs_labels=env.obs_description,
                 action_labels=env.action_description,
@@ -337,8 +345,10 @@ def excite_with_iGOATS(
             plt.show()
 
         pbar.update(new_actions.shape[0])
+
+        if np.concatenate(all_observations).shape[0] >= n_timesteps:
+            break
+
     pbar.close()
 
-    observations = observations + obs.tolist()
-
-    return observations, actions
+    return all_observations, all_actions
