@@ -390,13 +390,13 @@ class GoatsProblem(ElementwiseProblem):
         score = audze_eglais(feat_datapoints)
 
         # TODO: should the number of steps be included in the loss? This is to incite shorter trajectories..?
-        # N = observations.shape[0]
+        N = feat_datapoints.shape[0]
 
         penalty_terms = self.rho_obs * soft_penalty(
             a=observations, a_max=1, penalty_order=self.penalty_order
         ) + self.rho_act * soft_penalty(a=actions, a_max=1, penalty_order=self.penalty_order)
 
-        out["F"] = 1 * score + penalty_terms.item()
+        out["F"] = N * score + penalty_terms.item()
 
 
 def optimize_permutation_aprbs(
