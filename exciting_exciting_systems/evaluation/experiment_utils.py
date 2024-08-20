@@ -106,7 +106,7 @@ def evaluate_metrics(algorithm_names, n_results, results_parent_path, featurize)
     return results
 
 
-def extract_metrics_over_timesteps(experiment_ids, results_path, lengths, metrics=None):
+def extract_metrics_over_timesteps(experiment_ids, results_path, lengths, metrics=None, slotted=False):
     all_results = []
     for idx, identifier in enumerate(experiment_ids):
         print(f"Experiment {identifier} at index {idx}")
@@ -116,7 +116,20 @@ def extract_metrics_over_timesteps(experiment_ids, results_path, lengths, metric
             results_path=results_path,
             model_class=None,
         )
-        single_results = [evaluate_experiment_metrics(observations[:N], actions[:N], metrics=metrics) for N in lengths]
+        if slotted:
+            single_results = []
+
+            for i in range(len(lengths) - 1):
+                single_results.append(
+                    evaluate_experiment_metrics(
+                        observations[lengths[i] : lengths[i + 1]], actions[lengths[i] : lengths[i + 1]], metrics=metrics
+                    )
+                )
+
+        else:
+            single_results = [
+                evaluate_experiment_metrics(observations[:N], actions[:N], metrics=metrics) for N in lengths
+            ]
         metric_keys = single_results[0].keys()
 
         results_by_metric = {key: [] for key in metric_keys}
