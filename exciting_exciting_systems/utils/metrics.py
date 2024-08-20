@@ -87,13 +87,13 @@ def blockwise_mcudsa(data_points: jnp.ndarray, support_points: jnp.ndarray) -> j
     value = jnp.zeros(1)
 
     for m in range(0, M, block_size):
-
+        end = min(m + block_size, M)  # next block or until the end
         value = value + (
             MC_uniform_sampling_distribution_approximation(
                 data_points=data_points,
                 support_points=support_points[m : min(m + block_size, M)],
             )
-            * block_size
+            * (end - m)  # denormalizing mean inside loss computation
             / M
         )
 
@@ -131,15 +131,15 @@ def blockwise_ksfc(
     value = jnp.zeros(1)
 
     for m in range(0, M, block_size):
-
+        end = min(m + block_size, M)  # next block or until the end
         value = value + (
             kiss_space_filling_cost(
                 data_points=data_points,
-                support_points=support_points[m : min(m + block_size, M)],
+                support_points=support_points[m:end],
                 variances=variances,
                 eps=eps,
             )
-            * block_size
+            * (end - m)  # denormalizing mean inside loss computation
             / M
         )
 
