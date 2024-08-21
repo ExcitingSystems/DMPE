@@ -83,9 +83,12 @@ class DensityEstimate(eqx.Module):
             n_observations=jnp.array([0]),
         )
 
-        datapoints = (
-            jnp.concatenate([observations[0:-1, :], actions], axis=-1)[None] if use_actions else observations[None]
-        )
+        if observations.shape[0] == actions.shape[0] + 1:
+            datapoints = (
+                jnp.concatenate([observations[0:-1, :], actions], axis=-1)[None] if use_actions else observations[None]
+            )
+        else:
+            datapoints = jnp.concatenate([observations, actions], axis=-1)[None] if use_actions else observations[None]
 
         density_estimate = jax.vmap(
             update_density_estimate_multiple_observations,
