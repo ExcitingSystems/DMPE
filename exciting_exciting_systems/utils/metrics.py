@@ -51,7 +51,7 @@ def MNNS_without_penalty(data_points: jnp.ndarray, new_data_points: jnp.ndarray)
 
 
 def audze_eglais(data_points: jnp.ndarray, eps: float = 0.001) -> jnp.ndarray:
-    """From [Smits2024]. The maximin-desing penalizes points that
+    """From [Smits2024]. The maximin-design penalizes points that
     are too close in the point distribution.
 
     TODO: There has to be a more efficient way to do this.

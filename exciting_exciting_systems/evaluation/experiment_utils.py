@@ -153,6 +153,61 @@ def extract_metrics_over_timesteps(experiment_ids, results_path, lengths, metric
     return all_results_by_metric
 
 
+def extract_metrics_over_timesteps_via_interpolation(experiment_ids, results_path, target_lengths, metrics=None):
+    all_raw_results = []
+    all_raw_lengths = []
+
+    all_results = []
+    for idx, identifier in enumerate(experiment_ids):
+        print(f"Experiment {identifier} at index {idx} via interpolation")
+
+        _, observations, actions, _ = load_experiment_results(
+            exp_id=identifier,
+            results_path=results_path,
+            model_class=None,
+            to_array=False,
+        )
+
+        raw_lengths = [len(subsequence) for subsequence in observations]
+        raw_lengths = np.cumsum(raw_lengths[:-1])
+
+        observations = jnp.array(np.concatenate(observations))
+        actions = jnp.array(np.concatenate(actions))
+        raw_results = [evaluate_experiment_metrics(observations[:N], actions[:N], metrics=metrics) for N in raw_lengths]
+
+        metric_keys = raw_results[0].keys()
+
+        raw_results_by_metric = {key: [] for key in metric_keys}
+        for result in raw_results:
+            for metric_key in metric_keys:
+                raw_results_by_metric[metric_key].append(result[metric_key])
+
+        all_raw_results.append(raw_results_by_metric)
+        all_raw_lengths.append(raw_lengths)
+
+        interpolated_results_by_metric = {}
+        for metric_key in metric_keys:
+            interpolated_results_by_metric[metric_key] = jnp.interp(
+                x=target_lengths,
+                xp=raw_lengths,
+                fp=jnp.array(raw_results_by_metric[metric_key]),
+            )
+        all_results.append(interpolated_results_by_metric)
+
+    print("Reshape to results by metric...")
+    all_results_by_metric = {key: [] for key in metric_keys}
+    for result in all_results:
+        for metric_key in metric_keys:
+            all_results_by_metric[metric_key].append(result[metric_key])
+
+    for metric_key in all_results_by_metric.keys():
+        all_results_by_metric[metric_key] = jnp.stack(jnp.array(all_results_by_metric[metric_key]))
+
+    print("Done")
+
+    return {"interp": all_results_by_metric, "raw": all_raw_results, "raw_lengths": all_raw_lengths}
+
+
 def quick_eval(env, identifier, results_path, model_class=None):
     params, observations, actions, model = load_experiment_results(
         exp_id=identifier, results_path=results_path, model_class=model_class

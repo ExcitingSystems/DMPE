@@ -1,3 +1,4 @@
+from functools import partial
 from tqdm import tqdm
 
 import jax
