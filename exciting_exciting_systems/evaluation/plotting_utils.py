@@ -41,11 +41,11 @@ def plot_sequence(observations, actions, tau, obs_labels, action_labels, fig=Non
         axs[1].set_xlabel(obs_labels[-2])
 
     if actions is not None:
-        if observations.shape[-1] == 1 and actions.shape[-1] == 1:
-            if observations.shape[0] == actions.shape[0] + 1:
-                observations_ = observations[:-1]
-                t = t[:-1]
+        if observations.shape[0] == actions.shape[0] + 1:
+            observations_ = observations[:-1]
+            t = t[:-1]
 
+        if observations.shape[-1] == 1 and actions.shape[-1] == 1:
             axs[1].scatter(jnp.squeeze(actions[..., 0]), jnp.squeeze(observations_[..., 0]), s=1)
             axs[1].title.set_text("observation $\\times$ action plane")
             axs[1].set_ylabel(obs_labels[0])
