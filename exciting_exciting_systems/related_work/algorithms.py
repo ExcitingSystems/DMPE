@@ -336,8 +336,8 @@ def excite_with_iGOATS(
 
         if plot_subsequences:
             fig, axs = plot_sequence(
-                observations=np.array(all_observations),
-                actions=np.array(all_actions[:-1]),
+                observations=np.concatenate(all_observations),
+                actions=np.concatenate(all_actions),
                 tau=env.tau,
                 obs_labels=env.obs_description,
                 action_labels=env.action_description,
