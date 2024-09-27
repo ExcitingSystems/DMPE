@@ -16,10 +16,10 @@ def interact_and_observe(
     env: excenvs.CoreEnvironment,
     k: int,
     action: jax.Array,
-    state: excenvs.CoreEnvironment.State,
+    state: excenvs.ClassicCoreEnvironment.State,
     actions: jax.Array,
     observations: jax.Array,
-) -> Tuple[jax.Array, excenvs.CoreEnvironment.State, jax.Array, jax.Array]:
+) -> Tuple[jax.Array, excenvs.ClassicCoreEnvironment.State, jax.Array, jax.Array]:
     """
     Interact with the environment and store the action and the resulting observation.
 
@@ -39,7 +39,8 @@ def interact_and_observe(
     """
 
     # apply u_k and go to x_{k+1}
-    obs, _, _, _, state = env.step(state, action, env.env_properties)
+
+    obs, state = env.step(state, action, env.env_properties)
 
     actions = actions.at[k].set(action)  # store u_k
     observations = observations.at[k + 1].set(obs)  # store x_{k+1}
@@ -47,7 +48,7 @@ def interact_and_observe(
     return obs, state, actions, observations
 
 
-def default_dmpe_parameterization(env: excenvs.CoreEnvironment, seed: int = 0):
+def default_dmpe_parameterization(env: excenvs.CoreEnvironment, seed: int = 0, featurize=None, model_class=None):
     """Returns a default parameterization for the DMPE algorithm.
 
     This parameterization is intended as a starting point to apply to a given system.
@@ -94,7 +95,7 @@ def default_dmpe_parameterization(env: excenvs.CoreEnvironment, seed: int = 0):
         training_batch_size=128,
         n_train_steps=3,
         sequence_length=alg_params["n_prediction_steps"],
-        featurize=lambda x: x,
+        featurize=(lambda x: x) if featurize is None else featurize,
         model_lr=1e-4,
     )
     model_params = dict(obs_dim=env.physical_state_dim, action_dim=env.action_dim, width_size=128, depth=3, key=None)
@@ -102,7 +103,7 @@ def default_dmpe_parameterization(env: excenvs.CoreEnvironment, seed: int = 0):
     exp_params = dict(
         seed=seed,
         n_time_steps=15_000,
-        model_class=NeuralEulerODE,
+        model_class=NeuralEulerODE if model_class is None else model_class,
         env_params=None,
         alg_params=alg_params,
         model_trainer_params=model_trainer_params,

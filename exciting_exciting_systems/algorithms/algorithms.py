@@ -22,7 +22,7 @@ def excite_and_fit(
     env: excenvs.CoreEnvironment,
     model: eqx.Module,
     obs: jax.Array,
-    state: excenvs.CoreEnvironment.State,
+    state: excenvs.ClassicCoreEnvironment.State,
     proposed_actions: jax.Array,
     exciter: Exciter,
     model_trainer: ModelTrainer,
@@ -42,7 +42,7 @@ def excite_and_fit(
         env (excenvs.CoreEnvironment): The environment object representing the system.
         model (eqx.Module): The model used for prediction.
         obs (jax.Array): The initial observation of the system.
-        state (excenvs.CoreEnvironment.State): The initial state of the system.
+        state (excenvs.ClassicCoreEnvironment.State): The initial state of the system.
         proposed_actions (jax.Array): The proposed actions for exploration.
         exciter (Exciter): The exciter object responsible for choosing actions.
         model_trainer (ModelTrainer): The model trainer object responsible for training the model.
@@ -211,7 +211,7 @@ def excite_with_dmpe(
     return observations, actions, model, density_estimate, losses, proposed_actions
 
 
-def default_dmpe(env):
+def default_dmpe(env, seed=0, featurize=None, model_class=None, plot_every=None):
     """Runs DMPE with default parameterization. The parameter choices might
     not be optimal for a given system.
 
@@ -226,4 +226,8 @@ def default_dmpe(env):
         the history of actions, the trained model, and the density estimate.
     """
 
-    return excite_with_dmpe(env, *default_dmpe_parameterization(env))
+    return excite_with_dmpe(
+        env,
+        *default_dmpe_parameterization(env, seed, featurize, model_class),
+        plot_every,
+    )
