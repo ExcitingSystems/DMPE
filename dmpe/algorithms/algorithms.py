@@ -8,58 +8,59 @@ import jax.numpy as jnp
 import equinox as eqx
 import optax
 
-from exciting_exciting_systems.algorithms.algorithm_utils import interact_and_observe
-from exciting_exciting_systems.evaluation.plotting_utils import plot_sequence_and_prediction
-from exciting_exciting_systems.excitation import loss_function, Exciter
-from exciting_exciting_systems.models.model_training import ModelTrainer
-from exciting_exciting_systems.utils.density_estimation import DensityEstimate, build_grid
-from exciting_exciting_systems.utils.metrics import JSDLoss
+import exciting_environments as excenvs
+from dmpe.algorithms.algorithm_utils import interact_and_observe, default_dmpe_parameterization
+from dmpe.evaluation.plotting_utils import plot_sequence_and_prediction
+from dmpe.excitation import loss_function, Exciter
+from dmpe.models.model_training import ModelTrainer
+from dmpe.utils.density_estimation import DensityEstimate, build_grid
+from dmpe.utils.metrics import JSDLoss
 
 
 def excite_and_fit(
-    n_timesteps: int,
-    env,
+    n_time_steps: int,
+    env: excenvs.CoreEnvironment,
     model: eqx.Module,
-    obs: jnp.ndarray,
-    state,
-    proposed_actions: jnp.ndarray,
+    obs: jax.Array,
+    state: excenvs.ClassicCoreEnvironment.State,
+    proposed_actions: jax.Array,
     exciter: Exciter,
     model_trainer: ModelTrainer,
     density_estimate: DensityEstimate,
-    observations: jnp.ndarray,
-    actions: jnp.ndarray,
+    observations: jax.Array,
+    actions: jax.Array,
     opt_state_model: optax.OptState,
     loader_key: jax.random.PRNGKey,
     expl_key: jax.random.PRNGKey,
     plot_every: int,
-) -> Tuple[jnp.ndarray, jnp.ndarray, eqx.Module, DensityEstimate]:
+) -> Tuple[jax.Array, jax.Array, eqx.Module, DensityEstimate]:
     """
-    Main algorithm to throw at a given (unknown) system and generate informative data from that system.
+    Main algorithm to apply to a given (unknown) system and generate informative data from that system.
 
     Args:
-        n_timesteps (int): The number of timesteps to run the algorithm for.
-        env: The environment object representing the system.
+        n_time_steps (int): The number of time steps to run the algorithm for.
+        env (excenvs.CoreEnvironment): The environment object representing the system.
         model (eqx.Module): The model used for prediction.
-        obs (jnp.ndarray): The initial observation of the system.
-        state: The initial state of the system.
-        proposed_actions (jnp.ndarray): The proposed actions for exploration.
+        obs (jax.Array): The initial observation of the system.
+        state (excenvs.ClassicCoreEnvironment.State): The initial state of the system.
+        proposed_actions (jax.Array): The proposed actions for exploration.
         exciter (Exciter): The exciter object responsible for choosing actions.
         model_trainer (ModelTrainer): The model trainer object responsible for training the model.
         density_estimate (DensityEstimate): The density estimate used for exploration.
-        observations (jnp.ndarray): The history of observations.
-        actions (jnp.ndarray): The history of actions.
+        observations (jax.Array): The history of observations.
+        actions (jax.Array): The history of actions.
         opt_state_model (optax.OptState): The optimizer state for the model.
         loader_key (jax.random.PRNGKey): The key used for loading data.
         plot_every (int): The frequency at which to plot the sequence and prediction.
 
     Returns:
-        Tuple[jnp.ndarray, jnp.ndarray, eqx.Module, DensityEstimate]: A tuple containing the updated history of observations,
-        the updated history of actions, the updated model, and the updated density estimate.
+        Tuple[jax.Array, jax.Array, eqx.Module, DensityEstimate]: A tuple containing the history of observations,
+        the history of actions, the updated model, and the updated density estimate.
     """
     prediction_losses = []
     data_losses = []
 
-    for k in tqdm(range(n_timesteps)):
+    for k in tqdm(range(n_time_steps)):
         action, proposed_actions, density_estimate, prediction_loss, expl_key = exciter.choose_action(
             obs=obs,
             model=model,
@@ -113,12 +114,12 @@ def excite_and_fit(
 
 
 def excite_with_dmpe(
-    env,
+    env: excenvs.CoreEnvironment,
     exp_params: dict,
-    proposed_actions: jnp.ndarray,
+    proposed_actions: jax.Array,
     loader_key: jax.random.PRNGKey,
     expl_key: jax.random.PRNGKey,
-    plot_every=None,
+    plot_every: bool | None = None,
 ):
     """
     Excite the system using the Differentiable Model Predictive Excitation (DMPE) algorithm.
@@ -129,6 +130,8 @@ def excite_with_dmpe(
         proposed_actions: The proposed actions for exploration.
         model_key: The key for initializing the model.
         loader_key: The key used for loading data.
+        expl_key: The key used for random action generation.
+        plot_every: The frequency at which to plot the current data sequences.
 
     Returns:
         Tuple[jnp.ndarray, jnp.ndarray, eqx.Module, DensityEstimate]: A tuple containing the history of observations,
@@ -144,9 +147,9 @@ def excite_with_dmpe(
     obs = obs[0]
 
     # setup memory variables
-    observations = jnp.zeros((exp_params["n_timesteps"], dim_obs_space))
+    observations = jnp.zeros((exp_params["n_time_steps"], dim_obs_space))
     observations = observations.at[0].set(obs)
-    actions = jnp.zeros((exp_params["n_timesteps"] - 1, dim_action_space))
+    actions = jnp.zeros((exp_params["n_time_steps"] - 1, dim_action_space))
 
     exciter = Exciter(
         loss_function=loss_function,
@@ -188,7 +191,7 @@ def excite_with_dmpe(
     )
 
     observations, actions, model, density_estimate, losses, proposed_actions = excite_and_fit(
-        n_timesteps=exp_params["n_timesteps"],
+        n_time_steps=exp_params["n_time_steps"],
         env=env,
         model=model,
         obs=obs,
@@ -202,7 +205,29 @@ def excite_with_dmpe(
         opt_state_model=opt_state_model,
         loader_key=loader_key,
         expl_key=expl_key,
-        plot_every=plot_every if plot_every is not None else exp_params["n_timesteps"] + 1,
+        plot_every=plot_every if plot_every is not None else exp_params["n_time_steps"] + 1,
     )
 
     return observations, actions, model, density_estimate, losses, proposed_actions
+
+
+def default_dmpe(env, seed=0, featurize=None, model_class=None, plot_every=None):
+    """Runs DMPE with default parameterization. The parameter choices might
+    not be optimal for a given system.
+
+    In future work, automatic tuning for the parameters will be added such that no
+    manual tuning is required.
+
+    Args:
+        env: The environment object representing the system.
+
+    Returns:
+        Tuple[jnp.ndarray, jnp.ndarray, eqx.Module, DensityEstimate]: A tuple containing the history of observations,
+        the history of actions, the trained model, and the density estimate.
+    """
+
+    return excite_with_dmpe(
+        env,
+        *default_dmpe_parameterization(env, seed, featurize, model_class),
+        plot_every,
+    )

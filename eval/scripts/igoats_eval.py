@@ -15,7 +15,7 @@ import diffrax
 
 import exciting_environments as excenvs
 
-from exciting_exciting_systems.related_work.algorithms import excite_with_iGOATS
+from dmpe.related_work.algorithms import excite_with_iGOATS
 
 
 def safe_json_dump(obj, fp):
@@ -28,7 +28,7 @@ parser.add_argument(
     "sys_name",
     metavar="sys_name",
     type=str,
-    help="The name of the environment. Options are ['pendulum', 'fluid_tank'].",
+    help="The name of the environment. Options are ['pendulum', 'fluid_tank', 'cart_pole'].",
 )
 
 args = parser.parse_args()
@@ -193,7 +193,7 @@ for exp_idx, seed in enumerate(seeds):
     print("Running experiment", exp_idx, f"(seed: {seed}) on '{sys_name}'")
 
     exp_params = dict(
-        n_timesteps=15000,
+        n_time_steps=15000,
         seed=int(seed),
         alg_params=alg_params,
         env_params=env_params,
@@ -201,7 +201,7 @@ for exp_idx, seed in enumerate(seeds):
 
     # run excitation algorithm
     observations, actions = excite_with_iGOATS(
-        n_timesteps=exp_params["n_timesteps"],
+        n_time_steps=exp_params["n_time_steps"],
         env=env,
         prediction_horizon=alg_params["prediction_horizon"],
         application_horizon=alg_params["application_horizon"],

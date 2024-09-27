@@ -4,7 +4,7 @@ import numpy as np
 
 import jax.numpy as jnp
 
-from exciting_exciting_systems.models.model_utils import simulate_ahead
+from dmpe.models.model_utils import simulate_ahead
 
 
 def plot_sequence(observations, actions, tau, obs_labels, action_labels, fig=None, axs=None, dotted=False):

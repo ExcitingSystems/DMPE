@@ -18,11 +18,11 @@ from haiku import PRNGSequence
 
 import exciting_environments as excenvs
 
-from exciting_exciting_systems.utils.signals import aprbs
-from exciting_exciting_systems.utils.density_estimation import select_bandwidth
-from exciting_exciting_systems.algorithms import excite_with_dmpe
-from exciting_exciting_systems.models import NeuralEulerODEPendulum, NeuralEulerODE, NeuralEulerODECartpole
-from exciting_exciting_systems.models.model_utils import save_model
+from dmpe.utils.signals import aprbs
+from dmpe.utils.density_estimation import select_bandwidth
+from dmpe.algorithms import excite_with_dmpe
+from dmpe.models import NeuralEulerODEPendulum, NeuralEulerODE, NeuralEulerODECartpole
+from dmpe.models.model_utils import save_model
 
 
 def safe_json_dump(obj, fp):
@@ -35,7 +35,7 @@ parser.add_argument(
     "sys_name",
     metavar="sys_name",
     type=str,
-    help="The name of the environment. Options are ['pendulum', 'fluid_tank'].",
+    help="The name of the environment. Options are ['pendulum', 'fluid_tank', 'cart_pole'].",
 )
 
 args = parser.parse_args()
@@ -95,7 +95,7 @@ if sys_name == "pendulum":
 
     exp_params = dict(
         seed=None,
-        n_timesteps=15_000,
+        n_time_steps=15_000,
         model_class=NeuralEulerODEPendulum,
         env_params=env_params,
         alg_params=alg_params,
@@ -167,7 +167,7 @@ elif sys_name == "fluid_tank":
 
     exp_params = dict(
         seed=None,
-        n_timesteps=15_000,
+        n_time_steps=15_000,
         model_class=NeuralEulerODE,
         env_params=env_params,
         alg_params=alg_params,
@@ -247,7 +247,7 @@ elif sys_name == "cart_pole":
 
     exp_params = dict(
         seed=None,
-        n_timesteps=15_000,
+        n_time_steps=15_000,
         model_class=NeuralEulerODECartpole,
         env_params=env_params,
         alg_params=alg_params,

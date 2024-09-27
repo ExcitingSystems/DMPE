@@ -17,7 +17,7 @@ jax.config.update("jax_platform_name", "cpu")
 import diffrax
 
 import exciting_environments as excenvs
-from exciting_exciting_systems.related_work.algorithms import excite_with_sGOATS
+from dmpe.related_work.algorithms import excite_with_sGOATS
 
 
 def safe_json_dump(obj, fp):
@@ -30,7 +30,7 @@ parser.add_argument(
     "sys_name",
     metavar="sys_name",
     type=str,
-    help="The name of the environment. Options are ['pendulum', 'fluid_tank'].",
+    help="The name of the environment. Options are ['pendulum', 'fluid_tank', 'cart_pole'].",
 )
 
 args = parser.parse_args()

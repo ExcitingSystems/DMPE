@@ -7,9 +7,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import jax.numpy as jnp
 
-from exciting_exciting_systems.models.model_utils import load_model
-from exciting_exciting_systems.evaluation.plotting_utils import plot_sequence, plot_model_performance
-from exciting_exciting_systems.evaluation.metrics_utils import default_jsd, default_ae, default_mcudsa, default_ksfc
+from dmpe.models.model_utils import load_model
+from dmpe.evaluation.plotting_utils import plot_sequence, plot_model_performance
+from dmpe.evaluation.metrics_utils import default_jsd, default_ae, default_mcudsa, default_ksfc
 
 
 def get_experiment_ids(results_path: pathlib.Path):

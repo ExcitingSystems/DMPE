@@ -8,13 +8,13 @@ import equinox as eqx
 
 from exciting_environments.core_env import CoreEnvironment
 
-from exciting_exciting_systems.models.model_utils import simulate_ahead
-from exciting_exciting_systems.utils.density_estimation import (
+from dmpe.models.model_utils import simulate_ahead
+from dmpe.utils.density_estimation import (
     DensityEstimate,
     update_density_estimate_single_observation,
     update_density_estimate_multiple_observations,
 )
-from exciting_exciting_systems.utils.metrics import JSDLoss
+from dmpe.utils.metrics import JSDLoss
 
 
 def soft_penalty(a, a_max=1, penalty_order=2):

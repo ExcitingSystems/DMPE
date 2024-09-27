@@ -3,12 +3,12 @@ requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "exciting_exciting_systems"
+name = "dmpe"
 version = "0.0.1"
 authors = [
   { name="Hendrik Vater", email="vater@lea.uni-paderborn.de" },
 ]
-description = "Excitation of exciting systems"
+description = "Excitation of exciting systems through differentiable predictive excitation"
 readme = "README.md"
 requires-python = ">=3.8"
 classifiers = [
@@ -17,12 +17,12 @@ classifiers = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/hvater/exciting-exciting-systems"
-Issues = "https://github.com/hvater/exciting-exciting-systems/issues"
+Homepage = "https://github.com/hvater/DMPE"
+Issues = "https://https://github.com/hvater/DMPE/issues"
 
 [tool.setuptools]
 py-modules = [
-    "exciting_exciting_systems",
+    "dmpe",
     "evaluation",
     "optimization",
     "utils",

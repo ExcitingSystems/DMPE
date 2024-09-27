@@ -8,9 +8,7 @@ def KLDLoss(p: jnp.ndarray, q: jnp.ndarray):
 
     The last dim of the input needs to be of length 1. The summation occurs along the second to
     last dimension. All dimensions before that are kept as they are. Overall the shape of the
-    two inputs must be indentical.
-
-    TODO: add an eps=1e-32 to remove zero issues?
+    two inputs must be identical.
     """
     assert p.shape == q.shape, "The two inputs need to be of the same shape."
     assert p.shape[-1] == q.shape[-1] == 1, "Last dim needs to be of length 1 for PDFs"
@@ -81,8 +79,10 @@ def MC_uniform_sampling_distribution_approximation(
 
 
 def blockwise_mcudsa(data_points: jnp.ndarray, support_points: jnp.ndarray) -> jnp.ndarray:
-    M = support_points.shape[0]
+    """Blockwise implementation of MCUDSA. For long trajectories, the full computation is infeasible and
+    needs to be split up into smaller blocks."""
 
+    M = support_points.shape[0]
     block_size = 1_000
     value = jnp.zeros(1)
 
@@ -125,8 +125,10 @@ def blockwise_ksfc(
     variances: jnp.ndarray,
     eps: float = 1e-16,
 ) -> jnp.ndarray:
-    M = support_points.shape[0]
+    """Blockwise implementation of MCUDSA. For long trajectories, the full computation is infeasible and
+    needs to be split up into smaller blocks."""
 
+    M = support_points.shape[0]
     block_size = 1_000
     value = jnp.zeros(1)
 

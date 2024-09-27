@@ -5,7 +5,7 @@ import jax.numpy as jnp
 import equinox as eqx
 import optax
 
-from exciting_exciting_systems.models.model_utils import simulate_ahead
+from dmpe.models.model_utils import simulate_ahead
 
 
 @eqx.filter_grad
