@@ -212,7 +212,7 @@ def excite_with_dmpe(
 
 
 def default_dmpe(env):
-    """Runs the dmpe with default parameterization. The parameter choices might
+    """Runs DMPE with default parameterization. The parameter choices might
     not be optimal for a given system.
 
     In future work, automatic tuning for the parameters will be added such that no
