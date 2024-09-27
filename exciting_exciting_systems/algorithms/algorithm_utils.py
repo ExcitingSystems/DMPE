@@ -47,7 +47,7 @@ def interact_and_observe(
     return obs, state, actions, observations
 
 
-def default_dmpe_parameterization(env: excenvs.CoreEnvironment, seed=0):
+def default_dmpe_parameterization(env: excenvs.CoreEnvironment, seed: int = 0):
     """Returns a default parameterization for the DMPE algorithm.
 
     This parameterization is intended as a starting point to apply to a given system.
@@ -57,6 +57,15 @@ def default_dmpe_parameterization(env: excenvs.CoreEnvironment, seed=0):
 
     In future work, automatic tuning for the parameters will be added such that no
     manual tuning is required.
+
+    Args:
+        env (excenvs.CoreEnvironment): The environment object representing the system.
+        seed (int): The seed for the random number generator.
+
+    Returns:
+        Tuple[Dict, jax.Array, jax.random.PRNGKey, jax.random.PRNGKey]: A tuple containing the experiment parameters,
+        the initial proposed actions, the key for loading data in model learning, and the key for random action generation.
+
     """
     alg_params = dict(
         bandwidth=None,
