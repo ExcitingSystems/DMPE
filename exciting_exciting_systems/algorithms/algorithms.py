@@ -9,7 +9,7 @@ import equinox as eqx
 import optax
 
 import exciting_environments as excenvs
-from exciting_exciting_systems.algorithms.algorithm_utils import interact_and_observe
+from exciting_exciting_systems.algorithms.algorithm_utils import interact_and_observe, default_dmpe_parameterization
 from exciting_exciting_systems.evaluation.plotting_utils import plot_sequence_and_prediction
 from exciting_exciting_systems.excitation import loss_function, Exciter
 from exciting_exciting_systems.models.model_training import ModelTrainer
@@ -116,7 +116,7 @@ def excite_and_fit(
 def excite_with_dmpe(
     env: excenvs.CoreEnvironment,
     exp_params: dict,
-    proposed_actions: jnp.Array,
+    proposed_actions: jax.Array,
     loader_key: jax.random.PRNGKey,
     expl_key: jax.random.PRNGKey,
     plot_every: bool | None = None,
@@ -209,3 +209,21 @@ def excite_with_dmpe(
     )
 
     return observations, actions, model, density_estimate, losses, proposed_actions
+
+
+def default_dmpe(env):
+    """Runs the dmpe with default parameterization. The parameter choices might
+    not be optimal for a given system.
+
+    In future work, automatic tuning for the parameters will be added such that no
+    manual tuning is required.
+
+    Args:
+        env: The environment object representing the system.
+
+    Returns:
+        Tuple[jnp.ndarray, jnp.ndarray, eqx.Module, DensityEstimate]: A tuple containing the history of observations,
+        the history of actions, the trained model, and the density estimate.
+    """
+
+    return excite_with_dmpe(env, *default_dmpe_parameterization(env))
