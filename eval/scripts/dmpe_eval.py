@@ -35,7 +35,7 @@ parser.add_argument(
     "sys_name",
     metavar="sys_name",
     type=str,
-    help="The name of the environment. Options are ['pendulum', 'fluid_tank'].",
+    help="The name of the environment. Options are ['pendulum', 'fluid_tank', 'cart_pole'].",
 )
 
 args = parser.parse_args()
