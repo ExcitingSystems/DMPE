@@ -20,7 +20,7 @@ The repository consists of two main folders. `eval/` contains the code used in t
 
 ## Basic Usage:
 
-To apply the algorithms onto a system, the systems structure must comply to a specific API (Naturally, this can be adapted in the future. Please open an issue or write an e-mail to vater@lea.uni-paderborn.de, if you are interested in discussing this). Example environments following this API can be found in the `exciting_environments` repository.
+To apply the algorithms onto a system, the systems structure must comply to a specific API (Naturally, this can be adapted in the future. Please open an issue or write an e-mail to vater@lea.uni-paderborn.de, if you are interested in discussing this). Example environments following this API can be found in the [`exciting_environments`](https://github.com/ExcitingSystems/exciting-environments) repository.
 
 Using the algorithm for such an environment is as simple as:
 
