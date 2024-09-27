@@ -29,7 +29,7 @@ import jax.numpy as jnp
 import diffrax
 
 import exciting_environments as excenvs
-from dmpe.models.model_utils import ModelEnvWrapperPendulum
+from dmpe.models.models import NeuralEulerODEPendulum
 from dmpe.algorithms import excite_with_dmpe, default_dmpe_parameterization
 
 
@@ -64,6 +64,11 @@ observations, actions, model, density_estimate, losses, proposed_actions = excit
 
 # visualize
 from dmpe.evaluation.plotting_utils import plot_sequence
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+mpl.rcParams['text.usetex'] = True
+mpl.rcParams.update({'font.size': 10})
+mpl.rcParams['text.latex.preamble']=r"\usepackage{bm}\usepackage{amsmath}"
 
 fig = plot_sequence(observations, actions, env.tau, env.obs_description, env.action_description)
 plt.show()
