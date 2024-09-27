@@ -1,6 +1,7 @@
 from typing import Tuple
 
 import jax
+import jax.numpy as jnp
 import equinox as eqx
 from haiku import PRNGSequence
 
@@ -106,8 +107,11 @@ def default_dmpe_parameterization(env: excenvs.CoreEnvironment, seed=0):
     exp_params["model_params"]["key"] = model_key
 
     # initial guess
-    proposed_actions = [
-        aprbs(alg_params["n_prediction_steps"], env.batch_size, 1, 10, next(data_rng))[0] for _ in range(env.action_dim)
-    ]
+    proposed_actions = jnp.hstack(
+        [
+            aprbs(alg_params["n_prediction_steps"], env.batch_size, 1, 10, next(data_rng))[0]
+            for _ in range(env.action_dim)
+        ]
+    )
 
     return exp_params, proposed_actions, loader_key, expl_key
