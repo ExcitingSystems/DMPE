@@ -95,7 +95,7 @@ if sys_name == "pendulum":
 
     exp_params = dict(
         seed=None,
-        n_timesteps=15_000,
+        n_time_steps=15_000,
         model_class=NeuralEulerODEPendulum,
         env_params=env_params,
         alg_params=alg_params,
@@ -167,7 +167,7 @@ elif sys_name == "fluid_tank":
 
     exp_params = dict(
         seed=None,
-        n_timesteps=15_000,
+        n_time_steps=15_000,
         model_class=NeuralEulerODE,
         env_params=env_params,
         alg_params=alg_params,
@@ -247,7 +247,7 @@ elif sys_name == "cart_pole":
 
     exp_params = dict(
         seed=None,
-        n_timesteps=15_000,
+        n_time_steps=15_000,
         model_class=NeuralEulerODECartpole,
         env_params=env_params,
         alg_params=alg_params,

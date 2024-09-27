@@ -1,10 +1,22 @@
+from typing import Tuple
+
+import jax
 import equinox as eqx
+
+import exciting_environments as excenvs
 
 
 @eqx.filter_jit
-def interact_and_observe(env, k, action, state, actions, observations):
+def interact_and_observe(
+    env: excenvs.CoreEnvironment,
+    k: int,
+    action: jax.Array,
+    state: excenvs.CoreEnvironment.State,
+    actions: jax.Array,
+    observations: jax.Array,
+) -> Tuple[jax.Array, excenvs.CoreEnvironment.State, jax.Array, jax.Array]:
     """
-    Interact with the environment and store the resulting effects.
+    Interact with the environment and store the action and the resulting observation.
 
     Args:
         env: The environment object.
@@ -21,7 +33,7 @@ def interact_and_observe(env, k, action, state, actions, observations):
         observations: The updated list of observations observed so far.
     """
 
-    # apply u_k = \hat{u}_{k+1} and go to x_{k+1}
+    # apply u_k and go to x_{k+1}
     obs, _, _, _, state = env.step(state, action, env.env_properties)
 
     actions = actions.at[k].set(action)  # store u_k
