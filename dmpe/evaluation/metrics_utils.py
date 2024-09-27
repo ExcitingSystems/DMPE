@@ -4,12 +4,12 @@ from tqdm import tqdm
 import jax
 import jax.numpy as jnp
 
-from exciting_exciting_systems.utils.density_estimation import (
+from dmpe.utils.density_estimation import (
     DensityEstimate,
     build_grid,
     update_density_estimate_multiple_observations,
 )
-from exciting_exciting_systems.utils.metrics import (
+from dmpe.utils.metrics import (
     JSDLoss,
     audze_eglais,
     MC_uniform_sampling_distribution_approximation,

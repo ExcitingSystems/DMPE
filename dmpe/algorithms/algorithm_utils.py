@@ -6,9 +6,9 @@ import equinox as eqx
 from haiku import PRNGSequence
 
 import exciting_environments as excenvs
-from exciting_exciting_systems.utils.signals import aprbs
-from exciting_exciting_systems.utils.density_estimation import select_bandwidth
-from exciting_exciting_systems.models import NeuralEulerODE
+from dmpe.utils.signals import aprbs
+from dmpe.utils.density_estimation import select_bandwidth
+from dmpe.models import NeuralEulerODE
 
 
 @eqx.filter_jit

@@ -7,15 +7,15 @@ import matplotlib.pyplot as plt
 import numpy as np
 from pymoo.core.mixed import MixedVariableGA, MixedVariableDuplicateElimination
 
-from exciting_exciting_systems.related_work.excitation_utils import (
+from dmpe.related_work.excitation_utils import (
     optimize_continuous_aprbs,
     optimize_permutation_aprbs,
     latin_hypercube_sampling,
 )
 
 import exciting_environments as exenvs
-from exciting_exciting_systems.evaluation.plotting_utils import plot_sequence
-from exciting_exciting_systems.related_work.mixed_GA import MixedVariableMating, MixedVariableSampling
+from dmpe.evaluation.plotting_utils import plot_sequence
+from dmpe.related_work.mixed_GA import MixedVariableMating, MixedVariableSampling
 
 
 def excite_with_GOATS(

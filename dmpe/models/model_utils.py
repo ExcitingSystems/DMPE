@@ -6,7 +6,7 @@ from jax.tree_util import tree_flatten
 import equinox as eqx
 
 import exciting_environments as excenvs
-from exciting_exciting_systems.models import NeuralEulerODE
+from dmpe.models import NeuralEulerODE
 
 
 @eqx.filter_jit

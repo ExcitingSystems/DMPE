@@ -7,13 +7,13 @@ from scipy.stats.qmc import LatinHypercube
 from pymoo.core.problem import ElementwiseProblem
 from pymoo.optimize import minimize
 
-import exciting_exciting_systems
-from exciting_exciting_systems.related_work.np_reimpl.env_utils import simulate_ahead_with_env
-from exciting_exciting_systems.related_work.np_reimpl.metrics import (
+import dmpe
+from dmpe.related_work.np_reimpl.env_utils import simulate_ahead_with_env
+from dmpe.related_work.np_reimpl.metrics import (
     MNNS_without_penalty,
     audze_eglais,
 )
-from exciting_exciting_systems.related_work.mixed_GA import Permutation, Integer, Real
+from dmpe.related_work.mixed_GA import Permutation, Integer, Real
 
 import exciting_environments as excenvs
 
@@ -359,7 +359,7 @@ class GoatsProblem(ElementwiseProblem):
         actions = generate_aprbs(amplitudes=applied_amplitudes, durations=durations)[:, None]
 
         if isinstance(self.env, excenvs.core_env.CoreEnvironment):
-            observations, _ = exciting_exciting_systems.models.model_utils.simulate_ahead_with_env(
+            observations, _ = dmpe.models.model_utils.simulate_ahead_with_env(
                 self.env,
                 self.obs,
                 self.env_state,

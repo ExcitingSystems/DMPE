@@ -9,12 +9,12 @@ import equinox as eqx
 import optax
 
 import exciting_environments as excenvs
-from exciting_exciting_systems.algorithms.algorithm_utils import interact_and_observe, default_dmpe_parameterization
-from exciting_exciting_systems.evaluation.plotting_utils import plot_sequence_and_prediction
-from exciting_exciting_systems.excitation import loss_function, Exciter
-from exciting_exciting_systems.models.model_training import ModelTrainer
-from exciting_exciting_systems.utils.density_estimation import DensityEstimate, build_grid
-from exciting_exciting_systems.utils.metrics import JSDLoss
+from dmpe.algorithms.algorithm_utils import interact_and_observe, default_dmpe_parameterization
+from dmpe.evaluation.plotting_utils import plot_sequence_and_prediction
+from dmpe.excitation import loss_function, Exciter
+from dmpe.models.model_training import ModelTrainer
+from dmpe.utils.density_estimation import DensityEstimate, build_grid
+from dmpe.utils.metrics import JSDLoss
 
 
 def excite_and_fit(
