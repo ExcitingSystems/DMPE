@@ -15,7 +15,7 @@ import diffrax
 
 import exciting_environments as excenvs
 
-from exciting_exciting_systems.related_work.algorithms import excite_with_iGOATS
+from dmpe.related_work.algorithms import excite_with_iGOATS
 
 
 def safe_json_dump(obj, fp):

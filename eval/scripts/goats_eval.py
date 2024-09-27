@@ -6,8 +6,8 @@ import jax
 
 jax.config.update("jax_platform_name", "cpu")
 
-from exciting_exciting_systems.related_work.np_reimpl.pendulum import Pendulum
-from exciting_exciting_systems.related_work.algorithms import excite_with_GOATS
+from dmpe.related_work.np_reimpl.pendulum import Pendulum
+from dmpe.related_work.algorithms import excite_with_GOATS
 
 
 def identity(x):

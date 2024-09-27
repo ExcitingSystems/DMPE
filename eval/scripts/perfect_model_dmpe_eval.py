@@ -18,10 +18,10 @@ from haiku import PRNGSequence
 
 import exciting_environments as excenvs
 
-from exciting_exciting_systems.utils.signals import aprbs
-from exciting_exciting_systems.utils.density_estimation import select_bandwidth
-from exciting_exciting_systems.algorithms import excite_with_dmpe
-from exciting_exciting_systems.models.model_utils import (
+from dmpe.utils.signals import aprbs
+from dmpe.utils.density_estimation import select_bandwidth
+from dmpe.algorithms import excite_with_dmpe
+from dmpe.models.model_utils import (
     ModelEnvWrapperFluidTank,
     ModelEnvWrapperPendulum,
     ModelEnvWrapperCartPole,

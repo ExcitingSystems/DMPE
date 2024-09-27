@@ -3,7 +3,7 @@ requires = ["setuptools"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "exciting_exciting_systems"
+name = "dmpe"
 version = "0.0.1"
 authors = [
   { name="Hendrik Vater", email="vater@lea.uni-paderborn.de" },
@@ -22,7 +22,7 @@ Issues = "https://github.com/hvater/exciting-exciting-systems/issues"
 
 [tool.setuptools]
 py-modules = [
-    "exciting_exciting_systems",
+    "dmpe",
     "evaluation",
     "optimization",
     "utils",
