@@ -42,6 +42,8 @@ def interact_and_observe(
 
     obs, state = env.step(state, action, env.env_properties)
 
+    obs = obs[0:2]  # only store the first two dimensions of the observation
+
     actions = actions.at[k].set(action)  # store u_k
     observations = observations.at[k + 1].set(obs)  # store x_{k+1}
 
@@ -71,14 +73,14 @@ def default_dmpe_parameterization(env: excenvs.CoreEnvironment, seed: int = 0, f
     alg_params = dict(
         bandwidth=None,
         n_prediction_steps=50,
-        points_per_dim=50,
+        points_per_dim=20,
         action_lr=1e-1,
         n_opt_steps=10,
         rho_obs=1,
         rho_act=1,
         penalty_order=2,
-        clip_action=True,
-        n_starts=5,
+        clip_action=False,
+        n_starts=20,
         reuse_proposed_actions=True,
     )
     alg_params["bandwidth"] = float(
@@ -93,12 +95,12 @@ def default_dmpe_parameterization(env: excenvs.CoreEnvironment, seed: int = 0, f
     model_trainer_params = dict(
         start_learning=alg_params["n_prediction_steps"],
         training_batch_size=128,
-        n_train_steps=3,
+        n_train_steps=1,
         sequence_length=alg_params["n_prediction_steps"],
         featurize=(lambda x: x) if featurize is None else featurize,
         model_lr=1e-4,
     )
-    model_params = dict(obs_dim=env.physical_state_dim, action_dim=env.action_dim, width_size=128, depth=3, key=None)
+    model_params = dict(obs_dim=2, action_dim=env.action_dim, width_size=128, depth=3, key=None)
 
     exp_params = dict(
         seed=seed,

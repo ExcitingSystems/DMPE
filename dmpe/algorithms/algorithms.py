@@ -99,7 +99,7 @@ def excite_and_fit(
                 actions=actions[: k + 1, :],
                 tau=exciter.tau,
                 obs_labels=env.obs_description,
-                actions_labels=[r"$u$"],
+                actions_labels=env.action_description,
                 model=model,
                 init_obs=obs,
                 proposed_actions=proposed_actions,
@@ -137,14 +137,16 @@ def excite_with_dmpe(
         Tuple[jnp.ndarray, jnp.ndarray, eqx.Module, DensityEstimate]: A tuple containing the history of observations,
         the history of actions, the trained model, and the density estimate.
     """
-    dim_obs_space = env.physical_state_dim  # assumes fully observable system
+    dim_obs_space = 2  # env.physical_state_dim  # assumes fully observable system
     dim_action_space = env.action_dim
     dim = dim_obs_space + dim_action_space
     n_grid_points = exp_params["alg_params"]["points_per_dim"] ** dim
 
     # setup x_0 / y_0
     obs, state = env.reset()
-    obs = obs[0]
+    # obs = obs[0]
+
+    obs = obs[0, 0:2]
 
     # setup memory variables
     observations = jnp.zeros((exp_params["n_time_steps"], dim_obs_space))
