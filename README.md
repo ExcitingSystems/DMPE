@@ -13,9 +13,30 @@ If you found this repository useful for your research, please cite it as:
 }
 ```
 
+## Installation:
+
+To make use of the package, the [`exciting_environments`](https://github.com/ExcitingSystems/exciting-environments) repository is needed as well. There, the expected system/environment API is given.
+First, download the current state of the `exciting_environments` repository, e.g.:
+
+`git clone git@github.com:ExcitingSystems/exciting-environments.git`
+
+and install it in your python environment by moving to the downloaded folder and running `pip install .`.
+Then, download the `dmpe` source code, e.g.:
+
+`git clone git@github.com:ExcitingSystems/DMPE.git`
+
+Afterwards, install it from within the repository folder via `pip install -e .` for an editable version or with `pip install .` if you do not plan to make changes to the code.
+
+
 ## Structure:
 
-The repository consists of two main folders. `eval/` contains the code used in the experiments in [Vater2024]. `dmpe/` contains the source code for the DMPE algorithm and also for the GOATS algorithms from the related work.
+The repository is structured as follows:
+
+- `dmpe/` contains the source code for the DMPE algorithm and also for the GOATS algorithms from the related work.
+- `eval/` contains the code used in the experiments in the corresponding publication [Vater2024]. 
+- `dev/` contains jupyter notebook that are intended for development on the repository.
+- `examples/` contains some examples to get started
+- `fig/` contains example images (e.g., for the README)
 
 
 ## Basic Usage:
