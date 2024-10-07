@@ -1,1 +1,1 @@
-from .models import NerualODE, NeuralODEPendulum, NeuralEulerODE, NeuralEulerODEPendulum, NeuralEulerODECartpole
+from .models import NeuralODE, NeuralODEPendulum, NeuralEulerODE, NeuralEulerODEPendulum, NeuralEulerODECartpole
