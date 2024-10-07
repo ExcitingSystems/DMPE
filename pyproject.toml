@@ -13,14 +13,14 @@ readme = "README.md"
 requires-python = ">=3.11"
 classifiers = [
     "Programming Language :: Python :: 3",
-    "Operating System :: OS Independent",
+    "Operating System :: POSIX :: Linux",
 ]
 dependencies = [
     "numpy==1.26.4",
     "scipy==1.13.1",
     "matplotlib==3.9.0",
     'tqdm==4.66.4',
-    "jax==0.4.28",
+    "jax[cuda12]==0.4.28",
     "jaxlib==0.4.28",
     'equinox==0.11.4',
     "diffrax==0.5.1",
