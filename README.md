@@ -51,7 +51,8 @@ import diffrax
 
 import exciting_environments as excenvs
 from dmpe.models.models import NeuralEulerODEPendulum
-from dmpe.algorithms import excite_with_dmpe, default_dmpe_parameterization
+from dmpe.algorithms import excite_with_dmpe
+from dmpe.algorithms.algorithm_utils import default_dmpe_parameterization
 
 
 env = excenvs.make(
