@@ -163,5 +163,5 @@ dev/results
 eval/results
 dev/unmaintained
 
-
+.vscode/
 *.pdf
