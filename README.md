@@ -15,15 +15,30 @@ If you found this repository useful for your research, please cite it as:
 
 ## Installation:
 
-To make use of the package, the [`exciting_environments`](https://github.com/ExcitingSystems/exciting-environments) repository is needed as well. There, the expected system/environment API is given.
-First, download the current state of the `exciting_environments` repository, e.g.:
+Simplest way, using `Python >= 3.11`:
 
-`git clone git@github.com:ExcitingSystems/exciting-environments.git`
+```
+pip install dmpe
+```
+- Intended for a Linux system using an NVIDIA GPU where CUDA is set up
+- Theoretically, it can be used without a GPU and also on Windows, **but** performance will likely be suboptimal
+- Depends on [`exciting_environments`](https://github.com/ExcitingSystems/exciting-environments)
+- As of now, the requirements/dependencies are strict. It is likely that other versions work as well, but the given setup has been used extensively. (The requirements will likely be extended in the future.)
+- As this repository is actively being worked on, it is possible that a more recent version is accessible in the [`DMPE`](https://github.com/ExcitingSystems/dmpe) GitHub repository.
 
+
+**Alternative installation:**
+
+Download the current state of the [`exciting_environments`](https://github.com/ExcitingSystems/exciting-environments) repository, e.g.:
+```
+git clone git@github.com:ExcitingSystems/exciting-environments.git
+```
 and install it in your python environment by moving to the downloaded folder and running `pip install .`.
-Then, download the `dmpe` source code, e.g.:
+Then, download the [`DMPE`](https://github.com/ExcitingSystems/dmpe) source code, e.g.:
 
-`git clone git@github.com:ExcitingSystems/DMPE.git`
+```
+git clone git@github.com:ExcitingSystems/DMPE.git
+```
 
 Afterwards, install it from within the repository folder via `pip install -e .` for an editable version or with `pip install .` if you do not plan to make changes to the code.
 
@@ -34,7 +49,7 @@ The repository is structured as follows:
 
 - `dmpe/` contains the source code for the DMPE algorithm and also for the GOATS algorithms from the related work.
 - `eval/` contains the code used in the experiments in the corresponding publication [Vater2024]. 
-- `dev/` contains jupyter notebook that are intended for development on the repository.
+- `dev/` contains jupyter notebooks that are intended for development on the repository.
 - `examples/` contains some examples to get started
 - `fig/` contains example images (e.g., for the README)
 
@@ -73,7 +88,7 @@ def featurize_theta(obs):
 exp_params, proposed_actions, loader_key, expl_key = default_dmpe_parameterization(
     env, seed=0, featurize=featurize_theta, model_class=NeuralEulerODEPendulum
 )
-exp_params["n_time_steps"] = 1000  # reduce to N=1000
+exp_params["n_time_steps"] = 1000  # reduce to N=1000 steps
 
 # run excitation
 observations, actions, model, density_estimate, losses, proposed_actions = excite_with_dmpe(
