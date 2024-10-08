@@ -2,10 +2,12 @@ numpy==1.26.4
 scipy==1.13.1
 matplotlib==3.9.0
 tqdm==4.66.4
-jax[cuda12]==0.4.28
+jax[cuda12]==0.4.28; sys_platform == 'linux'
+jax==0.4.28; sys_platform == 'win32'
 jaxlib==0.4.28
 equinox==0.11.4
 diffrax==0.5.1
 optax==0.2.3
 dm-haiku==0.0.12
 pymoo==0.6.1.1
+exciting-environments==0.1.1

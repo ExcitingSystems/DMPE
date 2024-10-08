@@ -95,4 +95,4 @@ mpl.rcParams['text.latex.preamble']=r"\usepackage{bm}\usepackage{amsmath}"
 fig = plot_sequence(observations, actions, env.tau, env.obs_description, env.action_description)
 plt.show()
 ```
-![example_trajectory_pendulum](fig/simple_example_pendulum.png)
+![](https://github.com/ExcitingSystems/DMPE/blob/main/fig/simple_example_pendulum.png?raw=true)
