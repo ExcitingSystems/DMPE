@@ -2,14 +2,15 @@
 
 This repository implements an algorithm for the excitation of systems with unknown (usually non-linear) systems.
 The inner workings and lines of thought are outlined within the corresponding publication.
-If you found this repository useful for your research, please cite it as:
+If you found this repository useful for your research, please cite the current preprint version as:
 
 ```
-@Article{Vater**TBD**,
-  author  = {**TBD**},
-  journal = {**TBD**},
-  title   = {**TBD**},
-  year    = {**TBD**},
+@Article{Vater2024,
+  author      = {Vater, Hendrik and Wallscheid, Oliver},
+  title       = {Differentiable Model Predictive Excitation: Generating Optimal Data Sets for Learning of Dynamical System Models},
+  journal     = {TechRxiv preprint},
+  year        = {2024},
+  doi         = {10.36227/techrxiv.172840381.16440835/v1},
 }
 ```
 
@@ -21,7 +22,7 @@ Simplest way, using `Python >= 3.11`:
 pip install dmpe
 ```
 - Intended for a Linux system using an NVIDIA GPU where CUDA is set up
-- Theoretically, it can be used without a GPU and also on Windows, **but** performance will likely be suboptimal
+- Theoretically, it can be used without a GPU and also on Windows, **but** performance will likely be suboptimal and the results are not exactly reproducible with the GPU/Linux results.
 - Depends on [`exciting_environments`](https://github.com/ExcitingSystems/exciting-environments)
 - As of now, the requirements/dependencies are strict. It is likely that other versions work as well, but the given setup has been used extensively. (The requirements will likely be extended in the future.)
 - As this repository is actively being worked on, it is possible that a more recent version is accessible in the [`DMPE`](https://github.com/ExcitingSystems/dmpe) GitHub repository.
