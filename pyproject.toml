@@ -4,27 +4,44 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "dmpe"
-version = "0.0.1"
+version = "0.1.1"
 authors = [
   { name="Hendrik Vater", email="vater@lea.uni-paderborn.de" },
 ]
 description = "Excitation of exciting systems through differentiable predictive excitation"
 readme = "README.md"
-requires-python = ">=3.8"
+requires-python = ">=3.11"
 classifiers = [
     "Programming Language :: Python :: 3",
-    "Operating System :: OS Independent",
+    "License :: OSI Approved :: GNU General Public License (GPL)",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Operating System :: POSIX :: Linux",
+]
+dependencies = [
+    "numpy==1.26.4",
+    "scipy==1.13.1",
+    "matplotlib==3.9.0",
+    'tqdm==4.66.4',
+    "jax[cuda12]==0.4.28; sys_platform == 'linux'",
+    "jax==0.4.28; sys_platform == 'win32'",
+    "jaxlib==0.4.28",
+    'equinox==0.11.4',
+    "diffrax==0.5.1",
+    'optax==0.2.3',
+    'dm-haiku==0.0.12',
+    'pymoo==0.6.1.1',
+    'exciting-environments==0.1.1',
 ]
 
 [project.urls]
 Homepage = "https://github.com/hvater/DMPE"
-Issues = "https://https://github.com/hvater/DMPE/issues"
+Issues = "https://github.com/hvater/DMPE/issues"
 
-[tool.setuptools]
-py-modules = [
-    "dmpe",
-    "evaluation",
-    "optimization",
-    "utils",
-    "models"
+[tool.setuptools.packages.find]
+where = ["."]  # list of folders that contain the packages (["."] by default)
+include = ["dmpe*"]  # package names should match these glob patterns (["*"] by default)
+
+[tool.pytest.ini_options]
+pythonpath = [
+    "."
 ]

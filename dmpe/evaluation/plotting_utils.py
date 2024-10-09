@@ -26,7 +26,7 @@ def plot_sequence(observations, actions, tau, obs_labels, action_labels, fig=Non
 
     axs[0].title.set_text("observations, timeseries")
     axs[0].legend()
-    axs[0].set_ylabel(r"$\bm{x}$")
+    axs[0].set_ylabel(r"$x$")
     axs[0].set_xlabel("$t$ in seconds")
 
     if observations.shape[-1] == 2:
@@ -56,7 +56,7 @@ def plot_sequence(observations, actions, tau, obs_labels, action_labels, fig=Non
 
         axs[2].title.set_text("actions, timeseries")
         axs[2].legend()
-        axs[2].set_ylabel(r"$\bm{u}$")
+        axs[2].set_ylabel(r"$u$")
         axs[2].set_xlabel(r"$t$ in seconds")
 
     for ax in axs:
