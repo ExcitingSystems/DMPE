@@ -89,11 +89,11 @@ class ClassicController:
 
         u_dq_norm = self.motor.env_properties.action_normalizations.u_d.normalize(u_dq)
 
-        self.u_albet_norm = dq2albet(
+        u_albet_norm = dq2albet(
             u_dq_norm,
             get_advanced_angle(eps, 0.5, self.tau, (3 * self.rpm / 60 * 2 * jnp.pi)),
         )
-        u_albet_c = self.u_albet_norm[:, 0] + 1j * self.u_albet_norm[:, 1]
+        u_albet_c = u_albet_norm[:, 0] + 1j * u_albet_norm[:, 1]
         idx = (jnp.sin(jnp.angle(u_albet_c)[..., jnp.newaxis] - 2 / 3 * jnp.pi * jnp.arange(3)) >= 0).astype(int)
         rot_vecs = ROTATION_MAP[idx[:, 0], idx[:, 1], idx[:, 2]]
         u_albet_c = jnp.multiply(u_albet_c, rot_vecs)
