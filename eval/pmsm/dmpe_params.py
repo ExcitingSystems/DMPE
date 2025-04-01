@@ -6,7 +6,7 @@ import optax
 
 from dmpe.models.models import NeuralEulerODEPMSM
 from dmpe.models.model_utils import ModelEnvWrapperPMSM
-from dmpe.utils.rls import SimulationPMSM_RLS
+from forks.DMPE.dmpe.models.rls import SimulationPMSM_RLS
 from dmpe.utils.density_estimation import build_grid, DensityEstimate
 
 
