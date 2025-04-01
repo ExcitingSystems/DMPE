@@ -22,6 +22,31 @@ def consult_exciter(
     proposed_actions: jax.Array,
     expl_key: jax.random.PRNGKey,
 ):
+    """Use the exciter to choose the next action or apply the proposed actions depending on
+    the current time step.
+
+    Here, this is essentially a wrapper around the exciter's choose_action method that enables to
+    overwrite the function for certain cases. Especially, this is used here to allow for random
+    actions at the start of the experiment where the model is not yet trained and random actions
+    are more effective compared to actions optimized based on the poor model prediction.
+
+    Args:
+        k: The current time step.
+        exciter: The exciter object.
+        obs: The current observation.
+        state: The current state of the environment.
+        model: The model used for predictions.
+        density_estimate: The density estimate object.
+        proposed_actions: The proposed actions for the current time step.
+        expl_key: The random key for drawing new proposed actions.
+
+    Returns:
+        action: The chosen action.
+        next_proposed_actions: The proposed actions for the next time step.
+        next_density_estimate: The updated density estimate.
+        prediction_loss: The prediction loss for the current time step.
+        next_expl_key: The updated random key for drawing new proposed actions.
+    """
     if k > exciter.start_optimizing:
         action, next_proposed_actions, next_density_estimate, prediction_loss, next_expl_key = exciter.choose_action(
             obs=obs,
@@ -40,7 +65,8 @@ def consult_exciter(
             proposed_actions=proposed_actions,
             expl_action_key=expl_action_key,
         )
-        prediction_loss = 0.0
+        prediction_loss = 0.0  # no prediction loss since no optimization has been performed
+
     return action, next_proposed_actions, next_density_estimate, prediction_loss, next_expl_key
 
 
