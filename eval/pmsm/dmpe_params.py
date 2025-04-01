@@ -7,37 +7,7 @@ import optax
 from dmpe.models.models import NeuralEulerODEPMSM
 from dmpe.models.model_utils import ModelEnvWrapperPMSM
 from forks.DMPE.dmpe.models.rls import SimulationPMSM_RLS
-from dmpe.utils.density_estimation import build_grid, DensityEstimate
-
-
-def get_target_distribution(
-    points_per_dim: int,
-    bandwidth: float,
-    grid_extend: float,
-    consider_action_distribution: bool,
-    penalty_function: Callable,
-):
-    """Get the target distribution for the DMPE algorithm in the PMSM experiments."""
-
-    dim = 4 if consider_action_distribution else 2
-    x_g = build_grid(dim, low=-grid_extend, high=grid_extend, points_per_dim=points_per_dim)
-
-    if consider_action_distribution:
-        constr_func = lambda x_g: penalty_function(x_g[..., None, :2], x_g[..., None, 2:])
-    else:
-        constr_func = lambda x_g: penalty_function(x_g[..., None, :2], None)
-
-    valid_grid_point = jax.vmap(constr_func, in_axes=0)(x_g) == 0
-    constrained_data_points = x_g[jnp.where(valid_grid_point == True)]
-
-    target_distribution = DensityEstimate.from_dataset(
-        constrained_data_points[None],
-        x_min=-grid_extend,
-        x_max=grid_extend,
-        points_per_dim=points_per_dim,
-        bandwidth=bandwidth,
-    )
-    return target_distribution.p[0] / jnp.sum(target_distribution.p[0])
+from dmpe.utils.density_estimation import build_grid, DensityEstimate, get_target_distribution
 
 
 def get_alg_params(consider_action_distribution: bool, penalty_function: Callable):

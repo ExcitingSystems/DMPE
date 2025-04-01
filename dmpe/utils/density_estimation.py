@@ -1,3 +1,5 @@
+from typing import Callable
+
 import jax
 import jax.numpy as jnp
 
@@ -177,3 +179,35 @@ def build_grid_2d(low, high, points_per_dim):
 
 def build_grid_3d(low, high, points_per_dim):
     return build_grid(3, low, high, points_per_dim)
+
+
+def get_target_distribution(
+    points_per_dim: int,
+    bandwidth: float,
+    grid_extend: float,
+    consider_action_distribution: bool,
+    penalty_function: Callable,
+):
+    """Get the target distribution for the DMPE algorithm based on the grid parameters
+    and a penalty function. Only values that are not penalized by the penalty function
+    are considered to be valid in the target distribution.
+    """
+    dim = 4 if consider_action_distribution else 2
+    x_g = build_grid(dim, low=-grid_extend, high=grid_extend, points_per_dim=points_per_dim)
+
+    if consider_action_distribution:
+        constr_func = lambda x_g: penalty_function(x_g[..., None, :2], x_g[..., None, 2:])
+    else:
+        constr_func = lambda x_g: penalty_function(x_g[..., None, :2], None)
+
+    valid_grid_point = jax.vmap(constr_func, in_axes=0)(x_g) == 0
+    constrained_data_points = x_g[jnp.where(valid_grid_point == True)]
+
+    target_distribution = DensityEstimate.from_dataset(
+        constrained_data_points[None],
+        x_min=-grid_extend,
+        x_max=grid_extend,
+        points_per_dim=points_per_dim,
+        bandwidth=bandwidth,
+    )
+    return target_distribution.p[0] / jnp.sum(target_distribution.p[0])
