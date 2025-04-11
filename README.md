@@ -16,7 +16,7 @@ If you found this repository useful for your research, please cite the current p
 
 ## Installation:
 
-> If you are specifically interested in reproducing the results from the `Vater2024` publication, you are kindly referred to: https://pypi.org/project/dmpe/0.1.2/
+> If you are specifically interested in reproducing the results from the `Vater2024` publication, you are kindly referred to: https://pypi.org/project/dmpe/0.1.3/
 
 > Else, if you are specifically interested in reproducing the results from the `TBD` related publication, you are kindly referred to: `TBD`
 
