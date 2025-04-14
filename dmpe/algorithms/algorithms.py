@@ -1,7 +1,5 @@
 from typing import Tuple, Callable
-import matplotlib.pyplot as plt
 from tqdm import tqdm
-import numpy as np
 
 import jax
 import jax.numpy as jnp
@@ -10,7 +8,6 @@ import optax
 
 import exciting_environments as excenvs
 from dmpe.algorithms.algorithm_utils import consult_exciter, interact_and_observe, default_dmpe_parameterization
-from dmpe.evaluation.plotting_utils import plot_sequence_and_prediction
 from dmpe.excitation import loss_function, Exciter
 from dmpe.models.model_training import ModelTrainer
 from dmpe.utils.density_estimation import (
@@ -55,11 +52,14 @@ def excite_and_fit(
         actions (jax.Array): The history of actions.
         opt_state_model (optax.OptState): The optimizer state for the model.
         loader_key (jax.random.PRNGKey): The key used for loading data.
+        expl_key: (jax.random.PRNGKey): The key used for random action generation.
         callback_every (int): The frequency at which to run the callback function.
+        callback (Callable | None): Implementation of the callback function.
 
     Returns:
-        Tuple[jax.Array, jax.Array, eqx.Module, DensityEstimate]: A tuple containing the history of observations,
-        the history of actions, the updated model, and the updated density estimate.
+        Tuple[jax.Array, jax.Array, eqx.Module, DensityEstimate, list, jax.Array, list]: A tuple containing
+        the history of observations, the history of actions, the updated model, the updated density estimate,
+        the prediction losses, the proposed actions, and the callback output.
     """
     prediction_losses = []
     data_losses = []
@@ -112,20 +112,22 @@ def excite_and_fit(
             if callback is not None:
                 callback_out.append(
                     callback(
-                        jnp.array([k]),
-                        env,
-                        obs,
-                        state,
-                        next_obs,
-                        next_state,
-                        action,
-                        observations,
-                        actions,
-                        model,
-                        next_density_estimate,
-                        next_proposed_actions,
-                        data_losses,
-                        prediction_losses,
+                        k=jnp.array([k]),
+                        env=env,
+                        obs=obs,
+                        state=state,
+                        action=action,
+                        next_obs=next_obs,
+                        next_state=next_state,
+                        observations=observations,
+                        actions=actions,
+                        model=model,
+                        density_estimate=density_estimate,
+                        proposed_actions=proposed_actions,
+                        next_density_estimate=next_density_estimate,
+                        next_proposed_actions=next_proposed_actions,
+                        data_losses=data_losses,
+                        prediction_losses=prediction_losses,
                     )
                 )
 
@@ -155,14 +157,15 @@ def excite_with_dmpe(
         env: The environment object representing the system.
         exp_params: The experiment parameters.
         proposed_actions: The proposed actions for exploration.
-        model_key: The key for initializing the model.
         loader_key: The key used for loading data.
         expl_key: The key used for random action generation.
         callback_every: The frequency at which to run the callback function.
+        callback: Callback function
 
     Returns:
-        Tuple[jnp.ndarray, jnp.ndarray, eqx.Module, DensityEstimate]: A tuple containing the history of observations,
-        the history of actions, the trained model, and the density estimate.
+        Tuple[jax.Array, jax.Array, eqx.Module, DensityEstimate, list, jax.Array, list]: A tuple containing
+        the history of observations, the history of actions, the updated model, the updated density estimate,
+        the prediction losses, the proposed actions, and the callback output.
     """
     obs, state = env.reset(env.env_properties)
 
@@ -251,7 +254,7 @@ def excite_with_dmpe(
     return observations, actions, model, density_estimate, losses, proposed_actions, callback_out
 
 
-def default_dmpe(env, seed=0, n_time_steps=5000, featurize=None, model_class=None, callback_every=None):
+def default_dmpe(env, seed=0, n_time_steps=5000, featurize=None, model_class=None, callback=None, callback_every=None):
     """Runs DMPE with default parameterization. The parameter choices might
     not be optimal for a given system.
 
@@ -260,14 +263,22 @@ def default_dmpe(env, seed=0, n_time_steps=5000, featurize=None, model_class=Non
 
     Args:
         env: The environment object representing the system.
+        seed (int): The random seed for reproducibility.
+        n_time_steps (int): The number of time steps to run the algorithm for.
+        featurize: The function used for feature applied onto the observations.
+        model_class: The class of the model used for prediction.
+        callback: Callback function for prints and logging.
+        callback_every: The frequency at which to run the callback function.
 
     Returns:
-        Tuple[jnp.ndarray, jnp.ndarray, eqx.Module, DensityEstimate]: A tuple containing the history of observations,
-        the history of actions, the trained model, and the density estimate.
+        Tuple[jax.Array, jax.Array, eqx.Module, DensityEstimate, list, jax.Array, list]: A tuple containing
+        the history of observations, the history of actions, the updated model, the updated density estimate,
+        the prediction losses, the proposed actions, and the callback output.
     """
 
     return excite_with_dmpe(
         env,
         *default_dmpe_parameterization(env, seed, n_time_steps, featurize, model_class),
-        callback_every,
+        callback_every=callback_every,
+        callback=callback,
     )
