@@ -95,7 +95,7 @@ def plot_model_performance(model, true_observations, actions, tau, obs_labels, a
         axs=axs,
         dotted=True,
     )
-    return fig, axs
+    return fig, axs, pred_observations
 
 
 def append_predictions_to_sequence_plot(
@@ -330,7 +330,7 @@ def plot_feature_combinations(data, labels, mode="plot", points_per_dim=100, ban
 
     n_features = data.shape[-1]
 
-    fig, axs = plt.subplots(nrows=n_features, ncols=n_features, figsize=(18.2, 18.2), sharex=True, sharey=True)
+    fig, axs = plt.subplots(nrows=n_features, ncols=n_features, figsize=(9, 9), sharex=True, sharey=True)
 
     for i in range(n_features):
         for j in range(n_features):
