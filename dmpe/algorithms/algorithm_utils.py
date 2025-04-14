@@ -3,6 +3,7 @@ from typing import Tuple
 import jax
 import jax.numpy as jnp
 import equinox as eqx
+import optax
 from haiku import PRNGSequence
 
 import exciting_environments as excenvs
@@ -73,7 +74,7 @@ def consult_exciter(
 @eqx.filter_jit
 def interact_and_observe(
     env: excenvs.CoreEnvironment,
-    k: int,
+    k: jax.Array,
     action: jax.Array,
     state: excenvs.CoreEnvironment.State,
     actions: jax.Array,
@@ -130,35 +131,35 @@ def default_dmpe_parameterization(
 
     """
     alg_params = dict(
-        bandwidth=None,
+        bandwidth=0.08,
         n_prediction_steps=10,
-        points_per_dim=20,
-        action_lr=1e-1,
-        n_opt_steps=5,
+        points_per_dim=21,
+        grid_extend=1.05,
+        excitation_optimizer=optax.adabelief(1e-2),
+        n_opt_steps=50,
+        start_optimizing=5,
         consider_action_distribution=True,
+        penalty_function=(
+            lambda x, u: soft_penalty(a=x, a_max=1, penalty_order=2) + soft_penalty(a=u, a_max=1, penalty_order=2)
+        ),
         target_distribution=None,
-        rho_obs=1,
-        rho_act=1,
-        penalty_order=2,
         clip_action=False,
-        n_starts=20,
+        n_starts=10,
         reuse_proposed_actions=True,
-        penalty_function=lambda x, u: soft_penalty(a=x, a_max=1, penalty_order=2)
-        + soft_penalty(a=u, a_max=1, penalty_order=2),
     )
 
     dim = env.physical_state_dim + env.action_dim
 
     alg_params["target_distribution"] = jnp.ones(shape=(alg_params["points_per_dim"] ** dim, 1)) * 1 / (1 - (-1)) ** dim
 
-    alg_params["bandwidth"] = float(
-        select_bandwidth(
-            delta_x=2,
-            dim=env.physical_state_dim + env.action_dim,
-            n_g=alg_params["points_per_dim"],
-            percentage=0.3,
-        )
-    )
+    # alg_params["bandwidth"] = float(
+    #     select_bandwidth(
+    #         delta_x=2,
+    #         dim=env.physical_state_dim + env.action_dim,
+    #         n_g=alg_params["points_per_dim"],
+    #         percentage=0.3,
+    #     )
+    # )
 
     model_trainer_params = dict(
         start_learning=alg_params["n_prediction_steps"],

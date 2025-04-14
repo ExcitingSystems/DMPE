@@ -52,10 +52,10 @@ Afterwards, install it from within the repository folder via `pip install -e .` 
 
 The repository is structured as follows:
 
-- `dmpe/` contains the source code for the DMPE algorithm and also for the GOATS algorithms from the related work.
-- `eval/` contains the code used in the experiments in the corresponding publication [Vater2024]. 
-- `dev/` contains jupyter notebooks that are intended for development on the repository.
-- `examples/` contains some examples to get started
+- `dmpe/` contains the source code for the DMPE algorithm and also for the GOATS algorithms from the related work and the scripts to run experiments.
+- `eval/` contains jupyter notebooks that are intended for evaluation of experiments (not necessarily maintained). 
+- `dev/` contains jupyter notebooks that are intended for development on the repository (not necessarily maintained).
+- `examples/` contains some examples to get started that are regularly updated to reflect the momentary state.
 - `fig/` contains example images (e.g., for the README)
 
 
