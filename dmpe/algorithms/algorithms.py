@@ -1,4 +1,4 @@
-from typing import Tuple, Callable
+from typing import Callable
 from tqdm import tqdm
 
 import jax
@@ -7,7 +7,11 @@ import equinox as eqx
 import optax
 
 import exciting_environments as excenvs
-from dmpe.algorithms.algorithm_utils import consult_exciter, interact_and_observe, default_dmpe_parameterization
+from dmpe.algorithms.algorithm_utils import (
+    consult_exciter,
+    interact_and_observe,
+    default_dmpe_parameterization,
+)
 from dmpe.excitation import loss_function, Exciter
 from dmpe.models.model_training import ModelTrainer
 from dmpe.utils.density_estimation import (
@@ -34,7 +38,7 @@ def excite_and_fit(
     expl_key: jax.random.PRNGKey,
     callback_every: int,
     callback: Callable | None = None,
-) -> Tuple[jax.Array, jax.Array, eqx.Module, DensityEstimate]:
+) -> tuple[jax.Array, jax.Array, eqx.Module, DensityEstimate]:
     """
     Main algorithm to apply to a given (unknown) system and generate informative data from that system.
 
@@ -57,7 +61,7 @@ def excite_and_fit(
         callback (Callable | None): Implementation of the callback function.
 
     Returns:
-        Tuple[jax.Array, jax.Array, eqx.Module, DensityEstimate, list, jax.Array, list]: A tuple containing
+        tuple[jax.Array, jax.Array, eqx.Module, DensityEstimate, list, jax.Array, list]: A tuple containing
         the history of observations, the history of actions, the updated model, the updated density estimate,
         the prediction losses, the proposed actions, and the callback output.
     """
@@ -101,6 +105,7 @@ def excite_and_fit(
                 print("Model is used statically and not re-fitted or updated otherwise.")
 
         # evaluate the current excitation metric value for the acquired data
+        # (Only necessary for monitoring purposes)
         data_loss = JSDLoss(
             next_density_estimate.p / jnp.sum(next_density_estimate.p),
             exciter.target_distribution / jnp.sum(exciter.target_distribution),
@@ -147,20 +152,22 @@ def excite_with_dmpe(
     proposed_actions: jax.Array,
     loader_key: jax.random.PRNGKey,
     expl_key: jax.random.PRNGKey,
-    callback_every: bool | None = None,
+    callback_every: int | None = None,
     callback: Callable | None = None,
 ):
     """
     Excite the system using the Differentiable Model Predictive Excitation (DMPE) algorithm.
 
     Args:
-        env: The environment object representing the system.
-        exp_params: The experiment parameters.
-        proposed_actions: The proposed actions for exploration.
-        loader_key: The key used for loading data.
-        expl_key: The key used for random action generation.
-        callback_every: The frequency at which to run the callback function.
-        callback: Callback function
+        env (excenvs.CoreEnvironment): The environment object representing the system.
+        exp_params (dict): The experiment parameters.
+        proposed_actions (jax.Array): The initial proposed actions to apply.
+        loader_key (jax.random.PRNGKey): The key used for loading data.
+        expl_key (jax.random.PRNGKey): The key used for random action generation.
+        callback_every (int | None): The frequency of steps at which to run the callback function.
+            If it is 'None' no callback is done.
+        callback (Callable): Callback function to monitor the excitation process.
+            See 'dmpe/evaluation/callbacks.py' for examples and API.
 
     Returns:
         Tuple[jax.Array, jax.Array, eqx.Module, DensityEstimate, list, jax.Array, list]: A tuple containing
@@ -267,8 +274,10 @@ def default_dmpe(env, seed=0, n_time_steps=5000, featurize=None, model_class=Non
         n_time_steps (int): The number of time steps to run the algorithm for.
         featurize: The function used for feature applied onto the observations.
         model_class: The class of the model used for prediction.
-        callback: Callback function for prints and logging.
-        callback_every: The frequency at which to run the callback function.
+        callback (Callable): Callback function to monitor the excitation process.
+            See 'dmpe/evaluation/callbacks.py' for examples and API.
+        callback_every (int | None): The frequency of steps at which to run the callback function.
+            If it is 'None' no callback is done.
 
     Returns:
         Tuple[jax.Array, jax.Array, eqx.Module, DensityEstimate, list, jax.Array, list]: A tuple containing
