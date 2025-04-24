@@ -1,4 +1,4 @@
-from typing import Tuple
+from typing import Tuple, Callable
 
 import jax
 import jax.numpy as jnp
@@ -8,7 +8,7 @@ from haiku import PRNGSequence
 
 import exciting_environments as excenvs
 from dmpe.utils.signals import aprbs
-from dmpe.utils.density_estimation import select_bandwidth, DensityEstimate
+from dmpe.utils.density_estimation import DensityEstimate
 from dmpe.models import NeuralEulerODE
 from dmpe.excitation.excitation_utils import soft_penalty, Exciter
 
@@ -23,30 +23,35 @@ def consult_exciter(
     proposed_actions: jax.Array,
     expl_key: jax.random.PRNGKey,
 ):
-    """Use the exciter to choose the next action or apply the proposed actions depending on
+    """Use the exciter to choose the next action or simply apply the proposed actions depending on
     the current time step.
 
-    Here, this is essentially a wrapper around the exciter's choose_action method that enables to
-    overwrite the function for certain cases. Especially, this is used here to allow for random
+    This also updates the density estimate based on the chosen action. The momentary observation
+    y_k has no corresponding action u_k, before the exciter has chosen one. Therefore, the
+    DensityEstimate that goes into the function is still based on y_{k-1} and u_{k-1}. The
+    one that is returned from this function incorporates y_k and u_k.
+
+    This is essentially a wrapper around the exciter's choose_action method that enables
+    overwriting the function for certain cases. Especially, this is used here to allow for random
     actions at the start of the experiment where the model is not yet trained and random actions
     are more effective compared to actions optimized based on the poor model prediction.
 
     Args:
-        k: The current time step.
-        exciter: The exciter object.
-        obs: The current observation.
-        state: The current state of the environment.
-        model: The model used for predictions.
-        density_estimate: The density estimate object.
-        proposed_actions: The proposed actions for the current time step.
-        expl_key: The random key for drawing new proposed actions.
+        k (int): The current time step.
+        exciter (Exciter): The exciter object.
+        obs(jax.Array): The current observation.
+        state(excenvs.CoreEnvironment.State): The current state of the environment.
+        model (eqx.Module): The model used for predictions.
+        density_estimate (DensityEstimate): The density estimate object from time step k-1.
+        proposed_actions (jax.Array): The proposed actions for the current time step.
+        expl_key (jax.random.PRNGKey): The random key for drawing new proposed actions.
 
     Returns:
-        action: The chosen action.
-        next_proposed_actions: The proposed actions for the next time step.
-        next_density_estimate: The updated density estimate.
-        prediction_loss: The prediction loss for the current time step.
-        next_expl_key: The updated random key for drawing new proposed actions.
+        action (jax.Array): The chosen action.
+        next_proposed_actions (jax.Array): The proposed actions for the next time step.
+        next_density_estimate (DensityEstimate): The updated density estimate with (y_k, u_k).
+        prediction_loss (float): The prediction loss for the current time step.
+        next_expl_key (jax.random.PRNGKey): The updated random key for drawing new proposed actions.
     """
     if k > exciter.start_optimizing:
         action, next_proposed_actions, next_density_estimate, prediction_loss, next_expl_key = exciter.choose_action(
@@ -84,32 +89,35 @@ def interact_and_observe(
     Interact with the environment and store the action and the resulting observation.
 
     Args:
-        env: The environment object.
-        k: The current time step.
-        action: The action to be taken at time step k.
-        state: The state of the environment at time step k.
-        actions: The list of actions taken so far.
-        observations: The list of observations observed so far.
+        env (excenvs.CoreEnvironment): The environment object.
+        k (int): The current time step.
+        action (jax.Array): The action to be taken at time step k.
+        state (excenvs.CoreEnvironment.State): The state of the environment at time step k.
+        actions (jax.Array): The array of actions taken so far.
+        observations (jax.Array): The array of observations observed so far.
 
     Returns:
-        obs: The updated observation at time step k+1.
-        state: The updated state of the environment at time step k+1.
-        actions: The updated list of actions taken so far.
-        observations: The updated list of observations observed so far.
+        obs (jax.Array): The updated observation at time step k+1.
+        state (excenvs.CoreEnvironment.State): The updated state of the environment at time step k+1.
+        actions (jax.Array): The updated array of actions taken so far.
+        observations (jax.Array): The updated array of observations observed so far.
     """
 
-    # apply u_k and go to x_{k+1}
-
+    # apply u_k and go to x_{k+1} and observe y_{k+1}
     obs, state = env.step(state, action, env.env_properties)
 
     actions = actions.at[k].set(action)  # store u_k
-    observations = observations.at[k + 1].set(obs)  # store x_{k+1}
+    observations = observations.at[k + 1].set(obs)  # store y_{k+1}
 
     return obs, state, actions, observations
 
 
 def default_dmpe_parameterization(
-    env: excenvs.CoreEnvironment, seed: int = 0, n_time_steps=5_000, featurize=None, model_class=None
+    env: excenvs.CoreEnvironment,
+    seed: int = 0,
+    n_time_steps=5_000,
+    featurize: Callable | None = None,
+    model_class: eqx.Module | None = None,
 ):
     """Returns a default parameterization for the DMPE algorithm.
 
@@ -118,12 +126,14 @@ def default_dmpe_parameterization(
     reasonable first impression. Currently, featurization of the model state e.g. angles
     needs to be provided manually.
 
-    In future work, automatic tuning for the parameters will be added such that no
-    manual tuning is required.
-
     Args:
         env (excenvs.CoreEnvironment): The environment object representing the system.
         seed (int): The seed for the random number generator.
+        n_time_steps (int): The number of time steps for the experiment.
+        featurize (callable | None): A function to featurize the model state. Defaults to the identity function.
+        model_class (eqx.Module | None): The model class to be used. Defaults to NeuralEulerODE. It must comply
+            with the NeuralEulerODE API to be usable here. Otherwise, the model can also be overwritten after
+            getting the other default parameters.
 
     Returns:
         Tuple[Dict, jax.Array, jax.random.PRNGKey, jax.random.PRNGKey]: A tuple containing the experiment parameters,
@@ -151,15 +161,6 @@ def default_dmpe_parameterization(
     dim = env.physical_state_dim + env.action_dim
 
     alg_params["target_distribution"] = jnp.ones(shape=(alg_params["points_per_dim"] ** dim, 1)) * 1 / (1 - (-1)) ** dim
-
-    # alg_params["bandwidth"] = float(
-    #     select_bandwidth(
-    #         delta_x=2,
-    #         dim=env.physical_state_dim + env.action_dim,
-    #         n_g=alg_params["points_per_dim"],
-    #         percentage=0.3,
-    #     )
-    # )
 
     model_trainer_params = dict(
         start_learning=alg_params["n_prediction_steps"],

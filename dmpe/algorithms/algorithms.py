@@ -42,6 +42,12 @@ def excite_and_fit(
     """
     Main algorithm to apply to a given (unknown) system and generate informative data from that system.
 
+    A pseudocode description of this algorithm is given in the corresponding publication [Vater2024].
+    In summary, the algorithm iterates over the time steps k. Each iteration an action is chosen to be
+    applied by the Exciter object. Afterwards, the action is applied to the system and its effect is
+    observed. This is followed up by the (optional) update to the dynamics model.
+    The rest of the code is only for monitoring and, finally, progressing to the next time step k+1.
+
     Args:
         n_time_steps (int): The number of time steps to run the algorithm for.
         env (excenvs.CoreEnvironment): The environment object representing the system.
@@ -104,6 +110,7 @@ def excite_and_fit(
             if k == 0:
                 print("Model is used statically and not re-fitted or updated otherwise.")
 
+        ## Start Monitoring
         # evaluate the current excitation metric value for the acquired data
         # (Only necessary for monitoring purposes)
         data_loss = JSDLoss(
@@ -135,6 +142,7 @@ def excite_and_fit(
                         prediction_losses=prediction_losses,
                     )
                 )
+        ## End Monitoring
 
         # k <- k + 1
         obs = next_obs
