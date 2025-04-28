@@ -3,7 +3,7 @@ import jax.numpy as jnp
 
 
 @jax.jit
-def KLDLoss(p: jnp.ndarray, q: jnp.ndarray):
+def KLDLoss(p: jax.Array, q: jax.Array) -> jax.Array:
     """Computes the sample KLD between two inputs.
 
     The last dim of the input needs to be of length 1. The summation occurs along the second to
@@ -20,7 +20,7 @@ def KLDLoss(p: jnp.ndarray, q: jnp.ndarray):
 
 
 @jax.jit
-def JSDLoss(p: jnp.ndarray, q: jnp.ndarray):
+def JSDLoss(p: jax.Array, q: jax.Array) -> jax.Array:
     """Computes the sample JSD between two inputs.
 
     The last dim of the input needs to be of length 1. The summation occurs along the second to
@@ -34,7 +34,7 @@ def JSDLoss(p: jnp.ndarray, q: jnp.ndarray):
     return jnp.squeeze((KLDLoss(p, m) + KLDLoss(q, m)) / 2)
 
 
-def MNNS_without_penalty(data_points: jnp.ndarray, new_data_points: jnp.ndarray) -> jnp.ndarray:
+def MNNS_without_penalty(data_points: jax.Array, new_data_points: jax.Array) -> jax.Array:
     """From [Smits2024].
 
     Implementation inspired by https://github.com/google/jax/discussions/9813
@@ -48,7 +48,7 @@ def MNNS_without_penalty(data_points: jnp.ndarray, new_data_points: jnp.ndarray)
     return -jnp.sum(minimal_distances) / L
 
 
-def audze_eglais(data_points: jnp.ndarray, eps: float = 0.001) -> jnp.ndarray:
+def audze_eglais(data_points: jax.Array, eps: float = 0.001) -> jax.Array:
     """From [Smits2024]. The maximin-design penalizes points that
     are too close in the point distribution.
 
@@ -62,9 +62,7 @@ def audze_eglais(data_points: jnp.ndarray, eps: float = 0.001) -> jnp.ndarray:
 
 
 @jax.jit
-def MC_uniform_sampling_distribution_approximation(
-    data_points: jnp.ndarray, support_points: jnp.ndarray
-) -> jnp.ndarray:
+def MC_uniform_sampling_distribution_approximation(data_points: jax.Array, support_points: jax.Array) -> jax.Array:
     """From [Smits2024]. The minimax-design tries to minimize
     the distances of the data points to the support points.
 
@@ -78,7 +76,7 @@ def MC_uniform_sampling_distribution_approximation(
     return jnp.sum(minimal_distances) / M
 
 
-def blockwise_mcudsa(data_points: jnp.ndarray, support_points: jnp.ndarray) -> jnp.ndarray:
+def blockwise_mcudsa(data_points: jax.Array, support_points: jax.Array) -> jax.Array:
     """Blockwise implementation of MCUDSA. For long trajectories, the full computation is infeasible and
     needs to be split up into smaller blocks."""
 
@@ -102,11 +100,11 @@ def blockwise_mcudsa(data_points: jnp.ndarray, support_points: jnp.ndarray) -> j
 
 @jax.jit
 def kiss_space_filling_cost(
-    data_points: jnp.ndarray,
-    support_points: jnp.ndarray,
-    variances: jnp.ndarray,
+    data_points: jax.Array,
+    support_points: jax.Array,
+    variances: jax.Array,
     eps: float = 1e-16,
-) -> jnp.ndarray:
+) -> jax.Array:
     """From [Kiss2024]. Slightly modified to use the mean instead of the sum in the denominator.
     The goal is to have the same metric value for identical data distributions with different number
     of data points.
@@ -120,11 +118,11 @@ def kiss_space_filling_cost(
 
 
 def blockwise_ksfc(
-    data_points: jnp.ndarray,
-    support_points: jnp.ndarray,
-    variances: jnp.ndarray,
+    data_points: jax.Array,
+    support_points: jax.Array,
+    variances: jax.Array,
     eps: float = 1e-16,
-) -> jnp.ndarray:
+) -> jax.Array:
     """Blockwise implementation of MCUDSA. For long trajectories, the full computation is infeasible and
     needs to be split up into smaller blocks."""
 
