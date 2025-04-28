@@ -75,7 +75,7 @@ class DensityEstimate(eqx.Module):
         n_additional_observations: int,
         density_estimate: "DensityEstimate",
     ) -> "DensityEstimate":
-        """Create a density estimate recursively from an existing estimate.
+        """Create a density estimate from an existing estimate.
 
         The computation is usually that p is constructed from the DensityEstimate.p before the
         update together with the kernel density estimation over new data points. The result of
@@ -86,6 +86,9 @@ class DensityEstimate(eqx.Module):
             n_additional_observations (int): The number of data points that have been added
                 in the update
             density_estimate (DensityEstimate): The density estimate before the update
+
+        Returns:
+            The updated density estimate (DensityEstimate)
         """
 
         return cls(
@@ -97,9 +100,38 @@ class DensityEstimate(eqx.Module):
 
     @classmethod
     def from_observations_actions(
-        cls, observations, actions, use_actions=True, points_per_dim=30, x_min=-1, x_max=1, bandwidth=0.05
-    ):
-        """Create a fresh density estimate from gathered data."""
+        cls,
+        observations: jax.Array,
+        actions: jax.Array,
+        use_actions: bool = True,
+        points_per_dim: int = 30,
+        x_min: float = -1,
+        x_max: float = 1,
+        bandwidth: float = 0.05,
+    ) -> "DensityEstimate":
+        """Create a fresh density estimate from gathered in the form of observations and actions.
+
+        It is assumed that the feature vector is made up from observations and actions together
+        when 'use_actions' is True and only from the observations if it is False.
+
+        Often, the actions will have one less element compared to the observations. This occurs
+        when an observation has resulted from the application of the last action but a new action
+        has not been chosen yet. The last observation is then omitted from the density estimate.
+
+        Args:
+            observations (jax.Array): The observations to be part of the density estimate
+            actions (jax.Array): The actions to be part of the density estimate
+            use_actions (bool): A flag indicating whether the actions are to be part of the density
+                estimate
+            points_per_dim (int): The number of grid points per dimension. Always identical for each
+                dimension
+            x_min (float): The minimum value of the grid in each dimension
+            x_max (float): The maximum value of the grid in each dimension
+            bandwidth (float): The bandwidth of the kernel density estimate
+
+        Returns:
+            The resulting density estimate (DensityEstimate)
+        """
 
         if observations.shape[0] == actions.shape[0] + 1:
             data_points = (
@@ -111,8 +143,27 @@ class DensityEstimate(eqx.Module):
         return cls.from_dataset(data_points, points_per_dim, x_min, x_max, bandwidth)
 
     @classmethod
-    def from_dataset(cls, data_points, points_per_dim=30, x_min=-1, x_max=1, bandwidth=0.05):
+    def from_dataset(
+        cls,
+        data_points: jax.Array,
+        points_per_dim: int = 30,
+        x_min: float = -1,
+        x_max: float = 1,
+        bandwidth: float = 0.05,
+    ) -> "DensityEstimate":
+        """Create a fresh density estimate from gathered in the form of a sequence of feature vectors.
 
+        Args:
+            data_points (jax.Array): The data points to be part of the density estimate
+            points_per_dim (int): The number of grid points per dimension. Always identical for each
+                dimension
+            x_min (float): The minimum value of the grid in each dimension
+            x_max (float): The maximum value of the grid in each dimension
+            bandwidth (float): The bandwidth of the kernel density estimate
+
+        Returns:
+            The resulting density estimate (DensityEstimate)
+        """
         dim = data_points.shape[-1]
 
         n_grid_points = points_per_dim**dim
@@ -137,15 +188,15 @@ class DensityEstimate(eqx.Module):
 def update_density_estimate_single_observation(
     density_estimate: DensityEstimate,
     data_point: jax.Array,
-) -> jax.Array:
+) -> DensityEstimate:
     """Recursive update to the kernel density estimation (KDE) on a fixed grid.
 
     Args:
-        density_estimate: The density estimate before the update
-        data_point: The new data point
+        density_estimate (DensityEstimate): The density estimate before the update
+        data_point (jax.Array): The new data point
 
     Returns:
-        The updated density estimate
+        The updated density estimate (DensityEstimate)
     """
     kernel_value = gaussian_kernel(x=density_estimate.x_g - data_point, bandwidth=density_estimate.bandwidth)
     p_est = (
@@ -161,19 +212,20 @@ def update_density_estimate_single_observation(
 def update_density_estimate_multiple_observations(
     density_estimate: DensityEstimate,
     data_points: jax.Array,
-) -> jax.Array:
+) -> DensityEstimate:
     """Add a new sequence of data points to the current data density estimate.
 
     Args:
-        density_estimate: The density estimate before the update
-        data_points: The sequence of data_points
+        density_estimate (DensityEstimate): The density estimate before the update
+        data_points (jax.Array): The sequence of data_points
 
     Returns:
-        The updated values for the density estimate
+        The updated density estimate (DensityEstimate)
     """
 
-    def shifted_gaussian_kernel(x, observation, bandwidth):
-        return gaussian_kernel(x - observation, bandwidth)
+    def shifted_gaussian_kernel(x, data_points, bandwidth):
+        # created to enable vmapping of data_points without vmapping of x
+        return gaussian_kernel(x - data_points, bandwidth)
 
     new_sum_part = jax.vmap(shifted_gaussian_kernel, in_axes=(None, 0, None))(
         density_estimate.x_g, data_points, density_estimate.bandwidth
@@ -190,8 +242,19 @@ def update_density_estimate_multiple_observations(
     )
 
 
-def build_grid(dim, low, high, points_per_dim):
-    """Build a uniform grid of points in the given dimension."""
+def build_grid(dim: int, low: float, high: float, points_per_dim: int) -> jax.Array:
+    """Build a uniform grid of points in the given dimension.
+
+    Args:
+        dim (int): Dimensionality of the grid
+        low (float): The minimum value of the grid in each dimension
+        high (float): The maximum value of the grid in each dimension
+        points_per_dim (int): The number of grid points per dimension. Always identical for each
+            dimension
+
+    Returns:
+        The flattened grid as a jax.Array with shape (points_per_dim**dim, dim)
+    """
     xs = [jnp.linspace(low, high, points_per_dim) for _ in range(dim)]
 
     x_g = jnp.meshgrid(*xs)
@@ -202,11 +265,33 @@ def build_grid(dim, low, high, points_per_dim):
     return x_g
 
 
-def build_grid_2d(low, high, points_per_dim):
+def build_grid_2d(low: float, high: float, points_per_dim: int):
+    """Shorthand for a uniform 2d grid.
+
+    Args:
+        low (float): The minimum value of the grid in each dimension
+        high (float): The maximum value of the grid in each dimension
+        points_per_dim (int): The number of grid points per dimension. Always identical for each
+            dimension
+
+    Returns:
+        The flattened grid as a jax.Array with shape (points_per_dim**2, 2)
+    """
     return build_grid(2, low, high, points_per_dim)
 
 
-def build_grid_3d(low, high, points_per_dim):
+def build_grid_3d(low: float, high: float, points_per_dim: int):
+    """Shorthand for a uniform 3d grid.
+
+    Args:
+        low (float): The minimum value of the grid in each dimension
+        high (float): The maximum value of the grid in each dimension
+        points_per_dim (int): The number of grid points per dimension. Always identical for each
+            dimension
+
+    Returns:
+        The flattened grid as a jax.Array with shape (points_per_dim**3, 3)
+    """
     return build_grid(3, low, high, points_per_dim)
 
 
@@ -216,10 +301,24 @@ def get_target_distribution(
     grid_extend: float,
     consider_action_distribution: bool,
     penalty_function: Callable,
-):
+) -> jax.Array:
     """Get the target distribution for the DMPE algorithm based on the grid parameters
     and a penalty function. Only values that are not penalized by the penalty function
     are considered to be valid in the target distribution.
+
+    Args:
+        points_per_dim (int): The number of grid points per dimension. Always identical for each
+            dimension
+        bandwidth (float): The bandwidth of the kernel density estimate
+        grid_extend (float): The extent of the grid in each dimension
+        consider_action_distribution (bool): A flag indicating whether the action distribution
+            is to be considered
+        penalty_function (Callable): The penalty function that is used to determine the
+            valid grid points
+
+    Returns:
+        The target distribution as a jax.Array with shape (points_per_dim**dim, 1)
+
     """
     dim = 4 if consider_action_distribution else 2
     x_g = build_grid(dim, low=-grid_extend, high=grid_extend, points_per_dim=points_per_dim)
