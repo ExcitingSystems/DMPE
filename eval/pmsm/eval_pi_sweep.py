@@ -54,14 +54,14 @@ def subsample_references(references, target_N):
     return linear_interp(x_new, x_old, references)
 
 
-def induced_voltage_constr(x_g, env, w):
+def induced_voltage_constr(z_g, env, w):
     """Compute voltage constraint violations."""
     r_s = env.env_properties.static_params.r_s
 
     i_d_normalizer = env.env_properties.physical_normalizations.i_d
     i_q_normalizer = env.env_properties.physical_normalizations.i_q
-    physical_i_d = i_d_normalizer.denormalize(x_g[0])
-    physical_i_q = i_q_normalizer.denormalize(x_g[1])
+    physical_i_d = i_d_normalizer.denormalize(z_g[0])
+    physical_i_q = i_q_normalizer.denormalize(z_g[1])
 
     psid = env.LUT_interpolators["Psi_d"](jnp.array([physical_i_d, physical_i_q]))
     psiq = env.LUT_interpolators["Psi_q"](jnp.array([physical_i_d, physical_i_q]))

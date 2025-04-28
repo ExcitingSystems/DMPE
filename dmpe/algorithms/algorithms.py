@@ -237,7 +237,7 @@ def excite_with_dmpe(
 
     density_estimate = DensityEstimate(
         p=jnp.zeros([n_grid_points, 1]),
-        x_g=build_grid(
+        z_g=build_grid(
             dim,
             low=-exp_params["alg_params"]["grid_extend"],
             high=exp_params["alg_params"]["grid_extend"],

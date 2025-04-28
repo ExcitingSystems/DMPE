@@ -344,15 +344,15 @@ def plot_feature_combinations(data, labels, mode="plot", points_per_dim=100, ban
                 )
 
                 p_est = density_estimate.p
-                x = density_estimate.x_g
+                z = density_estimate.z_g
 
-                grid_len_per_dim = int(np.sqrt(x.shape[0]))
-                x_plot = x.reshape((grid_len_per_dim, grid_len_per_dim, 2))
+                grid_len_per_dim = int(np.sqrt(z.shape[0]))
+                z_plot = z.reshape((grid_len_per_dim, grid_len_per_dim, 2))
 
                 cax = axs[j, i].contourf(
-                    x_plot[..., 0],
-                    x_plot[..., 1],
-                    p_est.reshape(x_plot.shape[:-1]),
+                    z_plot[..., 0],
+                    z_plot[..., 1],
+                    p_est.reshape(z_plot.shape[:-1]),
                     antialiased=False,
                     levels=50,
                     alpha=0.9,

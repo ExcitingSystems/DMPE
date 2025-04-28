@@ -72,7 +72,7 @@ if sys_name == "pendulum":
     )
     alg_params["bandwidth"] = float(
         select_bandwidth(
-            delta_x=2,
+            delta_z=2,
             dim=env.physical_state_dim + env.action_dim,
             n_g=alg_params["points_per_dim"],
             percentage=0.3,
@@ -135,7 +135,7 @@ elif sys_name == "fluid_tank":
     )
     alg_params["bandwidth"] = float(
         select_bandwidth(
-            delta_x=2,
+            delta_z=2,
             dim=env.physical_state_dim + env.action_dim,
             n_g=alg_params["points_per_dim"],
             percentage=0.3,
@@ -323,7 +323,7 @@ elif sys_name == "pmsm":
 
     alg_params["bandwidth"] = float(
         select_bandwidth(
-            delta_x=2,
+            delta_z=2,
             dim=dim,
             n_g=alg_params["points_per_dim"],
             percentage=0.3,

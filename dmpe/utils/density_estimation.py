@@ -7,7 +7,7 @@ import equinox as eqx
 
 
 def select_bandwidth(
-    delta_x: float,
+    delta_z: float,
     dim: int,
     n_g: int,
     percentage: float,
@@ -19,7 +19,7 @@ def select_bandwidth(
     grid.
 
     Args:
-        delta_x (float): The size of the space in each dimension. Assumed to be
+        delta_z (float): The size of the space in each dimension. Assumed to be
             symmetrical
         dim (int): The dimension of the space.
         n_g (int): Number of grid points per dimension.
@@ -29,17 +29,17 @@ def select_bandwidth(
     Returns:
         bandwidth (float): The resulting proposed bandwidth
     """
-    return delta_x * jnp.sqrt(dim) / (n_g * jnp.sqrt(-2 * jnp.log(percentage)))
+    return delta_z * jnp.sqrt(dim) / (n_g * jnp.sqrt(-2 * jnp.log(percentage)))
 
 
 @jax.jit
-def gaussian_kernel(x: jax.Array, bandwidth: float) -> jax.Array:
-    """Evaluates the Gaussian RBF kernel at x with given bandwidth. This can take arbitrary
-    dimensions for 'x' and will compute the output by broadcasting. The last dimension of
+def gaussian_kernel(z: jax.Array, bandwidth: float) -> jax.Array:
+    """Evaluates the Gaussian RBF kernel at z with given bandwidth. This can take arbitrary
+    dimensions for 'z' and will compute the output by broadcasting. The last dimension of
     the input needs to be the dimension of the data which is reduced along.
 
     Args:
-        x (jax.Array): The input data points with shape (..., data_dim). The first dimensions
+        z (jax.Array): The input data points with shape (..., data_dim). The first dimensions
             are broadcast over and the last dimension is assumed to be the feature/data-dimension.
         bandwidth (float): Bandwidth of the kernel. Always symmetrical in the feature space.
 
@@ -47,9 +47,9 @@ def gaussian_kernel(x: jax.Array, bandwidth: float) -> jax.Array:
         The kernel value as a jax.Array with shape (..., 1). Where all dimensions before the
         last one are kept as they are.
     """
-    data_dim = x.shape[-1]
+    data_dim = z.shape[-1]
     factor = bandwidth**data_dim * jnp.power(2 * jnp.pi, data_dim / 2)
-    return 1 / factor * jnp.exp(-jnp.linalg.norm(x, axis=-1) ** 2 / (2 * bandwidth**2))
+    return 1 / factor * jnp.exp(-jnp.linalg.norm(z, axis=-1) ** 2 / (2 * bandwidth**2))
 
 
 class DensityEstimate(eqx.Module):
@@ -57,14 +57,14 @@ class DensityEstimate(eqx.Module):
 
     Args:
         p (jax.Array): The probability estimates at the grid points
-        x_g (jax.Array): The grid points to which the probability estimates belong
+        z_g (jax.Array): The grid points to which the probability estimates belong
         bandwidth (jax.Array): The bandwidth of the kernel density estimate
         n_observations (jax.Array): The number of observations that make up the momentary
             estimate
     """
 
     p: jax.Array
-    x_g: jax.Array
+    z_g: jax.Array
     bandwidth: jax.Array
     n_observations: jax.Array
 
@@ -94,7 +94,7 @@ class DensityEstimate(eqx.Module):
         return cls(
             p=p,
             n_observations=(density_estimate.n_observations + n_additional_observations),
-            x_g=density_estimate.x_g,
+            z_g=density_estimate.z_g,
             bandwidth=density_estimate.bandwidth,
         )
 
@@ -105,8 +105,8 @@ class DensityEstimate(eqx.Module):
         actions: jax.Array,
         use_actions: bool = True,
         points_per_dim: int = 30,
-        x_min: float = -1,
-        x_max: float = 1,
+        z_min: float = -1,
+        z_max: float = 1,
         bandwidth: float = 0.05,
     ) -> "DensityEstimate":
         """Create a fresh density estimate from gathered in the form of observations and actions.
@@ -125,8 +125,8 @@ class DensityEstimate(eqx.Module):
                 estimate
             points_per_dim (int): The number of grid points per dimension. Always identical for each
                 dimension
-            x_min (float): The minimum value of the grid in each dimension
-            x_max (float): The maximum value of the grid in each dimension
+            z_min (float): The minimum value of the grid in each dimension
+            z_max (float): The maximum value of the grid in each dimension
             bandwidth (float): The bandwidth of the kernel density estimate
 
         Returns:
@@ -140,15 +140,15 @@ class DensityEstimate(eqx.Module):
         else:
             data_points = jnp.concatenate([observations, actions], axis=-1)[None] if use_actions else observations[None]
 
-        return cls.from_dataset(data_points, points_per_dim, x_min, x_max, bandwidth)
+        return cls.from_dataset(data_points, points_per_dim, z_min, z_max, bandwidth)
 
     @classmethod
     def from_dataset(
         cls,
         data_points: jax.Array,
         points_per_dim: int = 30,
-        x_min: float = -1,
-        x_max: float = 1,
+        z_min: float = -1,
+        z_max: float = 1,
         bandwidth: float = 0.05,
     ) -> "DensityEstimate":
         """Create a fresh density estimate from gathered in the form of a sequence of feature vectors.
@@ -157,8 +157,8 @@ class DensityEstimate(eqx.Module):
             data_points (jax.Array): The data points to be part of the density estimate
             points_per_dim (int): The number of grid points per dimension. Always identical for each
                 dimension
-            x_min (float): The minimum value of the grid in each dimension
-            x_max (float): The maximum value of the grid in each dimension
+            z_min (float): The minimum value of the grid in each dimension
+            z_max (float): The maximum value of the grid in each dimension
             bandwidth (float): The bandwidth of the kernel density estimate
 
         Returns:
@@ -169,7 +169,7 @@ class DensityEstimate(eqx.Module):
         n_grid_points = points_per_dim**dim
         density_estimate = cls(
             p=jnp.zeros([1, n_grid_points, 1]),
-            x_g=build_grid(dim, x_min, x_max, points_per_dim),
+            z_g=build_grid(dim, z_min, z_max, points_per_dim),
             bandwidth=jnp.array([bandwidth]),
             n_observations=jnp.array([0]),
         )
@@ -198,7 +198,7 @@ def update_density_estimate_single_observation(
     Returns:
         The updated density estimate (DensityEstimate)
     """
-    kernel_value = gaussian_kernel(x=density_estimate.x_g - data_point, bandwidth=density_estimate.bandwidth)
+    kernel_value = gaussian_kernel(z=density_estimate.z_g - data_point, bandwidth=density_estimate.bandwidth)
     p_est = (
         1
         / (density_estimate.n_observations + 1)
@@ -223,12 +223,12 @@ def update_density_estimate_multiple_observations(
         The updated density estimate (DensityEstimate)
     """
 
-    def shifted_gaussian_kernel(x, data_points, bandwidth):
-        # created to enable vmapping of data_points without vmapping of x
-        return gaussian_kernel(x - data_points, bandwidth)
+    def shifted_gaussian_kernel(z, data_points, bandwidth):
+        # created to enable vmapping of data_points without vmapping of z
+        return gaussian_kernel(z - data_points, bandwidth)
 
     new_sum_part = jax.vmap(shifted_gaussian_kernel, in_axes=(None, 0, None))(
-        density_estimate.x_g, data_points, density_estimate.bandwidth
+        density_estimate.z_g, data_points, density_estimate.bandwidth
     )
     new_sum_part = jnp.sum(new_sum_part, axis=0)[..., None]
     p_est = (
@@ -246,7 +246,7 @@ def build_grid(dim: int, low: float, high: float, points_per_dim: int) -> jax.Ar
     """Build a uniform grid of points in the given dimension.
 
     Args:
-        dim (int): Dimensionality of the grid
+        dim (int): Dimensionality of the grid (and feature vector z)
         low (float): The minimum value of the grid in each dimension
         high (float): The maximum value of the grid in each dimension
         points_per_dim (int): The number of grid points per dimension. Always identical for each
@@ -257,12 +257,12 @@ def build_grid(dim: int, low: float, high: float, points_per_dim: int) -> jax.Ar
     """
     xs = [jnp.linspace(low, high, points_per_dim) for _ in range(dim)]
 
-    x_g = jnp.meshgrid(*xs)
-    x_g = jnp.stack([_x for _x in x_g], axis=-1)
-    x_g = x_g.reshape(-1, dim)
+    z_g = jnp.meshgrid(*xs)
+    z_g = jnp.stack([_x for _x in z_g], axis=-1)
+    z_g = z_g.reshape(-1, dim)
 
-    assert x_g.shape[0] == points_per_dim**dim
-    return x_g
+    assert z_g.shape[0] == points_per_dim**dim
+    return z_g
 
 
 def build_grid_2d(low: float, high: float, points_per_dim: int):
@@ -321,20 +321,20 @@ def get_target_distribution(
 
     """
     dim = 4 if consider_action_distribution else 2
-    x_g = build_grid(dim, low=-grid_extend, high=grid_extend, points_per_dim=points_per_dim)
+    z_g = build_grid(dim, low=-grid_extend, high=grid_extend, points_per_dim=points_per_dim)
 
     if consider_action_distribution:
-        constr_func = lambda x_g: penalty_function(x_g[..., None, :2], x_g[..., None, 2:])
+        constr_func = lambda z_g: penalty_function(z_g[..., None, :2], z_g[..., None, 2:])
     else:
-        constr_func = lambda x_g: penalty_function(x_g[..., None, :2], None)
+        constr_func = lambda z_g: penalty_function(z_g[..., None, :2], None)
 
-    valid_grid_point = jax.vmap(constr_func, in_axes=0)(x_g) == 0
-    constrained_data_points = x_g[jnp.where(valid_grid_point == True)]
+    valid_grid_point = jax.vmap(constr_func, in_axes=0)(z_g) == 0
+    constrained_data_points = z_g[jnp.where(valid_grid_point == True)]
 
     target_distribution = DensityEstimate.from_dataset(
         constrained_data_points[None],
-        x_min=-grid_extend,
-        x_max=grid_extend,
+        z_min=-grid_extend,
+        z_max=grid_extend,
         points_per_dim=points_per_dim,
         bandwidth=bandwidth,
     )

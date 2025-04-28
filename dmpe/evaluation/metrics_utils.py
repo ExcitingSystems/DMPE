@@ -36,7 +36,7 @@ def default_jsd(
 
     density_estimate = DensityEstimate(
         p=jnp.zeros([n_grid_points, 1]),
-        x_g=build_grid(dim, low=bounds[0], high=bounds[1], points_per_dim=points_per_dim),
+        z_g=build_grid(dim, low=bounds[0], high=bounds[1], points_per_dim=points_per_dim),
         bandwidth=jnp.array([bandwidth]),
         n_observations=jnp.array([0]),
     )
