@@ -11,7 +11,7 @@ def select_bandwidth(
     dim: int,
     n_g: int,
     percentage: float,
-):
+) -> float:
     """Select a bandwidth for the kernel density estimate by a rough heuristic.
 
     The bandwidth is designed so that the kernel is still at a given percentage of
@@ -19,11 +19,15 @@ def select_bandwidth(
     grid.
 
     Args:
-        delta_x: The size of the space in each dimension.
-        dim: The dimension of the space.
-        n_g: Number of grid points per dimension.
-        percentage: The percentage of the maximum value of the kernel at the other
-            grid point reached by stepping once in each dimension on the grid.
+        delta_x (float): The size of the space in each dimension. Assumed to be
+            symmetrical
+        dim (int): The dimension of the space.
+        n_g (int): Number of grid points per dimension.
+        percentage (float): The percentage of the maximum value of the kernel at
+            the other grid point reached by stepping once in each dimension on
+            the grid.
+    Returns:
+        bandwidth (float): The resulting proposed bandwidth
     """
     return delta_x * jnp.sqrt(dim) / (n_g * jnp.sqrt(-2 * jnp.log(percentage)))
 
@@ -33,6 +37,15 @@ def gaussian_kernel(x: jax.Array, bandwidth: float) -> jax.Array:
     """Evaluates the Gaussian RBF kernel at x with given bandwidth. This can take arbitrary
     dimensions for 'x' and will compute the output by broadcasting. The last dimension of
     the input needs to be the dimension of the data which is reduced along.
+
+    Args:
+        x (jax.Array): The input data points with shape (..., data_dim). The first dimensions
+            are broadcast over and the last dimension is assumed to be the feature/data-dimension.
+        bandwidth (float): Bandwidth of the kernel. Always symmetrical in the feature space.
+
+    Returns:
+        The kernel value as a jax.Array with shape (..., 1). Where all dimensions before the
+        last one are kept as they are.
     """
     data_dim = x.shape[-1]
     factor = bandwidth**data_dim * jnp.power(2 * jnp.pi, data_dim / 2)
@@ -40,13 +53,13 @@ def gaussian_kernel(x: jax.Array, bandwidth: float) -> jax.Array:
 
 
 class DensityEstimate(eqx.Module):
-    """Holds an estimation of the density of sampled data points.
+    """Holds an estimate of the data density of sampled data points.
 
     Args:
-        p: The probability estimates at the grid points
-        x_g: The grid points
-        bandwidth: The bandwidth of the kernel density estimate
-        n_observations: The number of observations that make up the current
+        p (jax.Array): The probability estimates at the grid points
+        x_g (jax.Array): The grid points to which the probability estimates belong
+        bandwidth (jax.Array): The bandwidth of the kernel density estimate
+        n_observations (jax.Array): The number of observations that make up the momentary
             estimate
     """
 
@@ -56,8 +69,24 @@ class DensityEstimate(eqx.Module):
     n_observations: jax.Array
 
     @classmethod
-    def from_estimate(cls, p, n_additional_observations, density_estimate):
-        """Create a density estimate recursively from an existing estimate."""
+    def from_estimate(
+        cls,
+        p: jax.Array,
+        n_additional_observations: int,
+        density_estimate: "DensityEstimate",
+    ) -> "DensityEstimate":
+        """Create a density estimate recursively from an existing estimate.
+
+        The computation is usually that p is constructed from the DensityEstimate.p before the
+        update together with the kernel density estimation over new data points. The result of
+        this computation is the input 'p'.
+
+        Args:
+            p (jax.Array): The new probability estimate
+            n_additional_observations (int): The number of data points that have been added
+                in the update
+            density_estimate (DensityEstimate): The density estimate before the update
+        """
 
         return cls(
             p=p,
