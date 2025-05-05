@@ -14,7 +14,7 @@ os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
 
 
 from dmpe.utils.signals import aprbs
-from dmpe.algorithms import excite_with_dmpe
+from dmpe.algorithms.algorithms import excite_with_dmpe
 from dmpe.models.model_utils import save_model
 
 import dmpe.utils.env_utils.pmsm_utils as pmsm_utils

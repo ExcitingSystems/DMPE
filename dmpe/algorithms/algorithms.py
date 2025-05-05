@@ -12,7 +12,7 @@ from dmpe.algorithms.algorithm_utils import (
     interact_and_observe,
     default_dmpe_parameterization,
 )
-from dmpe.excitation import loss_function, Exciter
+from dmpe.excitation.excitation_utils import loss_function, Exciter
 from dmpe.models.model_training import ModelTrainer
 from dmpe.utils.density_estimation import (
     DensityEstimate,

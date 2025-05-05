@@ -6,7 +6,7 @@ import jax.numpy as jnp
 import equinox as eqx
 
 import exciting_environments as excenvs
-from dmpe.models import NeuralEulerODE
+from dmpe.models.models import NeuralEulerODE
 
 
 @eqx.filter_jit

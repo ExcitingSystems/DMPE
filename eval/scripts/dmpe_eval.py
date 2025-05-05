@@ -20,8 +20,8 @@ import exciting_environments as excenvs
 
 from dmpe.utils.signals import aprbs
 from dmpe.utils.density_estimation import select_bandwidth
-from dmpe.algorithms import excite_with_dmpe
-from dmpe.models import NeuralEulerODEPendulum, NeuralEulerODE, NeuralEulerODECartpole
+from dmpe.algorithms.algorithms import excite_with_dmpe
+from dmpe.models.models import NeuralEulerODEPendulum, NeuralEulerODE, NeuralEulerODECartpole
 from dmpe.models.model_utils import save_model
 
 

@@ -9,7 +9,7 @@ from haiku import PRNGSequence
 import exciting_environments as excenvs
 from dmpe.utils.signals import aprbs
 from dmpe.utils.density_estimation import DensityEstimate
-from dmpe.models import NeuralEulerODE
+from dmpe.models.models import NeuralEulerODE
 from dmpe.excitation.excitation_utils import soft_penalty, Exciter
 
 
