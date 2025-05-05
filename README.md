@@ -53,11 +53,11 @@ Afterwards, install it from within the repository folder via `pip install -e .` 
 The repository is structured as follows:
 
 - `data/` is used to store the experiment results (needs to be created manually in order to successfully store the experiments) 
-- `dmpe/` contains the source code for the DMPE algorithm, for the GOATS algorithms from the related work, and the scripts to run experiments.
-- `examples/` contains some examples to get started that are regularly updated to reflect the momentary state.
+- `dmpe/` contains the **source code for the DMPE algorithm**, for the GOATS algorithms from the related work, and **the scripts to run experiments**.
+- `examples/` contains some examples to get started that **are regularly updated to reflect the momentary state of the repo.**
 - `fig/` contains example images (e.g., for the README)
-- `notebooks/eval` contains jupyter notebooks that are intended for evaluation of experiments (not necessarily maintained). 
-- `notebooks/dev/` contains jupyter notebooks that are intended for development on the repository (not necessarily maintained).
+- `notebooks/eval` contains jupyter notebooks that are intended for evaluation of experiments (generally not maintained and only updated when needed). 
+- `notebooks/dev/` contains jupyter notebooks that are intended for development on the repository (generally not maintained and only updated when needed).
 
 
 ## Basic Usage:
