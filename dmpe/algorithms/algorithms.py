@@ -216,7 +216,7 @@ def excite_with_dmpe(
 
     if exp_params["model_trainer_params"] is None and exp_params["model_params"] is None:
         model_trainer = None
-        model = env  # exp_params["model_env_wrapper"](env)
+        model = env
         opt_state_model = None
     elif exp_params["model_trainer_params"] is None and exp_params["model_params"] is not None:
         model_trainer = None

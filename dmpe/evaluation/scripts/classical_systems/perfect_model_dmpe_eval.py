@@ -82,7 +82,6 @@ if sys_name == "pendulum":
         alg_params=alg_params,
         model_trainer_params=None,
         model_params=None,
-        model_env_wrapper=ModelEnvWrapperPendulum,
     )
     seeds = list(np.arange(101, 131))
     ## End pendulum experiment parameters
@@ -145,7 +144,6 @@ elif sys_name == "fluid_tank":
         alg_params=alg_params,
         model_trainer_params=None,
         model_params=None,
-        model_env_wrapper=ModelEnvWrapperFluidTank,
     )
     seeds = list(np.arange(101, 131))
     ## End fluid_tank experiment parameters
@@ -207,7 +205,6 @@ elif sys_name == "cart_pole":
         alg_params=alg_params,
         model_trainer_params=None,
         model_params=None,
-        model_env_wrapper=ModelEnvWrapperCartPole,
     )
     seeds = list(np.arange(101, 131))
 
@@ -333,7 +330,6 @@ elif sys_name == "pmsm":
         alg_params=alg_params,
         model_trainer_params=None,
         model_params=None,
-        model_env_wrapper=None,
     )
 
     seeds = list(np.arange(22, 32))

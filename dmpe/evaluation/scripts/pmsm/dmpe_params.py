@@ -1,13 +1,9 @@
 from typing import Callable
-
-import jax
-import jax.numpy as jnp
 import optax
 
 from dmpe.models.models import NeuralEulerODEPMSM
-from dmpe.models.model_utils import ModelEnvWrapperPMSM
 from dmpe.models.rls import SimulationPMSM_RLS
-from dmpe.utils.density_estimation import build_grid, DensityEstimate, get_target_distribution
+from dmpe.utils.density_estimation import get_uniform_target_distribution
 
 
 def get_alg_params(consider_action_distribution: bool, penalty_function: Callable):
@@ -29,7 +25,7 @@ def get_alg_params(consider_action_distribution: bool, penalty_function: Callabl
         reuse_proposed_actions=True,
     )
 
-    alg_params["target_distribution"] = get_target_distribution(
+    alg_params["target_distribution"] = get_uniform_target_distribution(
         points_per_dim=alg_params["points_per_dim"],
         bandwidth=alg_params["bandwidth"],
         grid_extend=alg_params["grid_extend"],
@@ -48,9 +44,8 @@ def get_RLS_params(consider_action_distribution, penalty_function):
     model_params = dict(lambda_=0.9)
     model_trainer_params = None
     model_class = SimulationPMSM_RLS
-    model_env_wrapper = None
 
-    return alg_params, model_params, model_class, model_trainer_params, model_env_wrapper
+    return alg_params, model_params, model_class, model_trainer_params
 
 
 def get_NODE_params(consider_action_distribution, penalty_function):
@@ -70,9 +65,8 @@ def get_NODE_params(consider_action_distribution, penalty_function):
         model_lr=1e-4,
     )
     model_class = NeuralEulerODEPMSM
-    model_env_wrapper = None
 
-    return alg_params, model_params, model_class, model_trainer_params, model_env_wrapper
+    return alg_params, model_params, model_class, model_trainer_params
 
 
 def get_PM_params(consider_action_distribution, penalty_function):
@@ -85,6 +79,5 @@ def get_PM_params(consider_action_distribution, penalty_function):
     model_params = None
     model_trainer_params = None
     model_class = None
-    model_env_wrapper = ModelEnvWrapperPMSM
 
-    return alg_params, model_params, model_class, model_trainer_params, model_env_wrapper
+    return alg_params, model_params, model_class, model_trainer_params

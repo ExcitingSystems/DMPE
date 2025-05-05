@@ -91,7 +91,6 @@ def main(rpm, consider_actions):
         model_params=None,
         model_class=None,
         model_trainer_params=None,
-        model_env_wrapper=None,
     )
     seeds = list(np.arange(50, 61))
 
