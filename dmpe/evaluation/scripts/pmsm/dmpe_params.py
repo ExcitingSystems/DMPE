@@ -26,6 +26,7 @@ def get_alg_params(consider_action_distribution: bool, penalty_function: Callabl
     )
 
     alg_params["target_distribution"] = get_uniform_target_distribution(
+        dim=4 if consider_action_distribution else 2,
         points_per_dim=alg_params["points_per_dim"],
         bandwidth=alg_params["bandwidth"],
         grid_extend=alg_params["grid_extend"],
