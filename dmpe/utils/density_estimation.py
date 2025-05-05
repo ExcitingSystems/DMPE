@@ -295,18 +295,20 @@ def build_grid_3d(low: float, high: float, points_per_dim: int):
     return build_grid(3, low, high, points_per_dim)
 
 
-def get_target_distribution(
+def get_uniform_target_distribution(
+    dim: int,
     points_per_dim: int,
     bandwidth: float,
     grid_extend: float,
     consider_action_distribution: bool,
     penalty_function: Callable,
 ) -> jax.Array:
-    """Get the target distribution for the DMPE algorithm based on the grid parameters
+    """Get a uniform target distribution for the DMPE algorithm based on the grid parameters
     and a penalty function. Only values that are not penalized by the penalty function
-    are considered to be valid in the target distribution.
+    are targeted in the target distribution, but all of them are to be covered uniformly.
 
     Args:
+        dim (int): Number of dimensions for the grid.
         points_per_dim (int): The number of grid points per dimension. Always identical for each
             dimension
         bandwidth (float): The bandwidth of the kernel density estimate
@@ -320,7 +322,6 @@ def get_target_distribution(
         The target distribution as a jax.Array with shape (points_per_dim**dim, 1)
 
     """
-    dim = 4 if consider_action_distribution else 2
     z_g = build_grid(dim, low=-grid_extend, high=grid_extend, points_per_dim=points_per_dim)
 
     if consider_action_distribution:
