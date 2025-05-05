@@ -37,7 +37,8 @@ def JSDLoss(p: jax.Array, q: jax.Array) -> jax.Array:
 
 
 def MNNS_without_penalty(data_points: jax.Array, new_data_points: jax.Array) -> jax.Array:
-    """From [Smits2024].
+    """From [Smits2024: "Space-filling optimized excitation signals for nonlinear system
+    identification of dynamic processes of a diesel engine", V. Smits et al., 2024].
 
     Implementation inspired by https://github.com/google/jax/discussions/9813
 
@@ -51,10 +52,8 @@ def MNNS_without_penalty(data_points: jax.Array, new_data_points: jax.Array) -> 
 
 
 def audze_eglais(data_points: jax.Array, eps: float = 0.001) -> jax.Array:
-    """From [Smits2024]. The maximin-design penalizes points that
-    are too close in the point distribution.
-
-    TODO: There has to be a more efficient way to do this.
+    """From [Smits2024]. The maximin-design penalizes points that are too close to each other in
+    the data point distribution.
     """
     N = data_points.shape[0]
     distance_matrix = jnp.linalg.norm(data_points[:, None, :] - data_points[None, ...], axis=-1)
@@ -65,11 +64,11 @@ def audze_eglais(data_points: jax.Array, eps: float = 0.001) -> jax.Array:
 
 @jax.jit
 def MC_uniform_sampling_distribution_approximation(data_points: jax.Array, support_points: jax.Array) -> jax.Array:
-    """From [Smits2024]. The minimax-design tries to minimize
-    the distances of the data points to the support points.
+    """From [Smits2024]. The minimax-design aims to minimize the distances of the data points to
+    the support points.
 
-    What stops the data points to just flock to a single support point?
-    This is just looking at the shortest distance.
+    The loss is computed by considering the distance to the closest datapoint for each support
+    point.
     """
     M = support_points.shape[0]
     distance_matrix = jnp.linalg.norm(data_points[:, None, :] - support_points[None, ...], axis=-1)
@@ -78,12 +77,18 @@ def MC_uniform_sampling_distribution_approximation(data_points: jax.Array, suppo
     return jnp.sum(minimal_distances) / M
 
 
-def blockwise_mcudsa(data_points: jax.Array, support_points: jax.Array) -> jax.Array:
-    """Blockwise implementation of MCUDSA. For long trajectories, the full computation is infeasible and
-    needs to be split up into smaller blocks."""
+def blockwise_mcudsa(
+    data_points: jax.Array,
+    support_points: jax.Array,
+    block_size: int = 1000,
+) -> jax.Array:
+    """Block-wise implementation of MCUDSA.
+
+    Splits the support points into blocks with 'block_size' elements to reduce the amount of memory
+    necessary for the computation.
+    """
 
     M = support_points.shape[0]
-    block_size = 1_000
     value = jnp.zeros(1)
 
     for m in range(0, M, block_size):
@@ -107,7 +112,10 @@ def kiss_space_filling_cost(
     variances: jax.Array,
     eps: float = 1e-16,
 ) -> jax.Array:
-    """From [Kiss2024]. Slightly modified to use the mean instead of the sum in the denominator.
+    """From [Kiss2024: "Space-Filling Input Design for Nonlinear State-Space Identification",
+    M. Kiss et al., 2024].
+
+    Slightly modified to use the mean instead of the sum in the denominator.
     The goal is to have the same metric value for identical data distributions with different number
     of data points.
     """
@@ -124,12 +132,15 @@ def blockwise_ksfc(
     support_points: jax.Array,
     variances: jax.Array,
     eps: float = 1e-16,
+    block_size: int = 1000,
 ) -> jax.Array:
-    """Blockwise implementation of MCUDSA. For long trajectories, the full computation is infeasible and
-    needs to be split up into smaller blocks."""
+    """Block-wise implementation of KSFC [Kiss2024].
+
+    Splits the support points into blocks with 'block_size' elements to reduce the amount of memory
+    necessary for the computation.
+    """
 
     M = support_points.shape[0]
-    block_size = 1_000
     value = jnp.zeros(1)
 
     for m in range(0, M, block_size):
