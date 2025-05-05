@@ -110,15 +110,15 @@ def main(rpm, model_name, consider_actions):
     env, penalty_function = setup_env(rpm)
 
     if model_name == "NODE":
-        alg_params, model_params, model_class, model_trainer_params, model_env_wrapper = dmpe_params.get_NODE_params(
+        alg_params, model_params, model_class, model_trainer_params = dmpe_params.get_NODE_params(
             consider_action_distribution=consider_actions, penalty_function=penalty_function
         )
     elif model_name == "RLS":
-        alg_params, model_params, model_class, model_trainer_params, model_env_wrapper = dmpe_params.get_RLS_params(
+        alg_params, model_params, model_class, model_trainer_params = dmpe_params.get_RLS_params(
             consider_action_distribution=consider_actions, penalty_function=penalty_function
         )
     elif model_name == "PM":
-        alg_params, model_params, model_class, model_trainer_params, model_env_wrapper = dmpe_params.get_PM_params(
+        alg_params, model_params, model_class, model_trainer_params = dmpe_params.get_PM_params(
             consider_action_distribution=consider_actions, penalty_function=penalty_function
         )
     else:
@@ -132,7 +132,6 @@ def main(rpm, model_name, consider_actions):
         model_params=model_params,
         model_class=model_class,
         model_trainer_params=model_trainer_params,
-        model_env_wrapper=model_env_wrapper,
     )
     seeds = list(np.arange(50, 61))
 
