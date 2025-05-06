@@ -277,131 +277,6 @@ elif sys_name == "cart_pole":
 
     ## End cart_pole experiment parameters
 
-elif sys_name == "pmsm":
-    ## Begin pmsm experiment parameters
-    from dmpe.excitation.excitation_utils import soft_penalty
-    from exciting_environments.pmsm import PMSM
-
-    class ExcitingPMSM(PMSM):
-
-        def generate_observation(self, system_state, env_properties):
-            physical_constraints = env_properties.physical_constraints
-
-            eps = system_state.physical_state.epsilon
-            cos_eps = jnp.cos(eps)
-            sin_eps = jnp.sin(eps)
-
-            obs = jnp.hstack(
-                (
-                    (system_state.physical_state.i_d + (physical_constraints.i_d * 0.5))
-                    / (physical_constraints.i_d * 0.5),
-                    system_state.physical_state.i_q / physical_constraints.i_q,
-                )
-            )
-            return obs
-
-        def init_state(self, env_properties, rng=None, vmap_helper=None):
-            """Returns default initial state for all batches."""
-            phys = self.PhysicalState(
-                u_d_buffer=0.0,
-                u_q_buffer=0.0,
-                epsilon=0.0,
-                i_d=-env_properties.physical_constraints.i_d / 2,
-                i_q=0.0,
-                torque=0.0,
-                omega_el=2 * jnp.pi * 3 * 1000 / 60,
-            )
-            subkey = jnp.nan
-            additions = None  # self.Optional(something=jnp.zeros(self.batch_size))
-            ref = self.PhysicalState(
-                u_d_buffer=jnp.nan,
-                u_q_buffer=jnp.nan,
-                epsilon=jnp.nan,
-                i_d=jnp.nan,
-                i_q=jnp.nan,
-                torque=jnp.nan,
-                omega_el=jnp.nan,
-            )
-            return self.State(physical_state=phys, PRNGKey=subkey, additions=additions, reference=ref)
-
-    batch_size = 1
-
-    env = ExcitingPMSM(
-        batch_size=batch_size,
-        saturated=True,
-        static_params={
-            "p": 3,
-            "r_s": 15e-3,
-            "l_d": jnp.nan,
-            "l_q": jnp.nan,
-            "psi_p": jnp.nan,
-            "deadtime": 0,
-        },
-        solver=diffrax.Euler(),
-    )
-
-    def PMSM_penalty(observations, actions, penalty_order=2):
-
-        action_penalty = soft_penalty(actions, a_max=1, penalty_order=1)
-
-        physical_i_d = observations[..., 0] * (env.env_properties.physical_constraints.i_d * 0.5) - (
-            env.env_properties.physical_constraints.i_d * 0.5
-        )
-        physical_i_q = observations[..., 1] * env.env_properties.physical_constraints.i_q
-
-        a = physical_i_d / 250
-        b = physical_i_q / 250
-
-        obs_penalty = jax.nn.relu(a**2 + b**2 - 0.9)
-        obs_penalty = jnp.sum(obs_penalty)
-        i_d_penalty = jnp.sum(jax.nn.relu(a))
-
-        return (obs_penalty + i_d_penalty + action_penalty) * 1e3
-
-    alg_params = dict(
-        bandwidth=jnp.nan,
-        n_prediction_steps=5,
-        points_per_dim=21,
-        action_lr=1e-2,
-        n_opt_steps=100,
-        consider_action_distribution=True,
-        penalty_function=PMSM_penalty,
-        target_distribution=None,
-        clip_action=False,
-        n_starts=3,
-        reuse_proposed_actions=True,
-    )
-
-    dim = 4 if alg_params["consider_action_distribution"] else 2
-    points_per_dim = alg_params["points_per_dim"]
-    target_distribution = (np.ones(shape=[points_per_dim for _ in range(dim)]) ** dim)[..., None]
-    xx, yy = np.meshgrid(np.linspace(-1, 0, points_per_dim), np.linspace(-1, 1, points_per_dim))
-    target_distribution[xx**2 + yy**2 > 1] = 0
-    target_distribution = target_distribution / jnp.sum(target_distribution)
-    alg_params["target_distribution"] = jnp.array(target_distribution.reshape(-1, 1))
-
-    alg_params["bandwidth"] = float(
-        select_bandwidth(
-            delta_z=2,
-            dim=dim,
-            n_g=alg_params["points_per_dim"],
-            percentage=0.3,
-        )
-    )
-
-    exp_params = dict(
-        seed=int(1),
-        n_time_steps=5_000,
-        model_class=None,
-        env_params=None,
-        alg_params=alg_params,
-        model_trainer_params=None,
-        model_params=None,
-    )
-
-    seeds = list(np.arange(22, 32))
-    ## End pmsm experiment parameters
-
 else:
     raise NotImplementedError(f"System '{sys_name}' is unknown. Choose from ['pendulum', 'fluid_tank', 'cart_pole'].")
 
@@ -432,7 +307,7 @@ for exp_idx, seed in enumerate(seeds):
         ]
     )
     # run excitation algorithm
-    observations, actions, model, density_estimate, losses, proposed_actions = excite_with_dmpe(
+    observations, actions, model, density_estimate, losses, proposed_actions, _ = excite_with_dmpe(
         env,
         exp_params,
         proposed_actions,
