@@ -317,11 +317,11 @@ for exp_idx, seed in enumerate(seeds):
 
     # save parameters
     file_name = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    with open(TARGETED_DATA_PATH / pathlib.Path(f"params_{file_name}.json"), "w") as fp:
+    with open(results_path / pathlib.Path(f"params_{file_name}.json"), "w") as fp:
         safe_json_dump(exp_params, fp)
 
     # save observations + actions
-    with open(TARGETED_DATA_PATH / pathlib.Path(f"data_{file_name}.json"), "w") as fp:
+    with open(results_path / pathlib.Path(f"data_{file_name}.json"), "w") as fp:
         json.dump(dict(observations=observations.tolist(), actions=actions.tolist()), fp)
 
     jax.clear_caches()
