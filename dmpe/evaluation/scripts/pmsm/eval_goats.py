@@ -2,28 +2,20 @@ import json
 import argparse
 import datetime
 import os
+import pathlib
 
 
 import numpy as np
 import jax
-import jax.numpy as jnp
-import diffrax
-from haiku import PRNGSequence
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
 jax.config.update("jax_platform_name", "cpu")
 
 
-from dmpe.utils.signals import aprbs
 from dmpe.related_work.algorithms import excite_with_iGOATS
-from dmpe.models.model_utils import save_model
-
-import dmpe.utils.env_utils.pmsm_utils as pmsm_utils
-import dmpe_params
-
-from eval_dmpe import setup_env, safe_json_dump
-from goats_params import get_alg_params
+from dmpe.evaluation.scripts.pmsm.eval_dmpe import setup_env, safe_json_dump, TARGETED_DATA_PATH
+from dmpe.evaluation.scripts.pmsm.goats_params import get_alg_params
 
 
 def run_experiment(exp_idx, env, exp_params):
@@ -36,6 +28,14 @@ def run_experiment(exp_idx, env, exp_params):
         "Running experiment",
         exp_idx,
         f"(seed: {int(seed)}) on the PMSM with {rpm} rpm. Considers actions? {consider_actions}",
+    )
+
+    # Check that the targeted data folder actually exist:
+    results_path = TARGETED_DATA_PATH / pathlib.Path("igoats")
+    print(f"Results will be written to: '{results_path}'.")
+    assert results_path.exists(), (
+        f"The expected results path '{results_path}' does not seem to exist. Please create the necessary file structure "
+        + "or adapt the path."
     )
 
     # run excitation algorithm
@@ -67,11 +67,11 @@ def run_experiment(exp_idx, env, exp_params):
 
     # save parameters
     file_name = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
-    with open(f"./results/igoats/params_rpm_{rpm}_ca_{consider_actions}_{file_name}.json", "w") as fp:
+    with open(results_path / pathlib.Path(f"params_rpm_{rpm}_ca_{consider_actions}_{file_name}.json"), "w") as fp:
         safe_json_dump(exp_params, fp)
 
     # save observations + actions
-    with open(f"./results/igoats/data_rpm_{rpm}_ca_{consider_actions}_{file_name}.json", "w") as fp:
+    with open(results_path / pathlib.Path(f"data_rpm_{rpm}_ca_{consider_actions}_{file_name}.json"), "w") as fp:
         json.dump(dict(observations=observations, actions=actions), fp)
 
 

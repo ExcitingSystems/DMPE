@@ -3,12 +3,13 @@ import json
 import argparse
 import datetime
 from tqdm import tqdm
+import pathlib
 
 import jax
 import jax.numpy as jnp
 
 from dmpe.algorithms.algorithm_utils import interact_and_observe
-from eval_dmpe import setup_env
+from dmpe.evaluation.scripts.pmsm.eval_dmpe import setup_env, TARGETED_DATA_PATH
 
 
 @partial(jax.jit, static_argnums=(0, 1))
@@ -44,6 +45,14 @@ def run_experiment(rpm, seed):
     print(
         "Running experiment with random walk.",
         f"(seed: {int(seed)}) on the PMSM with {rpm} rpm.",
+    )
+
+    # Check that the targeted data folder actually exist:
+    results_path = TARGETED_DATA_PATH / pathlib.Path("heuristics") / pathlib.Path("random_walk")
+    print(f"Results will be written to: '{results_path}'.")
+    assert results_path.exists(), (
+        f"The expected results path '{results_path}' does not seem to exist. Please create the necessary file structure "
+        + "or adapt the path."
     )
 
     n_time_steps = 15_000
@@ -86,7 +95,7 @@ def run_experiment(rpm, seed):
     # experiment finished, save results
     file_name = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
 
-    with open(f"./results/heuristics/random_walk/data_rpm_{rpm}_{file_name}.json", "w") as fp:
+    with open(results_path / pathlib.Path(f"data_rpm_{rpm}_{file_name}.json"), "w") as fp:
         json.dump(dict(observations=observations.tolist(), actions=actions.tolist()), fp)
 
     jax.clear_caches()

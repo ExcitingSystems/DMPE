@@ -3,7 +3,7 @@ import json
 import time
 import argparse
 import datetime
-from tqdm import tqdm
+import pathlib
 
 import numpy as np
 import jax
@@ -11,7 +11,7 @@ import jax.numpy as jnp
 
 from dmpe.utils.density_estimation import build_grid
 from dmpe.utils.env_utils.foc_pi import ClassicController
-from eval_dmpe import setup_env
+from dmpe.evaluation.scripts.pmsm.eval_dmpe import setup_env, TARGETED_DATA_PATH
 
 
 @partial(jax.jit, static_argnums=(0, 1))
@@ -126,6 +126,14 @@ def run_experiment(rpm):
         f"on the PMSM with {rpm} rpm.",
     )
 
+    # Check that the targeted data folder actually exist:
+    results_path = TARGETED_DATA_PATH / pathlib.Path("heuristics") / pathlib.Path("current_plane_sweep")
+    print(f"Results will be written to: '{results_path}'.")
+    assert results_path.exists(), (
+        f"The expected results path '{results_path}' does not seem to exist. Please create the necessary file structure "
+        + "or adapt the path."
+    )
+
     points_per_dim = 100
 
     env, penalty_function = setup_env(rpm)
@@ -147,7 +155,7 @@ def run_experiment(rpm):
     # experiment finished, save results
     file_name = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
 
-    with open(f"./results/heuristics/current_plane_sweep/data_rpm_{rpm}_{file_name}.json", "w") as fp:
+    with open(results_path / pathlib.Path(f"data_rpm_{rpm}_{file_name}.json"), "w") as fp:
         json.dump(dict(observations=observations.tolist(), actions=actions.tolist()), fp)
 
     jax.clear_caches()
