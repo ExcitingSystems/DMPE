@@ -2,6 +2,7 @@ import json
 import argparse
 import datetime
 import os
+import pathlib
 
 
 import numpy as np
@@ -19,6 +20,11 @@ from dmpe.models.model_utils import save_model
 
 import dmpe.utils.env_utils.pmsm_utils as pmsm_utils
 import dmpe_params
+
+
+TARGETED_DATA_PATH = (
+    pathlib.Path(__file__).parent.parent.parent.parent.parent / pathlib.Path("data") / pathlib.Path("pmsm")
+)
 
 
 def safe_json_dump(obj, fp):
@@ -59,6 +65,14 @@ def run_experiment(model_name, exp_idx, env, exp_params):
         f"(seed: {int(seed)}) on the PMSM with {rpm} rpm. Considers actions? {consider_actions}",
     )
 
+    # Check that the targeted data folder actually exist:
+    results_path = TARGETED_DATA_PATH / pathlib.Path("dmpe") / pathlib.Path(model_name)
+    print(f"Results will be written to: '{results_path}'.")
+    assert results_path.exists(), (
+        f"The expected results path '{results_path}' does not seem to exist. Please create the necessary file structure "
+        + "or adapt the path."
+    )
+
     # setup PRNG:
     key = jax.random.PRNGKey(seed=exp_params["seed"])
     data_key, model_key, loader_key, expl_key, key = jax.random.split(key, 5)
@@ -85,11 +99,11 @@ def run_experiment(model_name, exp_idx, env, exp_params):
 
     # save parameters
     file_name = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
-    with open(f"./results/dmpe/{model_name}/params_rpm_{rpm}_ca_{consider_actions}_{file_name}.json", "w") as fp:
+    with open(results_path / pathlib.Path(f"params_rpm_{rpm}_ca_{consider_actions}_{file_name}.json"), "w") as fp:
         safe_json_dump(exp_params, fp)
 
     # save observations + actions
-    with open(f"./results/dmpe/{model_name}/data_rpm_{rpm}_ca_{consider_actions}_{file_name}.json", "w") as fp:
+    with open(results_path / pathlib.Path(f"data_rpm_{rpm}_ca_{consider_actions}_{file_name}.json"), "w") as fp:
         json.dump(dict(observations=observations.tolist(), actions=actions.tolist()), fp)
 
     model_params = exp_params["model_params"]
@@ -97,7 +111,7 @@ def run_experiment(model_name, exp_idx, env, exp_params):
     if model_name == "NODE":
         model_params["key"] = model_params["key"].tolist()
     save_model(
-        f"./results/dmpe/{model_name}/model_rpm_{rpm}_ca_{consider_actions}_{file_name}.json",
+        results_path / pathlib.Path(f"model_rpm_{rpm}_ca_{consider_actions}_{file_name}.json"),
         hyperparams=model_params,
         model=model,
     )
