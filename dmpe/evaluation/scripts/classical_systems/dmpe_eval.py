@@ -163,15 +163,18 @@ elif sys_name == "fluid_tank":
         bandwidth=None,
         n_prediction_steps=10,
         points_per_dim=50,
-        action_lr=1e-1,
+        grid_extend=1.05,
+        excitation_optimizer=optax.adabelief(1e-1),
         n_opt_steps=10,
-        rho_obs=1,
-        rho_act=1,
-        penalty_order=2,
+        start_optimizing=5,
+        consider_action_distribution=True,
+        penalty_function=None,
+        target_distribution=None,
         clip_action=True,
         n_starts=5,
         reuse_proposed_actions=True,
     )
+
     alg_params["bandwidth"] = float(
         select_bandwidth(
             delta_z=2,
@@ -179,6 +182,19 @@ elif sys_name == "fluid_tank":
             n_g=alg_params["points_per_dim"],
             percentage=0.3,
         )
+    )
+
+    # overwrite penalty function and target distribution
+    alg_params["penalty_function"] = lambda x, u: soft_penalty(a=x, a_max=1, penalty_order=2) + soft_penalty(
+        a=u, a_max=1, penalty_order=2
+    )
+    alg_params["target_distribution"] = get_uniform_target_distribution(
+        dim=2 if alg_params["consider_action_distribution"] else 1,
+        points_per_dim=alg_params["points_per_dim"],
+        bandwidth=alg_params["bandwidth"],
+        grid_extend=alg_params["grid_extend"],
+        consider_action_distribution=alg_params["consider_action_distribution"],
+        penalty_function=alg_params["penalty_function"],
     )
 
     model_trainer_params = dict(
@@ -229,38 +245,63 @@ elif sys_name == "cart_pole":
             "g": 9.81,
         },
         physical_normalizations={
-            "deflection": 2.4,
-            "velocity": 8,
-            "theta": jnp.pi,
-            "omega": 8,
+            "deflection": excenvs.utils.MinMaxNormalization(min=-2.4, max=2.4),
+            "velocity": excenvs.utils.MinMaxNormalization(min=-8, max=8),
+            "theta": excenvs.utils.MinMaxNormalization(min=-jnp.pi, max=jnp.pi),
+            "omega": excenvs.utils.MinMaxNormalization(min=-8, max=8),
         },
         env_solver=diffrax.Tsit5(),
     )
     env = excenvs.make(
         env_id="CartPole-v0",
         batch_size=env_params["batch_size"],
-        action_normalizations={"force": env_params["max_force"]},
+        action_normalizations={
+            "force": excenvs.utils.MinMaxNormalization(min=-env_params["max_force"], max=env_params["max_force"])
+        },
         physical_normalizations=env_params["physical_normalizations"],
         static_params=env_params["static_params"],
         solver=env_params["env_solver"],
         tau=env_params["tau"],
     )
 
-    points_per_dim = 20
-
     alg_params = dict(
-        bandwidth=select_bandwidth(2, 5, points_per_dim, 0.1),
+        bandwidth=0.12,
         n_prediction_steps=50,
-        points_per_dim=points_per_dim,
-        action_lr=1e-1,
+        points_per_dim=10,
+        grid_extend=1.05,
+        excitation_optimizer=optax.adabelief(1e-1),
         n_opt_steps=5,
-        rho_obs=1,
-        rho_act=1,
-        penalty_order=2,
+        start_optimizing=5,
+        consider_action_distribution=True,
+        penalty_function=None,
+        target_distribution=None,
         clip_action=True,
         n_starts=5,
         reuse_proposed_actions=True,
     )
+
+    # alg_params["bandwidth"] = float(
+    #     select_bandwidth(
+    #         delta_z=2,
+    #         dim=env.physical_state_dim + env.action_dim,
+    #         n_g=alg_params["points_per_dim"],
+    #         percentage=0.1,
+    #     )
+    # )
+
+    # overwrite penalty function and target distribution
+    alg_params["penalty_function"] = lambda x, u: soft_penalty(a=x, a_max=1, penalty_order=2) + soft_penalty(
+        a=u, a_max=1, penalty_order=2
+    )
+    alg_params["target_distribution"] = get_uniform_target_distribution(
+        dim=5 if alg_params["consider_action_distribution"] else 4,
+        points_per_dim=alg_params["points_per_dim"],
+        bandwidth=alg_params["bandwidth"],
+        grid_extend=alg_params["grid_extend"],
+        consider_action_distribution=alg_params["consider_action_distribution"],
+        penalty_function=alg_params["penalty_function"],
+    )
+
     model_trainer_params = dict(
         start_learning=alg_params["n_prediction_steps"],
         training_batch_size=128,
