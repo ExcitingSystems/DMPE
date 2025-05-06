@@ -316,7 +316,7 @@ for exp_idx, seed in enumerate(seeds):
     )
 
     # run excitation algorithm
-    observations, actions, model, density_estimate, losses, proposed_actions = excite_with_dmpe(
+    observations, actions, model, density_estimate, losses, proposed_actions, _ = excite_with_dmpe(
         env, exp_params, proposed_actions, loader_key, expl_key
     )
 
