@@ -38,6 +38,15 @@ def generate_aprbs(amplitudes, durations):
     return np.concatenate([np.ones(duration) * amplitude for (amplitude, duration) in zip(amplitudes, durations)])
 
 
+def generate_multidim_aprbs(amplitudes, durations):
+    """Parameterizable multidimensional aprbs"""
+    assert amplitudes.shape[1] == durations.shape[0] and durations.ndim == 1
+    multidim_signal = np.concatenate(
+        [generate_aprbs(amplitude, durations)[..., None] for amplitude in amplitudes], axis=-1
+    )
+    return multidim_signal
+
+
 def compress_datapoints(datapoints, N_c, feature_dimension, dist_th):
     """
     Compresses a sequence of datapoints based for the GOATS algorthims.
@@ -128,19 +137,21 @@ class ContinuousGoatsProblem(ElementwiseProblem):
         starting_actions,
         compress_data,
         compression_target_N,
-        rho_obs,
-        rho_act,
-        penalty_order,
         compression_feat_dim,
         compression_dist_th,
+        penalty_function,
     ):
+        self.action_dim = env.action_dim
 
         self.env = env
         self.obs = obs
+
         self.env_state = env_state
         self.featurize = featurize
 
-        amplitude_variables = {f"a_{number}": Real(bounds=bounds_amplitude) for number in range(prediction_horizon)}
+        amplitude_variables = {
+            f"a_{number}": Real(bounds=bounds_amplitude) for number in range(prediction_horizon * self.action_dim)
+        }
         duration_variables = {f"d_{number}": Integer(bounds=bounds_duration) for number in range(prediction_horizon)}
         all_vars = dict(amplitude_variables, **duration_variables)
 
@@ -172,18 +183,19 @@ class ContinuousGoatsProblem(ElementwiseProblem):
 
         self.compress_data = compress_data
         self.compression_target_N = compression_target_N
-        self.rho_obs = rho_obs
-        self.rho_act = rho_act
-        self.penalty_order = penalty_order
+        self.penalty_function = penalty_function
         self.compression_feat_dim = compression_feat_dim
         self.compression_dist_th = compression_dist_th
 
     def _evaluate(self, x, out, *args, **kwargs):
         action_parameters = np.fromiter(x.values(), dtype=np.float64)
-        actions = generate_aprbs(
-            amplitudes=action_parameters[: self.prediction_horizon],
-            durations=action_parameters[self.prediction_horizon :].astype(np.int32),
-        )[:, None]
+
+        amplitudes = action_parameters[: self.prediction_horizon * self.action_dim].reshape(
+            (self.action_dim, self.prediction_horizon)
+        )
+        durations = action_parameters[-self.prediction_horizon :].astype(np.int32)
+
+        actions = generate_multidim_aprbs(amplitudes=amplitudes, durations=durations)
 
         observations, _ = simulate_ahead_with_env(
             self.env,
@@ -201,10 +213,7 @@ class ContinuousGoatsProblem(ElementwiseProblem):
                 data_points=self.starting_feat_datapoints,
                 new_data_points=new_datapoints,
             )
-
-        penalty_terms = self.rho_obs * soft_penalty(
-            a=observations, a_max=1, penalty_order=self.penalty_order
-        ) + self.rho_act * soft_penalty(a=actions, a_max=1, penalty_order=self.penalty_order)
+        penalty_terms = self.penalty_function(observations, actions)
         out["F"] = np.squeeze(score).item() + penalty_terms.item()
 
 
@@ -224,11 +233,9 @@ def optimize_continuous_aprbs(
     starting_actions: np.ndarray,
     compress_data: bool,
     compression_target_N: int,
-    rho_obs: float,
-    rho_act: float,
-    penalty_order: int,
     compression_feat_dim: int,
     compression_dist_th: float,
+    penalty_function: Callable,
 ):
     """Optimize an APRBS signal with continuous amplitude levels for system excitiation."""
 
@@ -244,11 +251,9 @@ def optimize_continuous_aprbs(
         starting_actions=starting_actions,
         compress_data=compress_data,
         compression_target_N=compression_target_N,
-        rho_obs=rho_obs,
-        rho_act=rho_act,
-        penalty_order=penalty_order,
         compression_feat_dim=compression_feat_dim,
         compression_dist_th=compression_dist_th,
+        penalty_function=penalty_function,
     )
 
     res = minimize(
@@ -261,10 +266,13 @@ def optimize_continuous_aprbs(
     )
     proposed_aprbs_params = np.fromiter(res.X.values(), dtype=np.float64)
 
-    amplitudes = proposed_aprbs_params[:application_horizon]
-    all_durations = proposed_aprbs_params[prediction_horizon:]
+    action_dim = env.action_dim
+    amplitudes = proposed_aprbs_params[: application_horizon * action_dim].reshape((action_dim, application_horizon))
+
+    all_durations = proposed_aprbs_params[-prediction_horizon:]
     durations = all_durations[:application_horizon].astype(np.int32)
-    new_actions = generate_aprbs(amplitudes=amplitudes, durations=durations)[:, None]
+
+    new_actions = generate_multidim_aprbs(amplitudes=amplitudes, durations=durations)
 
     new_observations, env_state = simulate_ahead_with_env(
         env,

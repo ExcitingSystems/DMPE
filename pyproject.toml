@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "dmpe"
-version = "0.1.1"
+version = "0.2.1"
 authors = [
   { name="Hendrik Vater", email="vater@lea.uni-paderborn.de" },
 ]
@@ -34,8 +34,8 @@ dependencies = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/hvater/DMPE"
-Issues = "https://github.com/hvater/DMPE/issues"
+Homepage = "https://github.com/ExcitingSystems/DMPE"
+Issues = "https://github.com/ExcitingSystems/DMPE/issues"
 
 [tool.setuptools.packages.find]
 where = ["."]  # list of folders that contain the packages (["."] by default)
