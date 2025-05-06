@@ -19,7 +19,7 @@ from dmpe.algorithms.algorithms import excite_with_dmpe
 from dmpe.models.model_utils import save_model
 
 import dmpe.utils.env_utils.pmsm_utils as pmsm_utils
-import dmpe_params
+import dmpe.evaluation.scripts.pmsm.dmpe_params as dmpe_params
 
 
 TARGETED_DATA_PATH = (
