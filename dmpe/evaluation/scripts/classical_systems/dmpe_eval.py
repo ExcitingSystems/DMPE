@@ -4,15 +4,11 @@ import datetime
 import os
 import pathlib
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
-
 import numpy as np
 import jax
 import jax.numpy as jnp
 
 os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
-gpus = jax.devices()
-jax.config.update("jax_default_device", gpus[0])
 
 import diffrax
 import optax
@@ -45,9 +41,14 @@ parser.add_argument(
     type=str,
     help="The name of the environment. Options are ['pendulum', 'fluid_tank', 'cart_pole'].",
 )
+parser.add_argument("--gpu_id", type=int, default=0, help="GPU id to use.")
 
 args = parser.parse_args()
 sys_name = args.sys_name
+
+gpus = jax.devices()
+gpu_id = args.gpu_id
+jax.config.update("jax_default_device", gpus[args.gpu_id])
 
 ### Start experiment parameters #######################################################################################
 if sys_name == "pendulum":
