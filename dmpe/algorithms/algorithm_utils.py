@@ -8,7 +8,7 @@ from haiku import PRNGSequence
 
 import exciting_environments as excenvs
 from dmpe.utils.signals import aprbs
-from dmpe.utils.density_estimation import DensityEstimate
+from dmpe.utils.density_estimation import DensityEstimate, get_uniform_target_distribution
 from dmpe.models.models import NeuralEulerODE
 from dmpe.excitation.excitation_utils import soft_penalty, Exciter
 
@@ -149,9 +149,7 @@ def default_dmpe_parameterization(
         n_opt_steps=50,
         start_optimizing=5,
         consider_action_distribution=True,
-        penalty_function=(
-            lambda x, u: soft_penalty(a=x, a_max=1, penalty_order=2) + soft_penalty(a=u, a_max=1, penalty_order=2)
-        ),
+        penalty_function=None,
         target_distribution=None,
         clip_action=False,
         n_starts=10,
@@ -160,7 +158,17 @@ def default_dmpe_parameterization(
 
     dim = env.physical_state_dim + env.action_dim
 
-    alg_params["target_distribution"] = jnp.ones(shape=(alg_params["points_per_dim"] ** dim, 1)) * 1 / (1 - (-1)) ** dim
+    alg_params["penalty_function"] = lambda x, u: soft_penalty(a=x, a_max=1, penalty_order=2) + soft_penalty(
+        a=u, a_max=1, penalty_order=2
+    )
+    alg_params["target_distribution"] = get_uniform_target_distribution(
+        dim=3 if alg_params["consider_action_distribution"] else 2,
+        points_per_dim=alg_params["points_per_dim"],
+        bandwidth=alg_params["bandwidth"],
+        grid_extend=alg_params["grid_extend"],
+        consider_action_distribution=alg_params["consider_action_distribution"],
+        penalty_function=alg_params["penalty_function"],
+    )
 
     model_trainer_params = dict(
         start_learning=alg_params["n_prediction_steps"],
