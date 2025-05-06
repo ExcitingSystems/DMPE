@@ -5,6 +5,7 @@ import datetime
 import argparse
 import warnings
 import os
+import pathlib
 
 os.environ["CUDA_VISIBLE_DEVICES"] = "0"
 
@@ -17,7 +18,13 @@ jax.config.update("jax_platform_name", "cpu")
 import diffrax
 
 import exciting_environments as excenvs
+from dmpe.excitation.excitation_utils import soft_penalty
 from dmpe.related_work.algorithms import excite_with_sGOATS
+
+
+# file path setup
+REPO_ROOT_PATH = pathlib.Path(__file__).parent.parent.parent.parent.parent
+TARGETED_DATA_PATH = REPO_ROOT_PATH / pathlib.Path("data") / pathlib.Path("classical_systems")
 
 
 def safe_json_dump(obj, fp):
@@ -45,7 +52,9 @@ if sys_name == "pendulum":
     env = excenvs.make(
         env_id="Pendulum-v0",
         batch_size=env_params["batch_size"],
-        action_constraints={"torque": env_params["max_torque"]},
+        action_normalizations={
+            "torque": excenvs.utils.MinMaxNormalization(min=-env_params["max_torque"], max=env_params["max_torque"])
+        },
         static_params={"g": env_params["g"], "l": env_params["l"], "m": env_params["m"]},
         solver=env_params["env_solver"],
         tau=env_params["tau"],
@@ -86,8 +95,8 @@ elif sys_name == "fluid_tank":
     )
     env = excenvs.make(
         "FluidTank-v0",
-        physical_constraints=dict(height=env_params["max_height"]),
-        action_constraints=dict(inflow=env_params["max_inflow"]),
+        physical_normalizations=dict(height=excenvs.utils.MinMaxNormalization(min=0, max=env_params["max_height"])),
+        action_normalizations=dict(inflow=excenvs.utils.MinMaxNormalization(min=0, max=env_params["max_inflow"])),
         static_params=dict(
             base_area=env_params["base_area"],
             orifice_area=env_params["orifice_area"],
@@ -131,19 +140,21 @@ elif sys_name == "cart_pole":
             "m_c": 1,
             "g": 9.81,
         },
-        physical_constraints={
-            "deflection": 2.4,
-            "velocity": 8,
-            "theta": jnp.pi,
-            "omega": 8,
+        physical_normalizations={
+            "deflection": excenvs.utils.MinMaxNormalization(min=-2.4, max=2.4),
+            "velocity": excenvs.utils.MinMaxNormalization(min=-8, max=8),
+            "theta": excenvs.utils.MinMaxNormalization(min=-jnp.pi, max=jnp.pi),
+            "omega": excenvs.utils.MinMaxNormalization(min=-8, max=8),
         },
         env_solver=diffrax.Tsit5(),
     )
     env = excenvs.make(
         env_id="CartPole-v0",
         batch_size=env_params["batch_size"],
-        action_constraints={"force": env_params["max_force"]},
-        physical_constraints=env_params["physical_constraints"],
+        action_normalizations={
+            "force": excenvs.utils.MinMaxNormalization(min=-env_params["max_force"], max=env_params["max_force"])
+        },
+        physical_normalizations=env_params["physical_normalizations"],
         static_params=env_params["static_params"],
         solver=env_params["env_solver"],
         tau=env_params["tau"],
@@ -178,6 +189,13 @@ elif sys_name == "cart_pole":
 for exp_idx, seed in enumerate(seeds):
 
     print("Running experiment", exp_idx, f"(seed: {seed}) on '{sys_name}'")
+
+    results_path = TARGETED_DATA_PATH / pathlib.Path("sgoats") / pathlib.Path(sys_name)
+    print(f"Results will be written to: '{results_path}'.")
+    assert results_path.exists(), (
+        f"The expected results path '{results_path}' does not seem to exist. Please create the necessary file structure "
+        + "or adapt the path."
+    )
 
     exp_params = dict(
         seed=int(seed),
@@ -215,11 +233,11 @@ for exp_idx, seed in enumerate(seeds):
 
     # save parameters
     file_name = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
-    with open(f"../results/sgoats/{sys_name}/params_{file_name}.json", "w") as fp:
+    with open(results_path / pathlib.Path(f"params_{file_name}.json"), "w") as fp:
         safe_json_dump(exp_params, fp)
 
     # save observations + actions
-    with open(f"../results/sgoats/{sys_name}/data_{file_name}.json", "w") as fp:
+    with open(results_path / pathlib.Path(f"data_{file_name}.json"), "w") as fp:
         json.dump(dict(observations=observations, actions=actions), fp)
 
     jax.clear_caches()
