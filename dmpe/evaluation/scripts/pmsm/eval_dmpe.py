@@ -98,7 +98,7 @@ def run_experiment(model_name, exp_idx, env, exp_params):
     )
 
     # save parameters
-    file_name = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+    file_name = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     with open(results_path / pathlib.Path(f"params_rpm_{rpm}_ca_{consider_actions}_{file_name}.json"), "w") as fp:
         safe_json_dump(exp_params, fp)
 

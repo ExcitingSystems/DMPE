@@ -362,7 +362,7 @@ for exp_idx, seed in enumerate(seeds):
     )
 
     # save parameters
-    file_name = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+    file_name = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     with open(TARGETED_DATA_PATH / pathlib.Path(f"params_{file_name}.json"), "w") as fp:
         safe_json_dump(exp_params, fp)
 

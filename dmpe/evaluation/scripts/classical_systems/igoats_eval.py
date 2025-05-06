@@ -328,7 +328,7 @@ for exp_idx, seed in enumerate(seeds):
     actions = [act.tolist() for act in actions]
 
     # save parameters
-    file_name = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+    file_name = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
     with open(f"../results/igoats/{sys_name}/params_{file_name}.json", "w") as fp:
         safe_json_dump(exp_params, fp)
 

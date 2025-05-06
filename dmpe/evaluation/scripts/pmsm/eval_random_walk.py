@@ -93,7 +93,7 @@ def run_experiment(rpm, seed):
         obs = next_obs
 
     # experiment finished, save results
-    file_name = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
+    file_name = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
     with open(results_path / pathlib.Path(f"data_rpm_{rpm}_{file_name}.json"), "w") as fp:
         json.dump(dict(observations=observations.tolist(), actions=actions.tolist()), fp)
