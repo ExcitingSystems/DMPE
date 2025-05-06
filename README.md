@@ -52,7 +52,7 @@ Afterwards, install it from within the repository folder via `pip install -e .` 
 
 The repository is structured as follows:
 
-- `data/` is used to store the experiment results (needs to be created manually in order to successfully store the experiments) 
+- `data/` is used to store the experiment results (can be created manually or via a script located at `evaluation/scripts/create_exp_directories.py`) 
 - `dmpe/` contains the **source code for the DMPE algorithm**, for the GOATS algorithms from the related work, and **the scripts to run experiments**.
 - `examples/` contains some examples to get started that **are regularly updated to reflect the momentary state of the repo.**
 - `fig/` contains example images (e.g., for the README)
