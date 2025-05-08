@@ -1,6 +1,6 @@
 # Differentiable Model Predictive Excitation (DMPE):
 
-This repository implements an algorithm for the excitation of systems with unknown (usually non-linear) systems.
+This repository implements an algorithm for the excitation of systems with unknown (usually non-linear) dynamics.
 The inner workings and lines of thought are outlined within the corresponding publication.
 If you found this repository useful for your research, please cite the current preprint version as:
 
@@ -33,6 +33,10 @@ pip install dmpe
 
 
 **Alternative installation:**
+
+> ⚠️: As of now, the momentary state of `exciting environments` is not compatible with this version of `dmpe`. The commit with SHA hash `a1f828839a1b744cdce24b25e5fb1d12878b0ca6`
+is to be used to ensure compatiblity. Other options are to install `exciting environments` via pip (`pip install exciting-environments`) which is also compatible with this state of `dmpe`.
+
 
 Download the current state of the [`exciting_environments`](https://github.com/ExcitingSystems/exciting-environments) repository, e.g.:
 ```
