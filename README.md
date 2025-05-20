@@ -13,6 +13,8 @@ If you found this repository useful for your research, please cite the current p
   doi         = {10.36227/techrxiv.172840381.16440835/v1},
 }
 ```
+> ⚠️: If you are looking for the PMSM specific implementation, [the corresponding pull request](https://github.com/ExcitingSystems/DMPE/pull/3) is still open. You can look at the momentary state of the implementation in the [`dev-pmsm`](https://github.com/ExcitingSystems/DMPE/tree/dev-pmsm) branch.
+
 
 ## Installation:
 
