@@ -37,6 +37,9 @@ dependencies = [
 Homepage = "https://github.com/ExcitingSystems/DMPE"
 Issues = "https://github.com/ExcitingSystems/DMPE/issues"
 
+[tool.setuptools]
+include-package-data = true
+
 [tool.setuptools.packages.find]
 where = ["."]  # list of folders that contain the packages (["."] by default)
 include = ["dmpe*"]  # package names should match these glob patterns (["*"] by default)
