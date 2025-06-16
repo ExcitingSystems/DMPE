@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "dmpe"
-version = "0.2.3"
+version = "0.2.4"
 authors = [
   { name="Hendrik Vater", email="vater@lea.uni-paderborn.de" },
 ]
@@ -30,7 +30,7 @@ dependencies = [
     'optax==0.2.3',
     'dm-haiku==0.0.12',
     'pymoo==0.6.1.1',
-    'exciting-environments==0.2.1',
+    'exciting-environments==0.2.4',
 ]
 
 [project.urls]
