@@ -3,12 +3,14 @@ import jax.numpy as jnp
 
 
 @jax.jit
-def KLDLoss(p: jnp.ndarray, q: jnp.ndarray):
-    """Computes the sample KLD between two inputs.
+def KLDLoss(p: jax.Array, q: jax.Array) -> jax.Array:
+    """Computes the sample Kullback-Leibler divergence (KLD) between two inputs.
 
     The last dim of the input needs to be of length 1. The summation occurs along the second to
     last dimension. All dimensions before that are kept as they are. Overall the shape of the
     two inputs must be identical.
+    A small constant is added to the inputs to ensure numerical computability for inputs with
+    values approaching zero.
     """
     assert p.shape == q.shape, "The two inputs need to be of the same shape."
     assert p.shape[-1] == q.shape[-1] == 1, "Last dim needs to be of length 1 for PDFs"
@@ -20,12 +22,12 @@ def KLDLoss(p: jnp.ndarray, q: jnp.ndarray):
 
 
 @jax.jit
-def JSDLoss(p: jnp.ndarray, q: jnp.ndarray):
-    """Computes the sample JSD between two inputs.
+def JSDLoss(p: jax.Array, q: jax.Array) -> jax.Array:
+    """Computes the sample Jensen-Shannon divergence (JSD) between two inputs.
 
     The last dim of the input needs to be of length 1. The summation occurs along the second to
     last dimension. All dimensions before that are kept as they are. Overall the shape of the
-    two inputs must be indentical.
+    two inputs must be identical.
     """
     assert p.shape == q.shape, "The two inputs need to be of the same shape."
     assert p.shape[-1] == q.shape[-1] == 1, "Last dim needs to be of length 1 for PDFs"
@@ -34,8 +36,9 @@ def JSDLoss(p: jnp.ndarray, q: jnp.ndarray):
     return jnp.squeeze((KLDLoss(p, m) + KLDLoss(q, m)) / 2)
 
 
-def MNNS_without_penalty(data_points: jnp.ndarray, new_data_points: jnp.ndarray) -> jnp.ndarray:
-    """From [Smits2024].
+def MNNS_without_penalty(data_points: jax.Array, new_data_points: jax.Array) -> jax.Array:
+    """From [Smits2024: "Space-filling optimized excitation signals for nonlinear system
+    identification of dynamic processes of a diesel engine", V. Smits et al., 2024].
 
     Implementation inspired by https://github.com/google/jax/discussions/9813
 
@@ -48,11 +51,9 @@ def MNNS_without_penalty(data_points: jnp.ndarray, new_data_points: jnp.ndarray)
     return -jnp.sum(minimal_distances) / L
 
 
-def audze_eglais(data_points: jnp.ndarray, eps: float = 0.001) -> jnp.ndarray:
-    """From [Smits2024]. The maximin-design penalizes points that
-    are too close in the point distribution.
-
-    TODO: There has to be a more efficient way to do this.
+def audze_eglais(data_points: jax.Array, eps: float = 0.001) -> jax.Array:
+    """From [Smits2024]. The maximin-design penalizes points that are too close to each other in
+    the data point distribution.
     """
     N = data_points.shape[0]
     distance_matrix = jnp.linalg.norm(data_points[:, None, :] - data_points[None, ...], axis=-1)
@@ -62,14 +63,12 @@ def audze_eglais(data_points: jnp.ndarray, eps: float = 0.001) -> jnp.ndarray:
 
 
 @jax.jit
-def MC_uniform_sampling_distribution_approximation(
-    data_points: jnp.ndarray, support_points: jnp.ndarray
-) -> jnp.ndarray:
-    """From [Smits2024]. The minimax-design tries to minimize
-    the distances of the data points to the support points.
+def MC_uniform_sampling_distribution_approximation(data_points: jax.Array, support_points: jax.Array) -> jax.Array:
+    """From [Smits2024]. The minimax-design aims to minimize the distances of the data points to
+    the support points.
 
-    What stops the data points to just flock to a single support point?
-    This is just looking at the shortest distance.
+    The loss is computed by considering the distance to the closest datapoint for each support
+    point.
     """
     M = support_points.shape[0]
     distance_matrix = jnp.linalg.norm(data_points[:, None, :] - support_points[None, ...], axis=-1)
@@ -78,12 +77,18 @@ def MC_uniform_sampling_distribution_approximation(
     return jnp.sum(minimal_distances) / M
 
 
-def blockwise_mcudsa(data_points: jnp.ndarray, support_points: jnp.ndarray) -> jnp.ndarray:
-    """Blockwise implementation of MCUDSA. For long trajectories, the full computation is infeasible and
-    needs to be split up into smaller blocks."""
+def blockwise_mcudsa(
+    data_points: jax.Array,
+    support_points: jax.Array,
+    block_size: int = 1000,
+) -> jax.Array:
+    """Block-wise implementation of MCUDSA.
+
+    Splits the support points into blocks with 'block_size' elements to reduce the amount of memory
+    necessary for the computation.
+    """
 
     M = support_points.shape[0]
-    block_size = 1_000
     value = jnp.zeros(1)
 
     for m in range(0, M, block_size):
@@ -102,12 +107,15 @@ def blockwise_mcudsa(data_points: jnp.ndarray, support_points: jnp.ndarray) -> j
 
 @jax.jit
 def kiss_space_filling_cost(
-    data_points: jnp.ndarray,
-    support_points: jnp.ndarray,
-    variances: jnp.ndarray,
+    data_points: jax.Array,
+    support_points: jax.Array,
+    variances: jax.Array,
     eps: float = 1e-16,
-) -> jnp.ndarray:
-    """From [Kiss2024]. Slightly modified to use the mean instead of the sum in the denominator.
+) -> jax.Array:
+    """From [Kiss2024: "Space-Filling Input Design for Nonlinear State-Space Identification",
+    M. Kiss et al., 2024].
+
+    Slightly modified to use the mean instead of the sum in the denominator.
     The goal is to have the same metric value for identical data distributions with different number
     of data points.
     """
@@ -120,16 +128,19 @@ def kiss_space_filling_cost(
 
 
 def blockwise_ksfc(
-    data_points: jnp.ndarray,
-    support_points: jnp.ndarray,
-    variances: jnp.ndarray,
+    data_points: jax.Array,
+    support_points: jax.Array,
+    variances: jax.Array,
     eps: float = 1e-16,
-) -> jnp.ndarray:
-    """Blockwise implementation of MCUDSA. For long trajectories, the full computation is infeasible and
-    needs to be split up into smaller blocks."""
+    block_size: int = 1000,
+) -> jax.Array:
+    """Block-wise implementation of KSFC [Kiss2024].
+
+    Splits the support points into blocks with 'block_size' elements to reduce the amount of memory
+    necessary for the computation.
+    """
 
     M = support_points.shape[0]
-    block_size = 1_000
     value = jnp.zeros(1)
 
     for m in range(0, M, block_size):

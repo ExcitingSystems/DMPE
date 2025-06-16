@@ -2,27 +2,31 @@ import json
 import argparse
 import datetime
 import os
-
-os.environ["CUDA_VISIBLE_DEVICES"] = "0"
+import pathlib
 
 import numpy as np
 import jax
 import jax.numpy as jnp
 
 os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
-gpus = jax.devices()
-jax.config.update("jax_default_device", gpus[0])
 
 import diffrax
+import optax
 from haiku import PRNGSequence
 
 import exciting_environments as excenvs
 
 from dmpe.utils.signals import aprbs
-from dmpe.utils.density_estimation import select_bandwidth
-from dmpe.algorithms import excite_with_dmpe
-from dmpe.models import NeuralEulerODEPendulum, NeuralEulerODE, NeuralEulerODECartpole
+from dmpe.utils.density_estimation import select_bandwidth, get_uniform_target_distribution
+from dmpe.excitation.excitation_utils import soft_penalty
+from dmpe.algorithms.algorithms import excite_with_dmpe
+from dmpe.models.models import NeuralEulerODEPendulum, NeuralEulerODE, NeuralEulerODECartpole
 from dmpe.models.model_utils import save_model
+
+
+# file path setup
+REPO_ROOT_PATH = pathlib.Path(__file__).parent.parent.parent.parent.parent
+TARGETED_DATA_PATH = REPO_ROOT_PATH / pathlib.Path("data") / pathlib.Path("classical_systems")
 
 
 def safe_json_dump(obj, fp):
@@ -37,9 +41,14 @@ parser.add_argument(
     type=str,
     help="The name of the environment. Options are ['pendulum', 'fluid_tank', 'cart_pole'].",
 )
+parser.add_argument("--gpu_id", type=int, default=0, help="GPU id to use.")
 
 args = parser.parse_args()
 sys_name = args.sys_name
+
+gpus = jax.devices()
+gpu_id = args.gpu_id
+jax.config.update("jax_default_device", gpus[args.gpu_id])
 
 ### Start experiment parameters #######################################################################################
 if sys_name == "pendulum":
@@ -56,31 +65,49 @@ if sys_name == "pendulum":
     env = excenvs.make(
         env_id="Pendulum-v0",
         batch_size=env_params["batch_size"],
-        action_constraints={"torque": env_params["max_torque"]},
+        action_normalizations={
+            "torque": excenvs.utils.MinMaxNormalization(min=-env_params["max_torque"], max=env_params["max_torque"])
+        },
         static_params={"g": env_params["g"], "l": env_params["l"], "m": env_params["m"]},
         solver=env_params["env_solver"],
         tau=env_params["tau"],
     )
     alg_params = dict(
         bandwidth=None,
-        n_prediction_steps=50,
-        points_per_dim=50,
-        action_lr=1e-1,
+        n_prediction_steps=20,
+        points_per_dim=21,
+        grid_extend=1.05,
+        excitation_optimizer=optax.adabelief(1e-1),
         n_opt_steps=10,
-        rho_obs=1,
-        rho_act=1,
-        penalty_order=2,
+        start_optimizing=5,
+        consider_action_distribution=True,
+        penalty_function=None,
+        target_distribution=None,
         clip_action=True,
         n_starts=5,
         reuse_proposed_actions=True,
     )
+
     alg_params["bandwidth"] = float(
         select_bandwidth(
-            delta_x=2,
+            delta_z=2,
             dim=env.physical_state_dim + env.action_dim,
             n_g=alg_params["points_per_dim"],
             percentage=0.3,
         )
+    )
+
+    # overwrite penalty function and target distribution
+    alg_params["penalty_function"] = lambda x, u: soft_penalty(a=x, a_max=1, penalty_order=2) + soft_penalty(
+        a=u, a_max=1, penalty_order=2
+    )
+    alg_params["target_distribution"] = get_uniform_target_distribution(
+        dim=3 if alg_params["consider_action_distribution"] else 2,
+        points_per_dim=alg_params["points_per_dim"],
+        bandwidth=alg_params["bandwidth"],
+        grid_extend=alg_params["grid_extend"],
+        consider_action_distribution=alg_params["consider_action_distribution"],
+        penalty_function=alg_params["penalty_function"],
     )
 
     model_trainer_params = dict(
@@ -121,8 +148,8 @@ elif sys_name == "fluid_tank":
     )
     env = excenvs.make(
         "FluidTank-v0",
-        physical_constraints=dict(height=env_params["max_height"]),
-        action_constraints=dict(inflow=env_params["max_inflow"]),
+        physical_normalizations=dict(height=excenvs.utils.MinMaxNormalization(min=0, max=env_params["max_height"])),
+        action_normalizations=dict(inflow=excenvs.utils.MinMaxNormalization(min=0, max=env_params["max_inflow"])),
         static_params=dict(
             base_area=env_params["base_area"],
             orifice_area=env_params["orifice_area"],
@@ -137,22 +164,38 @@ elif sys_name == "fluid_tank":
         bandwidth=None,
         n_prediction_steps=10,
         points_per_dim=50,
-        action_lr=1e-1,
+        grid_extend=1.05,
+        excitation_optimizer=optax.adabelief(1e-1),
         n_opt_steps=10,
-        rho_obs=1,
-        rho_act=1,
-        penalty_order=2,
+        start_optimizing=5,
+        consider_action_distribution=True,
+        penalty_function=None,
+        target_distribution=None,
         clip_action=True,
         n_starts=5,
         reuse_proposed_actions=True,
     )
+
     alg_params["bandwidth"] = float(
         select_bandwidth(
-            delta_x=2,
+            delta_z=2,
             dim=env.physical_state_dim + env.action_dim,
             n_g=alg_params["points_per_dim"],
             percentage=0.3,
         )
+    )
+
+    # overwrite penalty function and target distribution
+    alg_params["penalty_function"] = lambda x, u: soft_penalty(a=x, a_max=1, penalty_order=2) + soft_penalty(
+        a=u, a_max=1, penalty_order=2
+    )
+    alg_params["target_distribution"] = get_uniform_target_distribution(
+        dim=2 if alg_params["consider_action_distribution"] else 1,
+        points_per_dim=alg_params["points_per_dim"],
+        bandwidth=alg_params["bandwidth"],
+        grid_extend=alg_params["grid_extend"],
+        consider_action_distribution=alg_params["consider_action_distribution"],
+        penalty_function=alg_params["penalty_function"],
     )
 
     model_trainer_params = dict(
@@ -202,39 +245,64 @@ elif sys_name == "cart_pole":
             "m_c": 1,
             "g": 9.81,
         },
-        physical_constraints={
-            "deflection": 2.4,
-            "velocity": 8,
-            "theta": jnp.pi,
-            "omega": 8,
+        physical_normalizations={
+            "deflection": excenvs.utils.MinMaxNormalization(min=-2.4, max=2.4),
+            "velocity": excenvs.utils.MinMaxNormalization(min=-8, max=8),
+            "theta": excenvs.utils.MinMaxNormalization(min=-jnp.pi, max=jnp.pi),
+            "omega": excenvs.utils.MinMaxNormalization(min=-8, max=8),
         },
         env_solver=diffrax.Tsit5(),
     )
     env = excenvs.make(
         env_id="CartPole-v0",
         batch_size=env_params["batch_size"],
-        action_constraints={"force": env_params["max_force"]},
-        physical_constraints=env_params["physical_constraints"],
+        action_normalizations={
+            "force": excenvs.utils.MinMaxNormalization(min=-env_params["max_force"], max=env_params["max_force"])
+        },
+        physical_normalizations=env_params["physical_normalizations"],
         static_params=env_params["static_params"],
         solver=env_params["env_solver"],
         tau=env_params["tau"],
     )
 
-    points_per_dim = 20
-
     alg_params = dict(
-        bandwidth=select_bandwidth(2, 5, points_per_dim, 0.1),
+        bandwidth=0.12,
         n_prediction_steps=50,
-        points_per_dim=points_per_dim,
-        action_lr=1e-1,
+        points_per_dim=10,
+        grid_extend=1.05,
+        excitation_optimizer=optax.adabelief(1e-1),
         n_opt_steps=5,
-        rho_obs=1,
-        rho_act=1,
-        penalty_order=2,
+        start_optimizing=5,
+        consider_action_distribution=True,
+        penalty_function=None,
+        target_distribution=None,
         clip_action=True,
         n_starts=5,
         reuse_proposed_actions=True,
     )
+
+    # alg_params["bandwidth"] = float(
+    #     select_bandwidth(
+    #         delta_z=2,
+    #         dim=env.physical_state_dim + env.action_dim,
+    #         n_g=alg_params["points_per_dim"],
+    #         percentage=0.1,
+    #     )
+    # )
+
+    # overwrite penalty function and target distribution
+    alg_params["penalty_function"] = lambda x, u: soft_penalty(a=x, a_max=1, penalty_order=2) + soft_penalty(
+        a=u, a_max=1, penalty_order=2
+    )
+    alg_params["target_distribution"] = get_uniform_target_distribution(
+        dim=5 if alg_params["consider_action_distribution"] else 4,
+        points_per_dim=alg_params["points_per_dim"],
+        bandwidth=alg_params["bandwidth"],
+        grid_extend=alg_params["grid_extend"],
+        consider_action_distribution=alg_params["consider_action_distribution"],
+        penalty_function=alg_params["penalty_function"],
+    )
+
     model_trainer_params = dict(
         start_learning=alg_params["n_prediction_steps"],
         training_batch_size=128,
@@ -267,6 +335,14 @@ for exp_idx, seed in enumerate(seeds):
     print("Running experiment", exp_idx, f"(seed: {seed}) on '{sys_name}'")
     exp_params["seed"] = int(seed)
 
+    # Check that the targeted data folder actually exist:
+    results_path = TARGETED_DATA_PATH / pathlib.Path("dmpe") / pathlib.Path(sys_name)
+    print(f"Results will be written to: '{results_path}'.")
+    assert results_path.exists(), (
+        f"The expected results path '{results_path}' does not seem to exist. Please create the necessary file structure "
+        + "or adapt the path."
+    )
+
     # setup PRNG
     key = jax.random.PRNGKey(seed=exp_params["seed"])
     data_key, model_key, loader_key, expl_key, key = jax.random.split(key, 5)
@@ -274,24 +350,29 @@ for exp_idx, seed in enumerate(seeds):
     exp_params["model_params"]["key"] = model_key
 
     # initial guess
-    proposed_actions = aprbs(exp_params["alg_params"]["n_prediction_steps"], env.batch_size, 1, 10, next(data_rng))[0]
+    proposed_actions = jnp.hstack(
+        [
+            aprbs(alg_params["n_prediction_steps"], env.batch_size, 1, 10, next(data_rng))[0]
+            for _ in range(env.action_dim)
+        ]
+    )
 
     # run excitation algorithm
-    observations, actions, model, density_estimate, losses, proposed_actions = excite_with_dmpe(
+    observations, actions, model, density_estimate, losses, proposed_actions, _ = excite_with_dmpe(
         env, exp_params, proposed_actions, loader_key, expl_key
     )
 
     # save parameters
-    file_name = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
-    with open(f"../results/dmpe/{sys_name}/params_{file_name}.json", "w") as fp:
+    file_name = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    with open(results_path / pathlib.Path(f"params_{file_name}.json"), "w") as fp:
         safe_json_dump(exp_params, fp)
 
     # save observations + actions
-    with open(f"../results/dmpe/{sys_name}/data_{file_name}.json", "w") as fp:
+    with open(results_path / pathlib.Path(f"data_{file_name}.json"), "w") as fp:
         json.dump(dict(observations=observations.tolist(), actions=actions.tolist()), fp)
 
     model_params["key"] = model_params["key"].tolist()
-    save_model(f"../results/dmpe/{sys_name}/model_{file_name}.json", hyperparams=model_params, model=model)
+    save_model(results_path / pathlib.Path(f"model_{file_name}.json"), hyperparams=model_params, model=model)
 
     jax.clear_caches()
 

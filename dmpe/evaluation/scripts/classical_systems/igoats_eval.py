@@ -1,6 +1,7 @@
 import json
 import datetime
 import argparse
+import pathlib
 
 import numpy as np
 import jax
@@ -15,7 +16,13 @@ import diffrax
 
 import exciting_environments as excenvs
 
+from dmpe.excitation.excitation_utils import soft_penalty
 from dmpe.related_work.algorithms import excite_with_iGOATS
+
+
+# file path setup
+REPO_ROOT_PATH = pathlib.Path(__file__).parent.parent.parent.parent.parent
+TARGETED_DATA_PATH = REPO_ROOT_PATH / pathlib.Path("data") / pathlib.Path("classical_systems")
 
 
 def safe_json_dump(obj, fp):
@@ -44,7 +51,9 @@ if sys_name == "pendulum":
     env = excenvs.make(
         env_id="Pendulum-v0",
         batch_size=env_params["batch_size"],
-        action_constraints={"torque": env_params["max_torque"]},
+        action_normalizations={
+            "torque": excenvs.utils.MinMaxNormalization(min=-env_params["max_torque"], max=env_params["max_torque"])
+        },
         static_params={"g": env_params["g"], "l": env_params["l"], "m": env_params["m"]},
         solver=env_params["env_solver"],
         tau=env_params["tau"],
@@ -52,6 +61,10 @@ if sys_name == "pendulum":
 
     h = 10
     a = 10
+
+    penalty_function = lambda x, u: 1e3 * soft_penalty(a=x, a_max=1, penalty_order=2) + 1e3 * soft_penalty(
+        a=u, a_max=1, penalty_order=2
+    )
 
     alg_params = dict(
         prediction_horizon=h,
@@ -64,11 +77,9 @@ if sys_name == "pendulum":
         rng=None,
         compress_data=True,
         compression_target_N=500,
-        rho_obs=1e3,
-        rho_act=1e3,
         compression_feat_dim=-2,
         compression_dist_th=0.1,
-        penalty_order=2,
+        penalty_order=penalty_function,
     )
     seeds = list(np.arange(101, 131))
     ## End pendulum experiment parameters
@@ -89,8 +100,8 @@ elif sys_name == "fluid_tank":
     )
     env = excenvs.make(
         "FluidTank-v0",
-        physical_constraints=dict(height=env_params["max_height"]),
-        action_constraints=dict(inflow=env_params["max_inflow"]),
+        physical_normalizations=dict(height=excenvs.utils.MinMaxNormalization(min=0, max=env_params["max_height"])),
+        action_normalizations=dict(inflow=excenvs.utils.MinMaxNormalization(min=0, max=env_params["max_inflow"])),
         static_params=dict(
             base_area=env_params["base_area"],
             orifice_area=env_params["orifice_area"],
@@ -104,6 +115,10 @@ elif sys_name == "fluid_tank":
     h = 10
     a = 10
 
+    penalty_function = lambda x, u: 1e3 * soft_penalty(a=x, a_max=1, penalty_order=2) + 1e3 * soft_penalty(
+        a=u, a_max=1, penalty_order=2
+    )
+
     alg_params = dict(
         prediction_horizon=h,
         application_horizon=a,
@@ -115,11 +130,9 @@ elif sys_name == "fluid_tank":
         rng=None,
         compress_data=True,
         compression_target_N=500,
-        rho_obs=1e3,
-        rho_act=1e3,
         compression_feat_dim=-2,
         compression_dist_th=0.1,
-        penalty_order=2,
+        penalty_function=penalty_function,
     )
 
     seeds = list(np.arange(101, 131))
@@ -140,19 +153,21 @@ elif sys_name == "cart_pole":
             "m_c": 1,
             "g": 9.81,
         },
-        physical_constraints={
-            "deflection": 2.4,
-            "velocity": 8,
-            "theta": jnp.pi,
-            "omega": 8,
+        physical_normalizations={
+            "deflection": excenvs.utils.MinMaxNormalization(min=-2.4, max=2.4),
+            "velocity": excenvs.utils.MinMaxNormalization(min=-8, max=8),
+            "theta": excenvs.utils.MinMaxNormalization(min=-jnp.pi, max=jnp.pi),
+            "omega": excenvs.utils.MinMaxNormalization(min=-8, max=8),
         },
         env_solver=diffrax.Tsit5(),
     )
     env = excenvs.make(
         env_id="CartPole-v0",
         batch_size=env_params["batch_size"],
-        action_constraints={"force": env_params["max_force"]},
-        physical_constraints=env_params["physical_constraints"],
+        action_normalizations={
+            "force": excenvs.utils.MinMaxNormalization(min=-env_params["max_force"], max=env_params["max_force"])
+        },
+        physical_normalizations=env_params["physical_normalizations"],
         static_params=env_params["static_params"],
         solver=env_params["env_solver"],
         tau=env_params["tau"],
@@ -160,6 +175,10 @@ elif sys_name == "cart_pole":
 
     h = 10
     a = 5  # to help with stabilization?
+
+    penalty_function = lambda x, u: 1e3 * soft_penalty(a=x, a_max=1, penalty_order=2) + 1e3 * soft_penalty(
+        a=u, a_max=1, penalty_order=2
+    )
 
     alg_params = dict(
         prediction_horizon=h,
@@ -172,11 +191,9 @@ elif sys_name == "cart_pole":
         rng=None,
         compress_data=True,
         compression_target_N=500,
-        rho_obs=1e3,
-        rho_act=1e3,
-        penalty_order=2,
         compression_feat_dim=-2,
         compression_dist_th=0.1,
+        penalty_function=penalty_function,
     )
 
     seeds = list(np.arange(101, 131))
@@ -192,8 +209,16 @@ for exp_idx, seed in enumerate(seeds):
 
     print("Running experiment", exp_idx, f"(seed: {seed}) on '{sys_name}'")
 
+    # Check that the targeted data folder actually exist:
+    results_path = TARGETED_DATA_PATH / pathlib.Path("igoats") / pathlib.Path(sys_name)
+    print(f"Results will be written to: '{results_path}'.")
+    assert results_path.exists(), (
+        f"The expected results path '{results_path}' does not seem to exist. Please create the necessary file structure "
+        + "or adapt the path."
+    )
+
     exp_params = dict(
-        n_time_steps=15000,
+        n_time_steps=15_000,
         seed=int(seed),
         alg_params=alg_params,
         env_params=env_params,
@@ -213,11 +238,9 @@ for exp_idx, seed in enumerate(seeds):
         rng=np.random.default_rng(seed),
         compress_data=alg_params["compress_data"],
         compression_target_N=alg_params["compression_target_N"],
-        rho_obs=alg_params["rho_obs"],
-        rho_act=alg_params["rho_act"],
-        penalty_order=alg_params["penalty_order"],
         compression_feat_dim=alg_params["compression_feat_dim"],
         compression_dist_th=alg_params["compression_dist_th"],
+        penalty_function=alg_params["penalty_function"],
         plot_subsequences=False,
     )
 
@@ -225,12 +248,12 @@ for exp_idx, seed in enumerate(seeds):
     actions = [act.tolist() for act in actions]
 
     # save parameters
-    file_name = datetime.datetime.now().strftime("%Y-%m-%d_%H:%M:%S")
-    with open(f"../results/igoats/{sys_name}/params_{file_name}.json", "w") as fp:
+    file_name = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+    with open(results_path / pathlib.Path(f"params_{file_name}.json"), "w") as fp:
         safe_json_dump(exp_params, fp)
 
     # save observations + actions
-    with open(f"../results/igoats/{sys_name}/data_{file_name}.json", "w") as fp:
+    with open(results_path / pathlib.Path(f"data_{file_name}.json"), "w") as fp:
         json.dump(dict(observations=observations, actions=actions), fp)
 
     jax.clear_caches()

@@ -3,8 +3,10 @@ import matplotlib.colors as mcolors
 import numpy as np
 
 import jax.numpy as jnp
+import equinox as eqx
 
-from dmpe.models.model_utils import simulate_ahead
+from dmpe.models.model_utils import simulate_ahead, simulate_ahead_with_env
+from dmpe.utils.density_estimation import DensityEstimate
 
 
 def plot_sequence(observations, actions, tau, obs_labels, action_labels, fig=None, axs=None, dotted=False):
@@ -15,13 +17,15 @@ def plot_sequence(observations, actions, tau, obs_labels, action_labels, fig=Non
 
     t = jnp.linspace(0, observations.shape[0] - 1, observations.shape[0]) * tau
 
+    colors = list(plt.rcParams["axes.prop_cycle"])[: observations.shape[-1]]
     for observation_idx in range(observations.shape[-1]):
         axs[0].plot(
             t,
             jnp.squeeze(observations[..., observation_idx]),
-            "." if dotted else "-",
+            "--" if dotted else "-",
             markersize=1,
             label=obs_labels[observation_idx],
+            color=colors[observation_idx]["color"],
         )
 
     axs[0].title.set_text("observations, timeseries")
@@ -35,15 +39,17 @@ def plot_sequence(observations, actions, tau, obs_labels, action_labels, fig=Non
         axs[1].set_ylabel(obs_labels[1])
         axs[1].set_xlabel(obs_labels[0])
     elif observations.shape[-1] > 2:
-        axs[1].scatter(jnp.squeeze(observations[..., -2]), jnp.squeeze(observations[..., -1]), s=1)
-        axs[1].title.set_text("observation plane, last two obs")
-        axs[1].set_ylabel(obs_labels[-1])
-        axs[1].set_xlabel(obs_labels[-2])
+        axs[1].scatter(jnp.squeeze(observations[..., 0]), jnp.squeeze(observations[..., 1]), s=1)
+        axs[1].title.set_text("observation plane, first two obs")
+        axs[1].set_ylabel(obs_labels[1])
+        axs[1].set_xlabel(obs_labels[0])
 
     if actions is not None:
         if observations.shape[0] == actions.shape[0] + 1:
             observations_ = observations[:-1]
             t = t[:-1]
+        else:
+            observations_ = observations
 
         if observations.shape[-1] == 1 and actions.shape[-1] == 1:
             axs[1].scatter(jnp.squeeze(actions[..., 0]), jnp.squeeze(observations_[..., 0]), s=1)
@@ -70,7 +76,11 @@ def plot_model_performance(model, true_observations, actions, tau, obs_labels, a
     """Compare the performance of the model to the ground truth data."""
 
     fig, axs = plot_sequence(
-        observations=true_observations, actions=actions, tau=tau, obs_labels=obs_labels, action_labels=action_labels
+        observations=true_observations,
+        actions=actions,
+        tau=tau,
+        obs_labels=["gt_" + obs_labels[i] for i in range(len(obs_labels))],
+        action_labels=action_labels,
     )
 
     pred_observations = simulate_ahead(model, true_observations[0, :], actions, tau)
@@ -85,7 +95,7 @@ def plot_model_performance(model, true_observations, actions, tau, obs_labels, a
         axs=axs,
         dotted=True,
     )
-    return fig, axs
+    return fig, axs, pred_observations
 
 
 def append_predictions_to_sequence_plot(
@@ -94,7 +104,7 @@ def append_predictions_to_sequence_plot(
     """Appends the future predictions to the given plot."""
 
     t = jnp.linspace(0, pred_observations.shape[0] - 1, pred_observations.shape[0]) * tau
-    t += tau * starting_step  # start where the trajectory left off
+    t += tau * (starting_step - 1)  # start where the trajectory left off
 
     colors = list(mcolors.CSS4_COLORS.values())[: pred_observations.shape[-1]]
     for observation_idx, color in zip(range(pred_observations.shape[-1]), colors):
@@ -114,8 +124,8 @@ def append_predictions_to_sequence_plot(
         )
     elif pred_observations.shape[-1] > 2:
         axs[1].scatter(
-            jnp.squeeze(pred_observations[..., -2]),
-            jnp.squeeze(pred_observations[..., -1]),
+            jnp.squeeze(pred_observations[..., 0]),
+            jnp.squeeze(pred_observations[..., 1]),
             s=1,
             color=mcolors.CSS4_COLORS["orange"],
         )
@@ -140,7 +150,7 @@ def append_predictions_to_sequence_plot(
 
 
 def plot_sequence_and_prediction(
-    observations, actions, tau, obs_labels, actions_labels, model, init_obs, proposed_actions
+    observations, actions, tau, obs_labels, actions_labels, model, init_obs, init_state, proposed_actions
 ):
     """Plots the current trajectory and appends the predictions from the optimization."""
 
@@ -151,8 +161,12 @@ def plot_sequence_and_prediction(
         obs_labels=obs_labels,
         action_labels=actions_labels,
     )
-
-    pred_observations = simulate_ahead(model=model, init_obs=init_obs, actions=proposed_actions, tau=tau)
+    if isinstance(model, eqx.Module):
+        pred_observations = simulate_ahead(model=model, init_obs=init_obs, actions=proposed_actions, tau=tau)
+    else:
+        pred_observations, state = simulate_ahead_with_env(
+            env=model, init_obs=init_obs, init_state=init_state, actions=proposed_actions
+        )
 
     fig, axs = append_predictions_to_sequence_plot(
         fig=fig,
@@ -305,5 +319,52 @@ def plot_metrics_by_sequence_length_for_all_algos(data_per_algo, lengths, algo_n
     [ax.grid(True) for ax in axs]
     [ax.legend() for ax in axs]
     plt.tight_layout()
+
+    return fig
+
+
+def plot_feature_combinations(data, labels, mode="plot", points_per_dim=100, bandwidth=0.05):
+    """Plot all combinations of the data set."""
+    assert data.shape[-1] == len(labels)
+    assert data.ndim == 2
+
+    n_features = data.shape[-1]
+
+    fig, axs = plt.subplots(nrows=n_features, ncols=n_features, figsize=(9, 9), sharex=True, sharey=True)
+
+    for i in range(n_features):
+        for j in range(n_features):
+            if mode == "plot":
+                axs[j, i].scatter(data[..., i], data[..., j], s=1)
+            elif mode == "contourf":
+                density_estimate = DensityEstimate.from_dataset(
+                    jnp.concatenate([data[..., i][..., None], data[..., j][..., None]], axis=-1)[None],
+                    points_per_dim=points_per_dim,
+                    bandwidth=bandwidth,
+                )
+
+                p_est = density_estimate.p
+                z = density_estimate.z_g
+
+                grid_len_per_dim = int(np.sqrt(z.shape[0]))
+                z_plot = z.reshape((grid_len_per_dim, grid_len_per_dim, 2))
+
+                cax = axs[j, i].contourf(
+                    z_plot[..., 0],
+                    z_plot[..., 1],
+                    p_est.reshape(z_plot.shape[:-1]),
+                    antialiased=False,
+                    levels=50,
+                    alpha=0.9,
+                    cmap=plt.cm.coolwarm,
+                )
+
+            axs[j, 0].set_ylabel(labels[j])
+
+            axs[j, i].grid(True)
+            axs[j, i].set_xlim(-1.1, 1.1)
+            axs[j, i].set_ylim(-1.1, 1.1)
+        axs[-1, i].set_xlabel(labels[i])
+    fig.tight_layout()
 
     return fig
