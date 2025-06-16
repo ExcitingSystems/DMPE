@@ -45,6 +45,7 @@ def setup_env(rpm):
             "l_q": jnp.nan,
             "psi_p": 65.65e-3,
             "deadtime": 0,
+            "u_dc": 400,
         },
         solver=diffrax.Tsit5(),
     )
