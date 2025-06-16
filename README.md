@@ -18,7 +18,7 @@ If you found this repository useful for your research, please cite the current p
 
 > If you are specifically interested in reproducing the results from the `Vater2024` publication, you are kindly referred to: https://pypi.org/project/dmpe/0.1.3/
 
-> Else, if you are specifically interested in reproducing the results from the `TBD` related publication, you are kindly referred to: https://pypi.org/project/dmpe/0.2.1/
+> Else, if you are specifically interested in reproducing the results from the `TBD` related publication, you are kindly referred to: https://pypi.org/project/dmpe/0.2.4/
 
 Otherwise, the simplest way is using `Python >= 3.11`:
 
