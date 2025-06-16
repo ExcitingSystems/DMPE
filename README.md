@@ -18,7 +18,7 @@ If you found this repository useful for your research, please cite the current p
 
 > If you are specifically interested in reproducing the results from the `Vater2024` publication, you are kindly referred to: https://pypi.org/project/dmpe/0.1.3/
 
-> Else, if you are specifically interested in reproducing the results from the `TBD` related publication, you are kindly referred to: `TBD`
+> Else, if you are specifically interested in reproducing the results from the `TBD` related publication, you are kindly referred to: https://pypi.org/project/dmpe/0.2.1/
 
 Otherwise, the simplest way is using `Python >= 3.11`:
 
@@ -128,13 +128,8 @@ Exemplary `PMSM` results at $n = 5000 \, \mathrm{min}^{-1}$:
 
 - Exemplary acquired trajectory (without considering the action distribution):
 
-![](fig/MIMO_example_trajectories_no_action_coverage.png?raw=true)
+![](https://github.com/ExcitingSystems/DMPE/blob/main/fig/MIMO_example_trajectories_no_action_coverage.png?raw=true)
 
 - feature-space coverage of the resulting data (without considering the action distribution):
 
-![](fig/MIMO_example_coverage_no_action_coverage.png?raw=true)
-
-
-- feature-space coverage of the resulting data (considering the action distribution):
-
-![](fig/MIMO_example_coverage_action_coverage.png?raw=true)
+![](https://github.com/ExcitingSystems/DMPE/blob/main/fig/MIMO_example_coverage_no_action_coverage.png?raw=true)
