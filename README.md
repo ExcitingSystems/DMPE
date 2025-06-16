@@ -13,8 +13,6 @@ If you found this repository useful for your research, please cite the current p
   doi         = {10.36227/techrxiv.172840381.16440835/v1},
 }
 ```
-> ⚠️: If you are looking for the PMSM specific implementation, [the corresponding pull request](https://github.com/ExcitingSystems/DMPE/pull/3) is still open. You can look at the momentary state of the implementation in the [`dev-pmsm`](https://github.com/ExcitingSystems/DMPE/tree/dev-pmsm) branch.
-
 
 ## Installation:
 
@@ -35,10 +33,6 @@ pip install dmpe
 
 
 **Alternative installation:**
-
-> ⚠️: As of now, the momentary state of `exciting environments` is not compatible with this version of `dmpe`. The commit with SHA hash `a1f828839a1b744cdce24b25e5fb1d12878b0ca6`
-is to be used to ensure compatiblity. Other options are to install `exciting environments` via pip (`pip install exciting-environments`) which is also compatible with this state of `dmpe`.
-
 
 Download the current state of the [`exciting_environments`](https://github.com/ExcitingSystems/exciting-environments) repository, e.g.:
 ```
