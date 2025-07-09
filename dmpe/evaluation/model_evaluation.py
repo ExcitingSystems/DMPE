@@ -1,13 +1,11 @@
-from typing import Callable
-from functools import partial
+import abc
 
 import jax
 import jax.numpy as jnp
-import optax
 import equinox as eqx
-import jax_dataclasses as jdc
 from dmpe.evaluation.utils import valid_space_grid
-import abc
+from dmpe.models.models import NeuralEulerODE
+import exciting_environments as excenvs
 
 
 class PredictionComparison(eqx.Module):
@@ -135,3 +133,44 @@ class ModelWrapper(abc.ABC):
             A sequence of observations representing the simulation rollout.
         """
         return
+
+
+class NodeModelWrapper(ModelWrapper):
+    """Wraps a DMPE NODE model for comparison."""
+
+    model: NeuralEulerODE
+
+    def step(self, obs, action, tau):
+        return self.model.step(obs, action, tau)
+
+    def gradient(self, obs, action):
+        return self.model.func(obs, action)
+
+    def rollout(self, init_obs, actions, tau):
+        return self.model(init_obs, actions, tau)
+
+
+class EnvWrapper(ModelWrapper):
+    """Wraps an exciting_environments env for comparison.
+
+    can you do this by differentiating the step function by time?
+    """
+
+    model: excenvs.CoreEnvironment
+
+    @eqx.filter_jit
+    def step(self, obs, action, tau):
+        assert tau == self.model.tau
+        state = self.model.generate_state_from_observation(obs, self.model.env_properties)
+        next_obs, _ = self.model.step(state, action, self.model.env_properties)
+        return next_obs
+
+    @eqx.filter_jit
+    def gradient(self, obs, action):
+        raise NotImplementedError
+
+    @eqx.filter_jit
+    def rollout(self, init_obs, actions, tau):
+        init_state = self.model.generate_state_from_observation(init_obs, self.model.env_properties)
+        observations, _, _ = self.model.sim_ahead(init_state, actions, self.model.env_properties, tau, tau)
+        return observations
