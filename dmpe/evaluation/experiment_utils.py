@@ -92,6 +92,24 @@ def load_experiment_results(exp_id: str, results_path: pathlib.Path, model_class
         return params, observations, actions, None
 
 
+def load_all_experiment_results(results_path: pathlib.Path, model_class=None, to_array=True):
+    experiment_results = []
+
+    for exp_id in get_experiment_ids(results_path):
+        params, observations, actions, model = load_experiment_results(exp_id, results_path, model_class, to_array)
+
+        experiment_results.append(
+            dict(
+                exp_id=exp_id,
+                params=params,
+                observations=observations,
+                actions=actions,
+                model=model,
+            )
+        )
+    return experiment_results
+
+
 def evaluate_experiment_metrics(observations, actions, metrics, featurize=None):
     """Evaluate the given observations and actions using the specified metrics."""
     results = {}
