@@ -42,9 +42,8 @@ def train_model_on_experiment_data(
     """
     key, model_key, loader_key = jax.random.split(key, 3)
     model_trainer = ModelTrainer(**model_trainer_params)
-
-    if model_params["key"] is None:
-        model_params["key"] = model_key
+    model_params = deepcopy(model_params)
+    model_params["key"] = model_key
 
     model = model_class(**model_params)
     opt_state_model = model_trainer.model_optimizer.init(eqx.filter(model, eqx.is_inexact_array))
@@ -84,9 +83,6 @@ class ModelExpDataResult(eqx.Module):
 
     def save_to_file(self, file_path: str | pathlib.Path):
 
-        model_params = deepcopy(self.model_params)
-        model_params["key"] = None
-
         hyperparams = dict(
             exp_id=self.exp_id,
             seeds=self.seeds,
@@ -94,8 +90,7 @@ class ModelExpDataResult(eqx.Module):
             n_obs=self.n_obs,
             n_actions=self.n_actions,
             n_iters=self.n_iters,
-            model_params=model_params,
-            # model_class=self.model_class,
+            model_params=self.model_params,
         )
 
         with open(file_path, "wb") as f:
@@ -165,10 +160,10 @@ class ModelExpDataResult(eqx.Module):
             n_actions=n_actions,
             observations=jnp.zeros((n_datapoints, n_obs)),
             actions=jnp.zeros((n_datapoints, n_actions)),
-            data_jsd=jnp.zeros(1),
+            data_jsd=jnp.zeros(shape=()),
             model_params=model_params,
             model_class=model_class,
-            models=[model_class(**model_params) for _ in seeds],
+            models=[model_class(**model_params, key=jax.random.PRNGKey(0)) for _ in seeds],
             n_iters=n_iters,
             model_errors=jnp.zeros((len(seeds), n_iters)),
         )
