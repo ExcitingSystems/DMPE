@@ -108,7 +108,7 @@ def main(
             trained_models.append(trained_model)
             model_errors.append(model_errors_dmpe)
 
-        result = ModelExpDataResult(
+        result = ModelExpDataResult.from_data(
             exp_id=exp_id,
             seeds=seeds,
             observations=observations,
