@@ -120,6 +120,7 @@ def main(
         file_path = data_out_path / f"test_{experiment_idx}.eqx"
         result.save_to_file(file_path)
         print("Successfully stored learned models and model errors.")
+        jax.clear_caches()
         print(100 * "#")
 
 
@@ -128,9 +129,21 @@ if __name__ == "__main__":
     # parse arguments
     parser = argparse.ArgumentParser(description="Train models on the provided datasets.")
     parser.add_argument(
-        "--data_in_path", type=str, help="File path for the experiment data to consider."
+        "--data_in_path",
+        type=str,
+        help=(
+            "File path for the inputs relative to the data root specified"
+            + "in dmpe.data_management.DataPaths().data_root."
+        ),
     )  # TODO: Hardcode?
-    parser.add_argument("--data_out_path", type=str, help="File path for the outputs.")
+    parser.add_argument(
+        "--data_out_path",
+        type=str,
+        help=(
+            "File path for the outputs relative to the data root specified"
+            + "in dmpe.data_management.DataPaths().data_root."
+        ),
+    )
     parser.add_argument(
         "--env_type",
         type=str,
@@ -141,9 +154,16 @@ if __name__ == "__main__":
 
     ## setup based on specified parameters
 
+    data_in_path = DataPaths().data_root / args.data_in_path
+    data_out_path = DataPaths().data_root / args.data_out_path
+
     # set gpu for run
     gpus = jax.devices()
     jax.config.update("jax_default_device", gpus[args.gpu_id])
+    print("Running on GPU with idx", args.gpu_id)
+    print("Considering env type:", args.env_type)
+    print(f"Found {len(get_experiment_ids(data_in_path))} at path {data_in_path}.")
+    print(f"Writing output to {data_out_path}.")
 
     # create corresponding env
     if args.env_type == "fluid_tank":
@@ -174,4 +194,4 @@ if __name__ == "__main__":
             return feat_obs
 
     # run model training
-    main(env, model_class, featurize, args.data_in_path, args.data_out_path)
+    main(env, model_class, featurize, pathlib.Path(data_in_path), pathlib.Path(data_out_path))
