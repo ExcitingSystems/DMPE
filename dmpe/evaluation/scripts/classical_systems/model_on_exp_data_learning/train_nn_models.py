@@ -79,6 +79,8 @@ def main(
         )
 
         # TODO: reduce_dataset?
+        observations = observations[:n_datapoints]
+        actions = actions[:n_datapoints]
 
         trained_models = []
         model_errors = []

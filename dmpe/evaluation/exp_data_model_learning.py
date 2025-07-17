@@ -2,6 +2,7 @@ from copy import deepcopy
 import json
 import pathlib
 from tqdm import tqdm
+import matplotlib.pyplot as plt
 
 import jax
 import jax.numpy as jnp
@@ -167,3 +168,31 @@ class ModelExpDataResult(eqx.Module):
             n_iters=n_iters,
             model_errors=jnp.zeros((len(seeds), n_iters)),
         )
+
+    def visualize(self):
+        fig, axs = plt.subplots(2, 1, figsize=(6, 4))
+        [axs[0].plot(errors) for errors in self.model_errors]
+
+        colors = plt.rcParams["axes.prop_cycle"]()
+        c1 = next(colors)["color"]
+
+        mean = jnp.nanmean(jnp.array(self.model_errors), axis=0)
+        std = jnp.nanstd(jnp.array(self.model_errors), axis=0)
+
+        axs[1].plot(
+            jnp.arange(0, len(mean), 1),
+            mean,
+            color=c1,
+        )
+        axs[1].fill_between(
+            jnp.arange(0, len(mean), 1),
+            mean - std,
+            mean + std,
+            color=c1,
+            alpha=0.1,
+        )
+
+        [ax.grid(True) for ax in axs]
+        [ax.set_yscale("log") for ax in axs]
+        fig.tight_layout()
+        return fig, axs
