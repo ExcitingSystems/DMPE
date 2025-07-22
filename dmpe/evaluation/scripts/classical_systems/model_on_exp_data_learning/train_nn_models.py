@@ -3,6 +3,7 @@
 import argparse
 import os
 import pathlib
+import datetime
 
 os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
 
@@ -124,7 +125,8 @@ def main(
             models=trained_models,
             model_errors=jnp.array(model_errors),
         )
-        file_path = data_out_path / f"test_{experiment_idx}.eqx"
+        name = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
+        file_path = data_out_path / f"{name}_based_on_{exp_id}.eqx"
         result.save_to_file(file_path)
         print("Successfully stored learned models and model errors.")
         jax.clear_caches()
