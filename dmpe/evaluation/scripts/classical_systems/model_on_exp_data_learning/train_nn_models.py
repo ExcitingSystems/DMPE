@@ -31,13 +31,15 @@ def main(
     featurize: callable,
     data_in_path: pathlib.Path,
     data_out_path: pathlib.Path,
+    n_datapoints: int,
+    data_start: int = 0,
 ):
     # setup parameters (TODO: Should these be done with a script specifically for a given env)
     points_per_dim = 20  # grid for model eval (TODO: potentially replace with LHS)
 
     lr = 1e-4
     n_iters = 100
-    n_datapoints = 1_000  # TODO: Do I really want to do it like this?
+    # n_datapoints = 4_000  # TODO: Do I really want to do it like this?
 
     seeds = jnp.arange(0, 10, 1).tolist()
 
@@ -78,9 +80,12 @@ def main(
             model_class=None,  # internal excitation model is unused anyways
         )
 
-        # TODO: reduce_dataset?
-        observations = observations[:n_datapoints]
-        actions = actions[:n_datapoints]
+        # TODO: reduce_dataset? start: start + n_datapoints
+        assert data_start + n_datapoints <= observations.shape[0]
+        assert data_start + n_datapoints <= actions.shape[0]
+
+        observations = observations[data_start : data_start + n_datapoints]
+        actions = actions[data_start : data_start + n_datapoints]
 
         trained_models = []
         model_errors = []
@@ -135,7 +140,7 @@ if __name__ == "__main__":
         type=str,
         help=(
             "File path for the inputs relative to the data root specified"
-            + "in dmpe.data_management.DataPaths().data_root."
+            + " in dmpe.data_management.DataPaths().data_root."
         ),
     )  # TODO: Hardcode?
     parser.add_argument(
@@ -143,7 +148,7 @@ if __name__ == "__main__":
         type=str,
         help=(
             "File path for the outputs relative to the data root specified"
-            + "in dmpe.data_management.DataPaths().data_root."
+            + " in dmpe.data_management.DataPaths().data_root."
         ),
     )
     parser.add_argument(
@@ -151,6 +156,16 @@ if __name__ == "__main__":
         type=str,
         help="Environment to consider. One of ['fluid_tank', 'pendulum', 'cart_pole']",
     )
+    parser.add_argument(
+        "--n_datapoints",
+        type=int,
+        help=(
+            "Length of the data subset for training. The data indexed with datastart:data_start+n_datapoints is used"
+            + " for training. If '-1' is used, the training is run for all length 1000 to 15000 in increments of"
+            + " 1000 steps (i.e., 1000, 2000, 3000, ..., 14000, 15000)."
+        ),
+    )
+    parser.add_argument("--data_start", type=int, default=0, help="Data index at which to start the training subset.")
     parser.add_argument("--gpu_id", type=int, default=0, help="GPU id to use.")
     args = parser.parse_args()
 
@@ -166,6 +181,7 @@ if __name__ == "__main__":
     print("Considering env type:", args.env_type)
     print(f"Found {len(get_experiment_ids(data_in_path))} at path {data_in_path}.")
     print(f"Writing output to {data_out_path}.")
+    print(f"Using data from index {args.data_start} until {args.data_start + args.n_datapoints} for training.")
 
     # create corresponding env
     if args.env_type == "fluid_tank":
@@ -196,4 +212,24 @@ if __name__ == "__main__":
             return feat_obs
 
     # run model training
-    main(env, model_class, featurize, pathlib.Path(data_in_path), pathlib.Path(data_out_path))
+    if args.n_datapoints == -1:
+        for n_datapoints in jnp.arange(1000, 15001, 1000):
+            main(
+                env,
+                model_class,
+                featurize,
+                pathlib.Path(data_in_path),
+                pathlib.Path(data_out_path),
+                n_datapoints=n_datapoints,
+                data_start=args.data_start,
+            )
+    else:
+        main(
+            env,
+            model_class,
+            featurize,
+            pathlib.Path(data_in_path),
+            pathlib.Path(data_out_path),
+            n_datapoints=args.n_datapoints,
+            data_start=args.data_start,
+        )
