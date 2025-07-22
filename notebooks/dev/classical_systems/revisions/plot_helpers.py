@@ -20,7 +20,7 @@ def plot_jsd_model_relation(data_path: pathlib.Path, model_class: eqx.Module, ve
     color_cycle = plt.rcParams["axes.prop_cycle"]()
     color_mapping = [next(color_cycle)["color"] for _ in range(15)]
 
-    result_paths = glob.glob(str(data_path / "*.eqx"))
+    result_paths = glob.glob(str(data_path) + "/**/*.eqx")
     n_results = len(result_paths)
     print("# or results:", n_results)
     print(80 * "-")
