@@ -15,16 +15,12 @@ import jax.numpy as jnp
 
 jax.config.update("jax_platform_name", "cpu")
 
-import diffrax
-
-import exciting_environments as excenvs
+from dmpe.data_management import DataPaths
 from dmpe.excitation.excitation_utils import soft_penalty
 from dmpe.related_work.algorithms import excite_with_sGOATS
-
-
-# file path setup
-REPO_ROOT_PATH = pathlib.Path(__file__).parent.parent.parent.parent.parent
-TARGETED_DATA_PATH = REPO_ROOT_PATH / pathlib.Path("data") / pathlib.Path("classical_systems")
+from dmpe.utils.env_utils.fluid_tank_utils import setup_env as setup_fluid_tank_env
+from dmpe.utils.env_utils.pendulum_utils import setup_env as setup_pendulum_env
+from dmpe.utils.env_utils.cart_pole_utils import setup_env as setup_cart_pole_env
 
 
 def safe_json_dump(obj, fp):
@@ -48,17 +44,7 @@ sys_name = args.sys_name
 if sys_name == "pendulum":
     ## Start pendulum experiment parameters
 
-    env_params = dict(batch_size=1, tau=2e-2, max_torque=5, g=9.81, l=1, m=1, env_solver=diffrax.Tsit5())
-    env = excenvs.make(
-        env_id="Pendulum-v0",
-        batch_size=env_params["batch_size"],
-        action_normalizations={
-            "torque": excenvs.utils.MinMaxNormalization(min=-env_params["max_torque"], max=env_params["max_torque"])
-        },
-        static_params={"g": env_params["g"], "l": env_params["l"], "m": env_params["m"]},
-        solver=env_params["env_solver"],
-        tau=env_params["tau"],
-    )
+    env, _, env_params = setup_pendulum_env()
 
     alg_params = dict(
         n_amplitudes=360,
@@ -82,30 +68,8 @@ if sys_name == "pendulum":
 elif sys_name == "fluid_tank":
     ## Start fluid_tank experiment parameters
 
-    env_params = dict(
-        batch_size=1,
-        tau=5,
-        max_height=3,
-        max_inflow=0.2,
-        base_area=jnp.pi,
-        orifice_area=jnp.pi * 0.1**2,
-        c_d=0.6,
-        g=9.81,
-        env_solver=diffrax.Tsit5(),
-    )
-    env = excenvs.make(
-        "FluidTank-v0",
-        physical_normalizations=dict(height=excenvs.utils.MinMaxNormalization(min=0, max=env_params["max_height"])),
-        action_normalizations=dict(inflow=excenvs.utils.MinMaxNormalization(min=0, max=env_params["max_inflow"])),
-        static_params=dict(
-            base_area=env_params["base_area"],
-            orifice_area=env_params["orifice_area"],
-            c_d=env_params["c_d"],
-            g=env_params["g"],
-        ),
-        tau=env_params["tau"],
-        solver=env_params["env_solver"],
-    )
+    env, _, env_params = setup_fluid_tank_env()
+
     alg_params = dict(
         n_amplitudes=779,
         n_amplitude_groups=41,
@@ -128,37 +92,7 @@ elif sys_name == "fluid_tank":
 elif sys_name == "cart_pole":
     ## Start cart_pole experiment parameters
 
-    env_params = dict(
-        batch_size=1,
-        tau=2e-2,
-        max_force=10,
-        static_params={
-            "mu_p": 0.002,
-            "mu_c": 0.5,
-            "l": 0.5,
-            "m_p": 0.1,
-            "m_c": 1,
-            "g": 9.81,
-        },
-        physical_normalizations={
-            "deflection": excenvs.utils.MinMaxNormalization(min=-2.4, max=2.4),
-            "velocity": excenvs.utils.MinMaxNormalization(min=-8, max=8),
-            "theta": excenvs.utils.MinMaxNormalization(min=-jnp.pi, max=jnp.pi),
-            "omega": excenvs.utils.MinMaxNormalization(min=-8, max=8),
-        },
-        env_solver=diffrax.Tsit5(),
-    )
-    env = excenvs.make(
-        env_id="CartPole-v0",
-        batch_size=env_params["batch_size"],
-        action_normalizations={
-            "force": excenvs.utils.MinMaxNormalization(min=-env_params["max_force"], max=env_params["max_force"])
-        },
-        physical_normalizations=env_params["physical_normalizations"],
-        static_params=env_params["static_params"],
-        solver=env_params["env_solver"],
-        tau=env_params["tau"],
-    )
+    env, _, env_params = setup_cart_pole_env()
 
     alg_params = dict(
         n_amplitudes=720,
@@ -190,7 +124,7 @@ for exp_idx, seed in enumerate(seeds):
 
     print("Running experiment", exp_idx, f"(seed: {seed}) on '{sys_name}'")
 
-    results_path = TARGETED_DATA_PATH / pathlib.Path("sgoats") / pathlib.Path(sys_name)
+    results_path = DataPaths().cs_experiments / pathlib.Path("sgoats") / pathlib.Path(sys_name)
     print(f"Results will be written to: '{results_path}'.")
     assert results_path.exists(), (
         f"The expected results path '{results_path}' does not seem to exist. Please create the necessary file structure "
