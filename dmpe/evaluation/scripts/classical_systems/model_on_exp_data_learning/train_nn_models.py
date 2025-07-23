@@ -186,12 +186,12 @@ if __name__ == "__main__":
 
     # create corresponding env
     if args.env_type == "fluid_tank":
-        env, _ = setup_fluid_tank_env()
+        env, _, _ = setup_fluid_tank_env()
         model_class = NeuralEulerODE
         featurize = lambda x: x
 
     elif args.env_type == "pendulum":
-        env, _ = setup_pendulum_env()
+        env, _, _ = setup_pendulum_env()
         model_class = NeuralEulerODEPendulum
 
         def featurize(obs):
@@ -202,7 +202,7 @@ if __name__ == "__main__":
             return feat_obs
 
     elif args.env_type == "cart_pole":
-        env, _ = setup_cart_pole_env()
+        env, _, _ = setup_cart_pole_env()
         model_class = NeuralEulerODECartpole
 
         def featurize(obs):

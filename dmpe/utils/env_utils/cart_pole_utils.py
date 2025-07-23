@@ -5,7 +5,7 @@ import jax.numpy as jnp
 from dmpe.excitation.excitation_utils import soft_penalty
 
 
-def setup_env() -> tuple[excenvs.CartPole, callable]:
+def setup_env() -> tuple[excenvs.CartPole, callable, dict]:
     env_params = dict(
         batch_size=1,
         tau=2e-2,
@@ -42,4 +42,4 @@ def setup_env() -> tuple[excenvs.CartPole, callable]:
         a=u, a_max=1, penalty_order=2
     )
 
-    return env, penalty_function
+    return env, penalty_function, env_params

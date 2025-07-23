@@ -5,7 +5,7 @@ import jax.numpy as jnp
 from dmpe.excitation.excitation_utils import soft_penalty
 
 
-def setup_env() -> tuple[excenvs.Pendulum, callable]:
+def setup_env() -> tuple[excenvs.Pendulum, callable, dict]:
     env_params = dict(batch_size=1, tau=2e-2, max_torque=5, g=9.81, l=1, m=1, env_solver=diffrax.Tsit5())
     env = excenvs.make(
         env_id="Pendulum-v0",
@@ -21,4 +21,4 @@ def setup_env() -> tuple[excenvs.Pendulum, callable]:
     penalty_function = lambda x, u: soft_penalty(a=x, a_max=1, penalty_order=2) + soft_penalty(
         a=u, a_max=1, penalty_order=2
     )
-    return env, penalty_function
+    return env, penalty_function, env_params
