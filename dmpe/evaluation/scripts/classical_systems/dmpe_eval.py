@@ -10,26 +10,18 @@ import jax.numpy as jnp
 
 os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
 
-import diffrax
 import optax
 from haiku import PRNGSequence
 
-import exciting_environments as excenvs
-
+from dmpe.data_management import DataPaths
 from dmpe.utils.signals import aprbs
 from dmpe.utils.density_estimation import select_bandwidth, get_uniform_target_distribution
-from dmpe.excitation.excitation_utils import soft_penalty
 from dmpe.algorithms.algorithms import excite_with_dmpe
 from dmpe.models.models import NeuralEulerODEPendulum, NeuralEulerODE, NeuralEulerODECartpole
 from dmpe.models.model_utils import save_model
 from dmpe.utils.env_utils.fluid_tank_utils import setup_env as setup_fluid_tank_env
 from dmpe.utils.env_utils.pendulum_utils import setup_env as setup_pendulum_env
 from dmpe.utils.env_utils.cart_pole_utils import setup_env as setup_cart_pole_env
-
-
-# file path setup
-REPO_ROOT_PATH = pathlib.Path(__file__).parent.parent.parent.parent.parent
-TARGETED_DATA_PATH = REPO_ROOT_PATH / pathlib.Path("data") / pathlib.Path("classical_systems")
 
 
 def safe_json_dump(obj, fp):
@@ -271,7 +263,7 @@ for exp_idx, seed in enumerate(seeds):
     exp_params["seed"] = int(seed)
 
     # Check that the targeted data folder actually exist:
-    results_path = TARGETED_DATA_PATH / pathlib.Path("dmpe") / pathlib.Path(sys_name)
+    results_path = DataPaths().cs_experiments / pathlib.Path("dmpe") / pathlib.Path(sys_name)
     print(f"Results will be written to: '{results_path}'.")
     assert results_path.exists(), (
         f"The expected results path '{results_path}' does not seem to exist. Please create the necessary file structure "
