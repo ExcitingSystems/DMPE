@@ -43,7 +43,7 @@ def plot_jsd_model_relation(data_path: pathlib.Path, model_class: eqx.Module, ve
             plt.show()
             print(80 * "-")
 
-    fig, ax = plt.subplots(1, 1, figsize=(8, 8))
+    fig, ax = plt.subplots(1, 1, figsize=(12, 8))
     ax.grid(True)
 
     ax.scatter(

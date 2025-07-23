@@ -40,7 +40,6 @@ def main(
 
     lr = 1e-4
     n_iters = 100
-    # n_datapoints = 4_000  # TODO: Do I really want to do it like this?
 
     seeds = jnp.arange(0, 10, 1).tolist()
 
