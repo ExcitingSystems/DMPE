@@ -5,7 +5,7 @@ import jax.numpy as jnp
 from dmpe.excitation.excitation_utils import soft_penalty
 
 
-def setup_env():
+def setup_env() -> tuple[excenvs.FluidTank, callable]:
     env_params = dict(
         batch_size=1,
         tau=5,
