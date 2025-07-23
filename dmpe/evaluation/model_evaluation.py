@@ -63,6 +63,11 @@ class ModelEvaluator:
         self.constraint_data_space_grid = valid_space_grid(
             constraint_function, obs_dim + act_dim, validation_points_per_dim, -1, 1
         )
+        self.validation_points_per_dim = validation_points_per_dim
+        self.obs_dim = obs_dim
+        self.act_dim = act_dim
+        self.tau = tau
+
         # create default metrics with default params
         self.default_metrics = {
             "pred_comp": PredictionComparison(
