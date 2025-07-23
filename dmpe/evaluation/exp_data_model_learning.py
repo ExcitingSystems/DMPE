@@ -3,6 +3,7 @@ import json
 import pathlib
 from tqdm import tqdm
 import matplotlib.pyplot as plt
+import numpy as np
 
 import jax
 import jax.numpy as jnp
@@ -196,3 +197,16 @@ class ModelExpDataResult(eqx.Module):
         [ax.set_yscale("log") for ax in axs]
         fig.tight_layout()
         return fig, axs
+
+    @property
+    def best_model(self) -> eqx.Module:
+        """Returns the model with the lowest final prediction error."""
+        best_idx = jnp.argmin(self.model_errors[..., -1], axis=0)
+        return self.models[best_idx]
+
+    @property
+    def median_model(self) -> eqx.Module:
+        """Returns the model with the median final prediction error."""
+        x = self.model_errors[..., -1].tolist()
+        median_idx = np.argpartition(x, len(x) // 2)[len(x) // 2]
+        return self.models[median_idx]
