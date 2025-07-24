@@ -111,6 +111,7 @@ elif sys_name == "cart_pole":
         n_generations=25,
         featurize=lambda x: x,
         compress_data=True,
+        compression_feature_dim=-2,
         compression_target_N=500,
         compression_dist_th=0.1,
         penalty_function=penalty_function,
