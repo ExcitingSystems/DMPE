@@ -64,7 +64,7 @@ if sys_name == "pendulum":
         compression_target_N=500,
         compression_feat_dim=-2,
         compression_dist_th=0.1,
-        penalty_order=penalty_function,
+        penalty_function=penalty_function,
     )
     seeds = list(np.arange(101, 131))
     ## End pendulum experiment parameters

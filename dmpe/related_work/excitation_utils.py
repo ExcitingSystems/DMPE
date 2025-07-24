@@ -299,14 +299,12 @@ class GoatsProblem(ElementwiseProblem):
         obs,
         env_state,
         featurize,
+        penalty_function: callable,
         bounds_duration=(1, 50),
         starting_observations=None,
         starting_actions=None,
         compress_data: bool = True,
         compression_target_N: int = 500,
-        rho_obs: float = 1e3,
-        rho_act: float = 1e3,
-        penalty_order: int = 2,
         compression_feat_dim: int = 0,
         compression_dist_th: float = 0.1,
         share_of_current_sequence: float = 1,
@@ -351,9 +349,7 @@ class GoatsProblem(ElementwiseProblem):
 
         self.compress_data = compress_data
         self.compression_target_N = compression_target_N
-        self.rho_obs = rho_obs
-        self.rho_act = rho_act
-        self.penalty_order = penalty_order
+        self.penalty_function = penalty_function
         self.compression_feat_dim = compression_feat_dim
         self.compression_dist_th = compression_dist_th
         self.share_of_current_sequence = share_of_current_sequence
@@ -400,9 +396,7 @@ class GoatsProblem(ElementwiseProblem):
         # TODO: should the number of steps be included in the loss? This is to incite shorter trajectories..?
         N = feat_datapoints.shape[0]
 
-        penalty_terms = self.rho_obs * soft_penalty(
-            a=observations, a_max=1, penalty_order=self.penalty_order
-        ) + self.rho_act * soft_penalty(a=actions, a_max=1, penalty_order=self.penalty_order)
+        penalty_terms = self.penalty_function(observations, actions)
 
         out["F"] = N * score + penalty_terms.item()
 
@@ -422,9 +416,7 @@ def optimize_permutation_aprbs(
     starting_actions: np.ndarray | None,
     compress_data: bool,
     compression_target_N: int,
-    rho_obs: float,
-    rho_act: float,
-    penalty_order: int,
+    penalty_function: callable,
     compression_feat_dim: int,
     compression_dist_th: float,
     share_of_current_sequence: float,
@@ -442,9 +434,7 @@ def optimize_permutation_aprbs(
         starting_actions=starting_actions,
         compress_data=compress_data,
         compression_target_N=compression_target_N,
-        rho_act=rho_act,
-        rho_obs=rho_obs,
-        penalty_order=penalty_order,
+        penalty_function=penalty_function,
         compression_dist_th=compression_dist_th,
         compression_feat_dim=compression_feat_dim,
         share_of_current_sequence=share_of_current_sequence,

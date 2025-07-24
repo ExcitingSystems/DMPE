@@ -46,6 +46,10 @@ if sys_name == "pendulum":
 
     env, _, env_params = setup_pendulum_env()
 
+    penalty_function = lambda x, u: 1e3 * soft_penalty(a=x, a_max=1, penalty_order=2) + 1e3 * soft_penalty(
+        a=u, a_max=1, penalty_order=2
+    )
+
     alg_params = dict(
         n_amplitudes=360,
         n_amplitude_groups=36,
@@ -58,9 +62,7 @@ if sys_name == "pendulum":
         compression_target_N=500,
         compression_dist_th=0.1,
         compression_feature_dim=-2,
-        rho_obs=1e3,
-        rho_act=1e3,
-        penalty_order=2,
+        penalty_function=penalty_function,
     )
     seeds = list(np.arange(101, 131))
     ## End pendulum experiment parameters
@@ -69,6 +71,10 @@ elif sys_name == "fluid_tank":
     ## Start fluid_tank experiment parameters
 
     env, _, env_params = setup_fluid_tank_env()
+
+    penalty_function = lambda x, u: 1e3 * soft_penalty(a=x, a_max=1, penalty_order=2) + 1e3 * soft_penalty(
+        a=u, a_max=1, penalty_order=2
+    )
 
     alg_params = dict(
         n_amplitudes=779,
@@ -81,9 +87,7 @@ elif sys_name == "fluid_tank":
         compression_target_N=500,
         compression_dist_th=0.1,
         compression_feature_dim=-2,
-        rho_obs=1e3,
-        rho_act=1e3,
-        penalty_order=2,
+        penalty_function=penalty_function,
         featurize=lambda x: x,
     )
     seeds = list(np.arange(101, 131))
@@ -93,6 +97,10 @@ elif sys_name == "cart_pole":
     ## Start cart_pole experiment parameters
 
     env, _, env_params = setup_cart_pole_env()
+
+    penalty_function = lambda x, u: 1e3 * soft_penalty(a=x, a_max=1, penalty_order=2) + 1e3 * soft_penalty(
+        a=u, a_max=1, penalty_order=2
+    )
 
     alg_params = dict(
         n_amplitudes=720,
@@ -105,9 +113,7 @@ elif sys_name == "cart_pole":
         compress_data=True,
         compression_target_N=500,
         compression_dist_th=0.1,
-        compression_feature_dim=-2,
-        rho_obs=1e3,
-        rho_act=1e3,
+        penalty_function=penalty_function,
         penalty_order=2,
     )
 
@@ -154,9 +160,7 @@ for exp_idx, seed in enumerate(seeds):
         compression_target_N=alg_params["compression_target_N"],
         compression_dist_th=alg_params["compression_dist_th"],
         compression_feat_dim=alg_params["compression_feature_dim"],
-        rho_obs=alg_params["rho_obs"],
-        rho_act=alg_params["rho_act"],
-        penalty_order=alg_params["penalty_order"],
+        penalty_function=alg_params["penalty_function"],
         rng=np.random.default_rng(seed=exp_params["seed"]),
         verbose=False,
         plot_every_subsequence=False,
