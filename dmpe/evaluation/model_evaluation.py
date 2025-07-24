@@ -91,9 +91,11 @@ class ModelWrapper(abc.ABC):
     """
 
     model: eqx.Module
+    featurize: callable
 
-    def __init__(self, model, **kwargs):
+    def __init__(self, model, featurize, **kwargs):
         self.model = model
+        self.featurize = featurize
 
     @abc.abstractmethod
     def step(self, obs, action, tau):
@@ -144,15 +146,17 @@ class NodeModelWrapper(ModelWrapper):
     """Wraps a DMPE NODE model for comparison."""
 
     model: NeuralEulerODE
+    featurize: callable
 
     def step(self, obs, action, tau):
-        return self.model.step(obs, action, tau)
+        return self.featurize(self.model.step(obs, action, tau))
 
     def gradient(self, obs, action):
         return self.model.func(obs, action)
 
     def rollout(self, init_obs, actions, tau):
-        return self.model(init_obs, actions, tau)
+        pred = self.model(init_obs, actions, tau)
+        return eqx.filter_vmap(self.featurize)(pred)
 
 
 class EnvWrapper(ModelWrapper):
@@ -162,13 +166,14 @@ class EnvWrapper(ModelWrapper):
     """
 
     model: excenvs.CoreEnvironment
+    featurize: callable
 
     @eqx.filter_jit
     def step(self, obs, action, tau):
         assert tau == self.model.tau
         state = self.model.generate_state_from_observation(obs, self.model.env_properties)
         next_obs, _ = self.model.step(state, action, self.model.env_properties)
-        return next_obs
+        return self.featurize(next_obs)
 
     @eqx.filter_jit
     def gradient(self, obs, action):
@@ -178,4 +183,4 @@ class EnvWrapper(ModelWrapper):
     def rollout(self, init_obs, actions, tau):
         init_state = self.model.generate_state_from_observation(init_obs, self.model.env_properties)
         observations, _, _ = self.model.sim_ahead(init_state, actions, self.model.env_properties, tau, tau)
-        return observations
+        return eqx.filter_vmap(self.featurize)(observations)

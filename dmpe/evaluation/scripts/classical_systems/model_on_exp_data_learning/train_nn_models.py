@@ -44,7 +44,7 @@ def main(
     seeds = jnp.arange(0, 10, 1).tolist()
 
     # setup all necessary objects
-    wrapped_env = EnvWrapper(env)
+    wrapped_env = EnvWrapper(env, featurize=featurize)
     obs_dim = env.reset(env.env_properties)[0].shape[-1]
     act_dim = env.action_dim
 

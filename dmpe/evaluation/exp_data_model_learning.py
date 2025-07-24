@@ -62,7 +62,9 @@ def train_model_on_experiment_data(
             loader_key=loader_key,
         )
 
-        _, metric = model_evaluator.default_metrics["pred_comp"](NodeModelWrapper(model), model_evaluator.gt_model)
+        _, metric = model_evaluator.default_metrics["pred_comp"](
+            NodeModelWrapper(model, featurize=model_trainer.featurize), model_evaluator.gt_model
+        )
         model_errors_log.append(metric)
 
     return model, model_errors_log
@@ -170,7 +172,49 @@ class ModelExpDataResult(eqx.Module):
             model_errors=jnp.zeros((len(seeds), n_iters)),
         )
 
-    def visualize(self):
+    def visualize_model_prediction_performance(self, wrapped_model, model_evaluator: ModelEvaluator, labels: list[str]):
+        difference_map, _ = model_evaluator.default_metrics["pred_comp"](
+            wrapped_model,
+            model_evaluator.gt_model,
+        )
+        print(difference_map.shape)
+
+        n_features = model_evaluator.obs_dim + model_evaluator.act_dim
+        reshaped_difference_map = difference_map.reshape(
+            [model_evaluator.validation_points_per_dim] * n_features + [-1]
+        )
+        print(reshaped_difference_map.shape)
+
+        abs_map = jnp.linalg.norm(reshaped_difference_map, axis=-1)
+
+        fig, axs = plt.subplots(nrows=n_features, ncols=n_features, figsize=(9, 9), sharex=True, sharey=True)
+
+        feature_indices = jnp.arange(0, n_features, 1).tolist()
+
+        for i in range(n_features):
+            for j in range(n_features):
+
+                axs[j, i].grid(True)
+                axs[j, i].set_xlim(-1.1, 1.1)
+                axs[j, i].set_ylim(-1.1, 1.1)
+
+                reduction_indices = [f_idx for f_idx in feature_indices if not (f_idx == i or f_idx == j)]
+                if len(reduction_indices) == n_features - 1:
+                    continue
+
+                image = jnp.sum(abs_map, axis=reduction_indices)
+
+                image = jnp.transpose(image, (0, 1) if i > j else (1, 0))
+
+                axs[j, i].imshow(image, origin="lower", extent=[-1, 1, -1, 1])
+                axs[j, 0].set_ylabel(labels[j])
+
+            axs[-1, i].set_xlabel(labels[i])
+        fig.tight_layout()
+
+        return fig, axs
+
+    def visualize_training(self):
         fig, axs = plt.subplots(2, 1, figsize=(6, 4))
         [axs[0].plot(errors) for errors in self.model_errors]
 
