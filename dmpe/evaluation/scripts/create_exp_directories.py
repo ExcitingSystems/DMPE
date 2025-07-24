@@ -1,8 +1,10 @@
 import argparse
 import pathlib
 
-REPO_ROOT_PATH = pathlib.Path(__file__).parent.parent.parent.parent
-DATA_PATH = REPO_ROOT_PATH / pathlib.Path("data")
+from dmpe.data_management import DataPaths, get_project_root
+
+REPO_ROOT_PATH = get_project_root()
+DATA_PATH = DataPaths().data_root
 
 if __name__ == "__main__":
     print("repo root: ", REPO_ROOT_PATH)
@@ -19,7 +21,7 @@ if __name__ == "__main__":
     if which == "classical" or which == "all":
 
         systems = ["fluid_tank", "pendulum", "cart_pole"]
-        algorithms = ["dmpe", "igoats", "sgoats", "perfect_model_dmpe"]
+        algorithms = ["dmpe", "igoats", "sgoats", "perfect_model_dmpe", "random_walk"]
 
         for algo in algorithms:
             for system in systems:
