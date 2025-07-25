@@ -1,4 +1,5 @@
 import abc
+from functools import partial
 
 import jax
 import jax.numpy as jnp
@@ -163,8 +164,6 @@ class GradientComparison(eqx.Module):
 
 
 class RolloutComparison(eqx.Module):
-    action_dim: float
-    obs_dim: float
     control_law: callable
     penalty_function: callable
     tau: float
@@ -203,8 +202,11 @@ class RolloutComparison(eqx.Module):
         _, _, observations, actions, _ = jax.lax.fori_loop(
             0, sequence_length, body_fun, (last_action, init_state, observations, actions, key)
         )
+        observations = jnp.concatenate([init_obs[None], observations], axis=0)
+
         return observations, actions
 
+    @eqx.filter_jit
     def __call__(
         self,
         init_obs: jax.Array,
