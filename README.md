@@ -1,7 +1,7 @@
 # Differentiable Model Predictive Excitation (DMPE):
 
 This repository implements an algorithm for the excitation of systems with unknown (usually non-linear) dynamics.
-The inner workings and lines of thought are outlined within the corresponding publication.
+The inner workings and lines of thought are outlined within the [corresponding publication](https://www.techrxiv.org/users/839244/articles/1230076-differentiable-model-predictive-excitation-generating-optimal-data-sets-for-learning-of-dynamical-system-models).
 If you found this repository useful for your research, please cite the current preprint version as:
 
 ```
@@ -16,9 +16,9 @@ If you found this repository useful for your research, please cite the current p
 
 ## Installation:
 
-> If you are specifically interested in reproducing the results from the `Vater2024` publication, you are kindly referred to: https://pypi.org/project/dmpe/0.1.3/
+> If you are specifically interested in reproducing the results from the [original preprint publication](https://www.techrxiv.org/users/839244/articles/1230076-differentiable-model-predictive-excitation-generating-optimal-data-sets-for-learning-of-dynamical-system-models), you are kindly referred to: https://pypi.org/project/dmpe/0.1.3/
 
-> Else, if you are specifically interested in reproducing the results from the `TBD` related publication, you are kindly referred to: https://pypi.org/project/dmpe/0.2.4/
+> Else, if you are specifically interested in reproducing the results from the [permanent magnet synchronous motor specific publication](https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=11061126), you are kindly referred to: https://pypi.org/project/dmpe/0.2.4/
 
 Otherwise, the simplest way is using `Python >= 3.11`:
 
