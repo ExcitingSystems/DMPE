@@ -5,7 +5,7 @@ import jax.numpy as jnp
 from dmpe.excitation.excitation_utils import soft_penalty
 
 
-def setup_env() -> tuple[excenvs.CartPole, callable, dict]:
+def setup_env() -> tuple[excenvs.CartPole, callable, callable, dict]:
     env_params = dict(
         batch_size=1,
         tau=2e-2,
@@ -42,4 +42,14 @@ def setup_env() -> tuple[excenvs.CartPole, callable, dict]:
         a=u, a_max=1, penalty_order=2
     )
 
-    return env, penalty_function, env_params
+    def featurize(obs):
+        """The angle itself is difficult to properly interpret in the loss as angles
+        such as 1.99 * pi and 0 are essentially the same. Therefore the angle is
+        transformed to sin(phi) and cos(phi) for comparison in the loss."""
+        feat_obs = jnp.stack(
+            [obs[..., 0], obs[..., 1], jnp.sin(obs[..., 2] * jnp.pi), jnp.cos(obs[..., 2] * jnp.pi), obs[..., 3]],
+            axis=-1,
+        )
+        return feat_obs
+
+    return env, penalty_function, featurize, env_params

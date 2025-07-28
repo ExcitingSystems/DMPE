@@ -34,4 +34,6 @@ def setup_env() -> tuple[excenvs.FluidTank, callable, dict]:
         a=u, a_max=1, penalty_order=2
     )
 
-    return env, penalty_function, env_params
+    featurize = lambda x: x
+
+    return env, penalty_function, featurize, env_params

@@ -21,4 +21,12 @@ def setup_env() -> tuple[excenvs.Pendulum, callable, dict]:
     penalty_function = lambda x, u: soft_penalty(a=x, a_max=1, penalty_order=2) + soft_penalty(
         a=u, a_max=1, penalty_order=2
     )
-    return env, penalty_function, env_params
+
+    def featurize(obs):
+        """The angle itself is difficult to properly interpret in the loss as angles
+        such as 1.99 * pi and 0 are essentially the same. Therefore the angle is
+        transformed to sin(phi) and cos(phi) for comparison in the loss."""
+        feat_obs = jnp.stack([jnp.sin(obs[..., 0] * jnp.pi), jnp.cos(obs[..., 0] * jnp.pi), obs[..., 1]], axis=-1)
+        return feat_obs
+
+    return env, penalty_function, featurize, env_params
