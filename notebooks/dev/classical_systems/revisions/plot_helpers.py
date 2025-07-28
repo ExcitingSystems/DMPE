@@ -87,6 +87,65 @@ def plot_jsd_model_prediction_relation(
     return fig, ax
 
 
+def plot_model_rollouts(
+    env: excenvs.CoreEnvironment,
+    penalty_function: callable,
+    featurize: callable,
+    model: eqx.Module,
+    batch_size: int,
+    sequence_length: int,
+    key: jax.random.PRNGKey,
+    control_law: Callable | None = None,
+):
+    if control_law is None:
+        control_law = partial(random_walk_control_law, n_tries=4000)
+
+    key, init_obs_key, rollout_key = jax.random.split(key, 3)
+    init_obs_keys = jax.random.split(init_obs_key, batch_size)
+    init_obs, state = eqx.filter_vmap(env.reset, in_axes=(None, 0))(env.env_properties, init_obs_keys)
+
+    wrapped_model = NodeModelWrapper(model, featurize)
+    wrapped_env = EnvWrapper(env, featurize)
+
+    rollout_comparison = RolloutComparison(
+        control_law=control_law,
+        penalty_function=penalty_function,
+        tau=env.tau,
+        env=env,
+        sequence_length=sequence_length,
+    )
+
+    (env_observations, pred_gt, pred, key), metric = rollout_comparison(
+        init_obs, wrapped_model, wrapped_env, key=rollout_key
+    )
+
+    feat_obs_dim = featurize(env.reset(env.env_properties)[0]).shape[-1]
+
+    print(metric)
+
+    for i in range(env_observations.shape[0]):
+        fig, axs = plt.subplots(1, feat_obs_dim, figsize=(12, 4))
+
+        if feat_obs_dim == 1:
+            label = env.obs_description[0]
+
+            axs.plot(pred_gt[i], label="gt_" + label)
+            axs.plot(pred[i], label="pred_" + label, linestyle="--")
+            axs.legend()
+            axs.grid()
+            axs.set_xlim(0.0, len(pred_gt[i]) - 1)
+            axs.set_ylim(-1.1, 1.1)
+        else:
+            for ax, obs_gt, obs_pred in zip(axs, pred_gt[i].T, pred[i].T):
+                ax.plot(obs_gt, label="gt_")
+                ax.plot(obs_pred, label="pred_", linestyle="--")
+                ax.legend()
+                ax.grid()
+                ax.set_xlim(0.0, len(obs_gt) - 1)
+                ax.set_ylim(-1.1, 1.1)
+        plt.show()
+
+
 def evaluate_model_rollout(
     rollout_comparison,
     wrapped_env,
