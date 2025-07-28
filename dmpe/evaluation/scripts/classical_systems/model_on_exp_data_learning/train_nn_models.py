@@ -126,6 +126,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--data_in_path",
         type=str,
+        default=None,
         help=(
             "File path for the inputs relative to the data root specified"
             + " in dmpe.data_management.DataPaths().data_root."
@@ -134,6 +135,7 @@ if __name__ == "__main__":
     parser.add_argument(
         "--data_out_path",
         type=str,
+        default=None,
         help=(
             "File path for the outputs relative to the data root specified"
             + " in dmpe.data_management.DataPaths().data_root."
@@ -167,8 +169,28 @@ if __name__ == "__main__":
 
     ## setup based on specified parameters
 
-    data_in_path = DataPaths().data_root / args.data_in_path
-    data_out_path = DataPaths().data_root / args.data_out_path
+    if args.data_in_path is not None:
+        data_in_path = DataPaths().data_root / args.data_in_path
+    else:
+        data_in_path = (
+            DataPaths().data_root
+            / "classical_systems"
+            / "model_on_exp_data"
+            / "various_exp_together_in"
+            / args.env_type
+        )
+
+    if args.data_out_path is not None:
+        data_out_path = DataPaths().data_root / args.data_out_path
+    else:
+        data_out_path = (
+            DataPaths().data_root
+            / "classical_systems"
+            / "model_on_exp_data"
+            / "various_exp_together_out"
+            / args.env_type
+            / args.training_setup
+        )
 
     # set gpu for run
     gpus = jax.devices()
