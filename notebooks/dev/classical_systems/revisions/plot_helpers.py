@@ -138,7 +138,7 @@ def plot_jsd_model_rollout_relation(
     n_results = len(result_paths)
     print("# or results:", n_results)
     print(80 * "-")
-    for result_path in tqdm(result_paths[:5], total=n_results):
+    for result_path in tqdm(result_paths, total=n_results):
         result = ModelExpDataResult.from_file(
             filename=result_path,
             model_class=model_class,
