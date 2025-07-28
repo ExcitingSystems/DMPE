@@ -1,17 +1,24 @@
+from typing import Callable
+from functools import partial
 import glob
 import pathlib
+from tqdm import tqdm
 
 import matplotlib.pyplot as plt
 from matplotlib.patches import Patch
 from matplotlib.lines import Line2D
 
+import jax
 import jax.numpy as jnp
 import equinox as eqx
 
+import exciting_environments as excenvs
+from dmpe.related_work.random_walk import random_walk_control_law
+from dmpe.evaluation.model_evaluation import RolloutComparison, EnvWrapper, NodeModelWrapper
 from dmpe.evaluation.exp_data_model_learning import ModelExpDataResult
 
 
-def plot_jsd_model_relation(
+def plot_jsd_model_prediction_relation(
     data_path: pathlib.Path, model_class: eqx.Module, verbose: bool = False, expecting_sub_folders: bool = True
 ):
     means = []
@@ -49,7 +56,6 @@ def plot_jsd_model_relation(
             print(80 * "-")
 
     fig, ax = plt.subplots(1, 1, figsize=(12, 8))
-    ax.grid(True)
 
     ax.scatter(
         jsds, medians, s=25, marker="x", c=colors
@@ -79,3 +85,84 @@ def plot_jsd_model_relation(
     ax.legend(handles=legend_elements, title=r"\# of datapoints")
 
     return fig, ax
+
+
+def evaluate_model_rollout(
+    rollout_comparison,
+    wrapped_env,
+    wrapped_model,
+    batch_size,
+    key,
+):
+    env = wrapped_env.model
+
+    key, init_obs_key, rollout_key = jax.random.split(key, 3)
+    init_obs_keys = jax.random.split(init_obs_key, batch_size)
+
+    init_obs, state = eqx.filter_vmap(env.reset, in_axes=(None, 0))(env.env_properties, init_obs_keys)
+    (env_observations, pred_gt, pred, key), metric = rollout_comparison(
+        init_obs, wrapped_model, wrapped_env, key=rollout_key
+    )
+    return metric
+
+
+def plot_jsd_model_rollout_relation(
+    data_path: pathlib.Path,
+    env: excenvs.CoreEnvironment,
+    penalty_function: callable,
+    featurize: callable,
+    batch_size: int,
+    sequence_length: int,
+    model_class: type[eqx.Module],
+    key: jax.random.PRNGKey,
+    control_law: Callable | None = None,
+):
+
+    if control_law is None:
+        control_law = partial(random_walk_control_law, n_tries=4000)
+
+    rollout_comparison = RolloutComparison(
+        control_law=control_law,
+        penalty_function=penalty_function,
+        tau=env.tau,
+        env=env,
+        sequence_length=sequence_length,
+    )
+    wrapped_env = EnvWrapper(env, featurize=featurize)
+
+    metrics = []
+    jsds = []
+
+    result_paths = glob.glob(str(data_path) + "/*.eqx")
+
+    n_results = len(result_paths)
+    print("# or results:", n_results)
+    print(80 * "-")
+    for result_path in tqdm(result_paths[:5], total=n_results):
+        result = ModelExpDataResult.from_file(
+            filename=result_path,
+            model_class=model_class,
+        )
+        jsds.append(result.data_jsd)
+        metric_values = [
+            evaluate_model_rollout(
+                rollout_comparison,
+                wrapped_env,
+                NodeModelWrapper(model, wrapped_env.featurize),
+                batch_size,
+                key,
+            )
+            for model in result.models
+        ]
+        metrics.append(jnp.median(jnp.array(metric_values)).item())
+
+    fig, ax = plt.subplots(1, 1, figsize=(12, 8))
+    ax.grid(True)
+
+    ax.scatter(jsds, metrics, s=25, marker="x", c="r")
+    ax.set_yscale("log")
+
+    ax.set_ylabel(f"model loss for {rollout_comparison.sequence_length} steps")
+    ax.set_xlabel("JSD")
+
+    return fig, ax, (metrics, jsds)

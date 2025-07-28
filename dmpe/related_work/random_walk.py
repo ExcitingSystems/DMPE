@@ -34,6 +34,19 @@ def choose_action(env, penalty_function, proposed_actions, state, choice_key):
     )
 
 
+def random_walk_control_law(env, penalty_function, last_action, state, key, n_tries):
+    key, action_key, choice_key = jax.random.split(key, 3)
+    proposed_actions = last_action + jax.random.normal(
+        action_key,
+        shape=(
+            n_tries,
+            env.action_dim,
+        ),
+    )
+    action = choose_action(env, penalty_function, proposed_actions, state, choice_key)
+    return action, key
+
+
 def excite_with_random_walk(env, exp_params, key):
 
     n_time_steps = exp_params["n_time_steps"]
