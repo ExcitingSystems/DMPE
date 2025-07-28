@@ -25,11 +25,15 @@ from dmpe.evaluation.data_evaluation import DataEvaluator
 from dmpe.evaluation.utils import default_constraint_function
 from dmpe.evaluation.exp_data_model_learning import train_model_on_experiment_data, ModelExpDataResult
 
+from params import get_experiment_params
+
 
 def main(
     env: excenvs.CoreEnvironment,
     model_class: eqx.Module,
     featurize: callable,
+    model_params: dict,
+    model_trainer_params: dict,
     data_in_path: pathlib.Path,
     data_out_path: pathlib.Path,
     n_datapoints: int,
@@ -37,8 +41,6 @@ def main(
 ):
     # setup parameters (TODO: Should these be done with a script specifically for a given env)
     points_per_dim = 20  # grid for model eval (TODO: potentially replace with LHS)
-
-    lr = 1e-4
     n_iters = 100
 
     seeds = jnp.arange(0, 10, 1).tolist()
@@ -61,13 +63,6 @@ def main(
         constraint_function=default_constraint_function,
         data_dim=obs_dim + act_dim,
         points_per_dim=points_per_dim,
-    )
-
-    model_params = dict(
-        obs_dim=env.reset(env.env_properties)[0].shape[0],
-        action_dim=env.action_dim,
-        width_size=64,
-        depth=2,
     )
 
     # get all experiment ids that were specified (I guess put all relevant experiments in an extra folder?)
@@ -95,15 +90,7 @@ def main(
                 key=jax.random.key(seed),
                 observations=observations,
                 actions=actions,
-                model_trainer_params=dict(
-                    start_learning=None,
-                    training_batch_size=128,
-                    n_train_steps=1_000,
-                    sequence_length=10,
-                    featurize=featurize,
-                    model_optimizer=optax.adabelief(lr),
-                    tau=env.tau,
-                ),
+                model_trainer_params=model_trainer_params,
                 model_params=model_params,
                 n_iters=n_iters,
                 model_class=model_class,
@@ -158,6 +145,14 @@ if __name__ == "__main__":
         help="Environment to consider. One of ['fluid_tank', 'pendulum', 'cart_pole']",
     )
     parser.add_argument(
+        "--training_setup",
+        type=str,
+        help=(
+            "Chooses one of the hyperparameter presets for model training."
+            + " One of ['2step', '10step_small', '10step_large', '50step_large]."
+        ),
+    )
+    parser.add_argument(
         "--n_datapoints",
         type=int,
         help=(
@@ -186,31 +181,24 @@ if __name__ == "__main__":
 
     # create corresponding env
     if args.env_type == "fluid_tank":
-        env, _, _ = setup_fluid_tank_env()
+        env, _, featurize, _ = setup_fluid_tank_env()
         model_class = NeuralEulerODE
-        featurize = lambda x: x
 
     elif args.env_type == "pendulum":
-        env, _, _ = setup_pendulum_env()
+        env, _, featurize, _ = setup_pendulum_env()
         model_class = NeuralEulerODEPendulum
 
-        def featurize(obs):
-            feat_obs = jnp.stack(
-                [jnp.sin(obs[..., 0] * jnp.pi), jnp.cos(obs[..., 0] * jnp.pi), obs[..., 1]],
-                axis=-1,
-            )
-            return feat_obs
-
     elif args.env_type == "cart_pole":
-        env, _, _ = setup_cart_pole_env()
+        env, _, featurize, _ = setup_cart_pole_env()
         model_class = NeuralEulerODECartpole
+    else:
+        raise ValueError(f"Environment {args.env_type} could not be found.")
 
-        def featurize(obs):
-            feat_obs = jnp.stack(
-                [obs[..., 0], obs[..., 1], jnp.sin(obs[..., 2] * jnp.pi), jnp.cos(obs[..., 2] * jnp.pi), obs[..., 3]],
-                axis=-1,
-            )
-            return feat_obs
+    model_params, model_trainer_params = get_experiment_params(
+        args.training_setup,
+        env,
+        featurize,
+    )
 
     # run model training
     if args.n_datapoints == -1:
@@ -219,6 +207,8 @@ if __name__ == "__main__":
                 env,
                 model_class,
                 featurize,
+                model_params,
+                model_trainer_params,
                 pathlib.Path(data_in_path),
                 pathlib.Path(data_out_path),
                 n_datapoints=n_datapoints,
@@ -229,6 +219,8 @@ if __name__ == "__main__":
             env,
             model_class,
             featurize,
+            model_params,
+            model_trainer_params,
             pathlib.Path(data_in_path),
             pathlib.Path(data_out_path),
             n_datapoints=args.n_datapoints,
