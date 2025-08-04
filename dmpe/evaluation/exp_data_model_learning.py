@@ -177,14 +177,12 @@ class ModelExpDataResult(eqx.Module):
             wrapped_model,
             model_evaluator.gt_model,
         )
-        print(difference_map.shape)
 
         n_features = model_evaluator.obs_dim + model_evaluator.act_dim
         reshaped_difference_map = difference_map.reshape(
             [model_evaluator.validation_points_per_dim] * n_features + [-1]
         )
-        print(reshaped_difference_map.shape)
-
+        # abs_map = jnp.mean(jnp.abs(reshaped_difference_map) ** 2, axis=-1)
         abs_map = jnp.linalg.norm(reshaped_difference_map, axis=-1)
 
         fig, axs = plt.subplots(nrows=n_features, ncols=n_features, figsize=(9, 9), sharex=True, sharey=True)
@@ -202,9 +200,9 @@ class ModelExpDataResult(eqx.Module):
                 if len(reduction_indices) == n_features - 1:
                     continue
 
-                image = jnp.mean(abs_map, axis=reduction_indices)
+                image = jnp.mean(jnp.abs(abs_map), axis=tuple(reduction_indices))
 
-                image = jnp.transpose(image, (0, 1) if i < j else (1, 0))
+                image = jnp.transpose(image, (0, 1) if i > j else (1, 0))
                 # image = jnp.transpose(image, (0, 1) if i + j <= 4 else (1, 0))
 
                 axs[j, i].imshow(image, origin="lower", extent=[-1, 1, -1, 1])
