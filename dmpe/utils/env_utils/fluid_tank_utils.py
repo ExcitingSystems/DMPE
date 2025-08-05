@@ -1,3 +1,5 @@
+from typing import Callable
+
 import diffrax
 import exciting_environments as excenvs
 import jax.numpy as jnp
@@ -5,7 +7,18 @@ import jax.numpy as jnp
 from dmpe.excitation.excitation_utils import soft_penalty
 
 
-def setup_env() -> tuple[excenvs.FluidTank, callable, dict]:
+def setup_env() -> tuple[excenvs.CartPole, Callable, Callable, dict]:
+    """Setup the fluid tank environment and utilities.
+
+    Args:
+        -
+
+    Returns:
+        env (excenvs.CartPole): The actual environment object
+        penalty_function (Callable): The penalty function that incorporates the constraints of the system
+        featurize (Callable): The featurize function (identity for the fluid tank)
+        env_params (dict): The parameters used to initialize the environment
+    """
     env_params = dict(
         batch_size=1,
         tau=5,
