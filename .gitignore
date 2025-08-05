@@ -164,6 +164,7 @@ notebooks/dev/classical_systems/results
 notebooks/dev/unmaintained
 notebooks/eval/classical_systems/results
 notebooks/eval/pmsm/results/
+notebooks/dev/classical_systems/revisions/unmaintained
 
 .vscode/
 *.pdf
