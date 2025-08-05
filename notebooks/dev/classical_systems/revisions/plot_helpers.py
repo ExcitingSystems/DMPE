@@ -19,7 +19,11 @@ from dmpe.evaluation.exp_data_model_learning import ModelExpDataResult
 
 
 def plot_jsd_model_prediction_relation(
-    data_path: pathlib.Path, model_class: eqx.Module, verbose: bool = False, expecting_sub_folders: bool = True
+    data_path: pathlib.Path,
+    model_class: eqx.Module,
+    verbose: bool = False,
+    expecting_sub_folders: bool = True,
+    penalty_function: callable = None,
 ):
     means = []
     medians = []
@@ -42,6 +46,10 @@ def plot_jsd_model_prediction_relation(
             filename=result_path,
             model_class=model_class,
         )
+        if penalty_function is not None:
+            if penalty_function(result.observations, result.actions) > 1:
+                continue
+
         color_idx = int(result.n_datapoints / 1_000) - 1
         colors.append(color_mapping[color_idx])
 
