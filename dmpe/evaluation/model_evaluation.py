@@ -130,12 +130,12 @@ class PredictionComparison(eqx.Module):
 
     @eqx.filter_jit
     def __call__(self, model, model_gt):
-        pred = jax.vmap(model.step, in_axes=(0, 0, None))(
-            self.grid[:, : self.obs_dim], self.grid[:, self.obs_dim :], self.tau
-        )
-        pred_gt = jax.vmap(model_gt.step, in_axes=(0, 0, None))(
-            self.grid[:, : self.obs_dim], self.grid[:, self.obs_dim :], self.tau
-        )
+
+        observations = self.grid[:, : self.obs_dim]
+        actions = self.grid[:, self.obs_dim :]
+
+        pred = eqx.filter_vmap(model.step, in_axes=(0, 0, None))(observations, actions, self.tau)
+        pred_gt = eqx.filter_vmap(model_gt.step, in_axes=(0, 0, None))(observations, actions, self.tau)
 
         return (pred - pred_gt), jnp.mean((pred - pred_gt) ** 2)
 

@@ -257,7 +257,7 @@ def build_grid(dim: int, low: float, high: float, points_per_dim: int) -> jax.Ar
     """
     xs = [jnp.linspace(low, high, points_per_dim) for _ in range(dim)]
 
-    z_g = jnp.meshgrid(*xs)
+    z_g = jnp.meshgrid(*xs, indexing="ij")
     z_g = jnp.stack([_x for _x in z_g], axis=-1)
     z_g = z_g.reshape(-1, dim)
 

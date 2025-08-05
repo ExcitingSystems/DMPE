@@ -202,8 +202,8 @@ class ModelExpDataResult(eqx.Module):
 
                 image = jnp.mean(jnp.abs(abs_map), axis=tuple(reduction_indices))
 
-                image = jnp.transpose(image, (0, 1) if i > j else (1, 0))
-                # image = jnp.transpose(image, (0, 1) if i + j <= 4 else (1, 0))
+                if i < j:
+                    image = jnp.transpose(image)
 
                 axs[j, i].imshow(image, origin="lower", extent=[-1, 1, -1, 1])
                 axs[j, 0].set_ylabel(labels[j])
