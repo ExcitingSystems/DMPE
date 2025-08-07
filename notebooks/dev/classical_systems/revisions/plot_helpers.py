@@ -16,6 +16,7 @@ import exciting_environments as excenvs
 from dmpe.related_work.random_walk import random_walk_control_law
 from dmpe.evaluation.model_evaluation import RolloutComparison, EnvWrapper, NodeModelWrapper
 from dmpe.evaluation.exp_data_model_learning import ModelExpDataResult
+from dmpe.evaluation.metrics_utils import default_jsd
 
 
 def plot_jsd_model_prediction_relation(
@@ -24,6 +25,7 @@ def plot_jsd_model_prediction_relation(
     verbose: bool = False,
     expecting_sub_folders: bool = True,
     penalty_function: callable = None,
+    recompute_jsd: bool = False,
 ):
     means = []
     medians = []
@@ -55,7 +57,21 @@ def plot_jsd_model_prediction_relation(
 
         means.append(jnp.mean(jnp.array(result.model_errors), axis=0)[-1])
         medians.append(jnp.median(jnp.array(result.model_errors), axis=0)[-1])
-        jsds.append(result.data_jsd)
+
+        if recompute_jsd:
+            jsd_value = default_jsd(
+                result.observations,
+                result.actions,
+                points_per_dim=20,
+                bounds=(-1, 1),
+                bandwidth=0.08,  # TODO: What about this?!
+                target_distribution=None,
+                ca=False,
+            )
+        else:
+            jsd_value = result.data_jsd
+
+        jsds.append(jsd_value)
 
         if verbose:
             print(result.data_jsd)
@@ -75,6 +91,7 @@ def plot_jsd_model_prediction_relation(
     # ax.set_xlabel(r"$\mathcal{L}_{\mathrm{JSD}}$")
     ax.grid(True)
     ax.set_yscale("log")
+    ax.set_xscale("log")
     legend_elements = [
         Line2D(
             [0],

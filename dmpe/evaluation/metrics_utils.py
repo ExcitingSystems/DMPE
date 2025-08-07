@@ -37,7 +37,7 @@ def default_jsd(
         n_observations=jnp.array([0]),
     )
 
-    if data_points.shape[0] > 500:
+    if data_points.shape[0] > 5000:
         # if there are too many datapoints at once, split them up and add
         # them in smaller chunks to the density estimate
 
