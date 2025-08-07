@@ -94,7 +94,7 @@ def approximate_reachable_set(
     sequence_length: int,
     n_starts: int,
     n_opt_steps: int,
-) -> tuple[jax.Array, jax.Array]:
+) -> tuple[jax.Array, jax.Array, jax.Array, jax.Array]:
     init_obs, _ = env.reset(env.env_properties)
 
     obs_dim = init_obs.shape[-1]
