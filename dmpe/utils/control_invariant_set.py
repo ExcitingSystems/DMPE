@@ -1,11 +1,13 @@
 """Utils to compute the recursive feasible set for arbitrary non-linear systems through data driven approximation."""
 
 from typing import Callable
+import json
 
 import jax
 import jax.numpy as jnp
 import equinox as eqx
 import optax
+import jax_tqdm
 
 import exciting_environments as excenvs
 from dmpe.models.model_utils import simulate_ahead_with_env
@@ -32,6 +34,7 @@ def optimize_actions(
 ):
     opt_state = optimizer.init(proposed_actions)
 
+    @jax_tqdm.loop_tqdm(n_opt_steps)
     def body_fun(i, carry):
         proposed_actions, opt_state = carry
         grad = gradient_function(
@@ -69,22 +72,20 @@ def optimize_actions_multistart(
 
 def approximate_control_invariant_set(
     env: excenvs.CoreEnvironment,
+    init_observations: jax.Array,
     penalty_function: Callable,
     key: jax.random.PRNGKey,
-    points_per_dim: int,
     sequence_length: int,
     n_starts: int,
     n_opt_steps: int,
-) -> tuple[jax.Array, jax.Array, jax.Array, jax.Array]:
-    obs_dim = env.reset(env.env_properties)[0].shape[-1]
-    init_observations = build_grid(obs_dim, -1.1, 1.1, points_per_dim)
+) -> tuple[jax.Array, jax.Array, jax.Array]:
 
     lr = optax.schedules.exponential_decay(
         init_value=1e-1,
-        transition_steps=1_000,
+        transition_steps=int(n_opt_steps / 3),
         transition_begin=0,
         decay_rate=0.1,
-        end_value=1e-3,
+        end_value=1e-4,
     )
 
     optimizer = optax.adam(lr)
@@ -97,6 +98,14 @@ def approximate_control_invariant_set(
     chosen_actions, losses = eqx.filter_vmap(optimize_actions_multistart, in_axes=(0, 0, None, None, None, None))(
         proposed_actions, init_observations, penalty_function, env, optimizer, n_opt_steps
     )
+    return chosen_actions, losses, proposed_actions
 
-    loss_map = losses.reshape((points_per_dim, points_per_dim))
-    return chosen_actions, loss_map, init_observations, proposed_actions
+
+def save_results(filename: str, chosen_actions, losses, init_observations):
+    data = dict(
+        chosen_actions_ci=chosen_actions.tolist(),
+        losses_ci=losses.tolist(),
+        init_observations_ci=init_observations.tolist(),
+    )
+    with open(filename, "w") as f:
+        json.dump(data, f)

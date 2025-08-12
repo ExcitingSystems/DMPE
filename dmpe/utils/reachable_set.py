@@ -1,12 +1,13 @@
 """Utils to compute the reachable set for arbitrary non-linear systems through data driven approximation."""
 
 from typing import Callable
-import jax_tqdm
+import json
 
 import jax
 import jax.numpy as jnp
 import equinox as eqx
 import optax
+import jax_tqdm
 
 import exciting_environments as excenvs
 from dmpe.models.model_utils import simulate_ahead_with_env
@@ -120,3 +121,27 @@ def approximate_reachable_set(
     )(proposed_actions, target_observations, init_obs, penalty_function, featurize, env, optimizer, n_opt_steps)
 
     return chosen_actions, losses, proposed_actions
+
+
+def evaluate_reachability(obs: jax.Array, reach_set: jax.Array) -> jax.Array:
+    """"""
+    dist = jnp.linalg.norm(obs[None] - reach_set)
+
+    raise NotImplementedError
+
+
+def save_results(filename: str, chosen_actions, losses, target_observations):
+    data = dict(
+        chosen_actions_rs=chosen_actions.tolist(),
+        losses_rs=losses.tolist(),
+        target_observations_rs=target_observations.tolist(),
+    )
+    with open(filename, "w") as f:
+        json.dump(data, f)
+
+
+def load_results(filename: str) -> dict[str, jax.Array]:
+    with open(filename, "r") as f:
+        data = json.load(f)
+    data = {key: jnp.array(entry) for key, entry in data.items()}
+    return data
