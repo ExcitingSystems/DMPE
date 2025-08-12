@@ -16,3 +16,4 @@ class DataPaths:
         get_project_root() / "data" / "classical_systems" / "model_on_exp_data" / "various_exp_together_out"
     )
     pmsm_experiments = get_project_root() / "data" / "pmsm"
+    reach_ci_experiments = get_project_root() / "data" / "classical_systems" / "reachable_and_control_invariant_set"

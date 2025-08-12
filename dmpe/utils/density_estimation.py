@@ -265,7 +265,7 @@ def build_grid(dim: int, low: float, high: float, points_per_dim: int) -> jax.Ar
     return z_g
 
 
-def build_grid_2d(low: float, high: float, points_per_dim: int):
+def build_grid_2d(low: float, high: float, points_per_dim: int) -> jax.Array:
     """Shorthand for a uniform 2d grid.
 
     Args:
@@ -280,7 +280,7 @@ def build_grid_2d(low: float, high: float, points_per_dim: int):
     return build_grid(2, low, high, points_per_dim)
 
 
-def build_grid_3d(low: float, high: float, points_per_dim: int):
+def build_grid_3d(low: float, high: float, points_per_dim: int) -> jax.Array:
     """Shorthand for a uniform 3d grid.
 
     Args:
