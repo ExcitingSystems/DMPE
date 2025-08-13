@@ -47,7 +47,7 @@ class DiscretizedSet(eqx.Module):
     unflattened_shape: tuple[int] = eqx.field(static=True)
 
     def check_in_set(self, obs: jax.Array) -> jax.Array:
-        return check_in_set(obs, self.mask, self.set_grid)
+        return check_in_set(obs, self.mask, self.grid)
 
     @property
     def mask_unflattened(self):
@@ -99,14 +99,14 @@ class DiscretizedSet(eqx.Module):
                     if len(reduction_indices) == dim - 1:
                         continue
 
-                    any_safe = jnp.any(self.mask, axis=tuple(reduction_indices))
+                    any_safe = jnp.any(self.mask_unflattened, axis=tuple(reduction_indices))
 
                     if i < j:
                         any_safe = jnp.transpose(any_safe)
 
                     axs[j, i].contourf(
-                        self.grid_unflattened[..., 0],
-                        self.grid_unflattened[..., 1],
+                        self.grid_unflattened[..., 0, 0, 0],
+                        self.grid_unflattened[..., 0, 0, 1],
                         any_safe,
                     )
 
@@ -116,3 +116,14 @@ class DiscretizedSet(eqx.Module):
             fig.tight_layout()
         else:
             raise NotImplementedError()
+
+
+class SlicedSet(eqx.Module):
+    sets: list[DiscretizedSet]
+
+    def check_in_set(self, obs: jax.Array, reduce: bool = True) -> jax.Array:
+        check_list = jnp.array([s.check_in_set(obs) for s in self.sets])
+        if reduce:
+            return jnp.all(check_list)
+        else:
+            return check_list

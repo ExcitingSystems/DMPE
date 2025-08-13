@@ -125,7 +125,7 @@ def approximate_reachable_set(
     return (
         DiscretizedSet(
             grid=target_observations,
-            set_bool=jnp.abs(losses) < tolerance,
+            mask=jnp.abs(losses) < tolerance,
             unflattened_shape=unflattened_shape,
         ),
         (chosen_actions, losses, proposed_actions),

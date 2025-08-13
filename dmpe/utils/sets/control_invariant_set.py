@@ -102,7 +102,7 @@ def approximate_control_invariant_set(
     return (
         DiscretizedSet(
             grid=init_observations,
-            set_bool=jnp.isclose(jnp.abs(losses), 0),
+            mask=jnp.isclose(jnp.abs(losses), 0),
             unflattened_shape=unflattened_shape,
         ),
         (chosen_actions, losses, proposed_actions),
