@@ -38,3 +38,36 @@ def check_in_set(
     penalty_bool = jnp.isclose(penalty_value, 0)
 
     return jnp.logical_and(set_bool[min_idx], penalty_bool)
+
+
+class DiscretizedSet(eqx.Module):
+    grid: jax.Array
+    set_bool: jax.Array
+    unflattened_shape: tuple[int] = eqx.field(static=True)
+
+    def check_in_set(self, obs: jax.Array) -> jax.Array:
+        return check_in_set(obs, self.set_bool, self.set_grid)
+
+    @property
+    def bool_unflattened(self):
+        return self.set_bool.reshape(self.unflattened_shape)
+
+    @property
+    def grid_unflattened(self):
+        return self.grid.reshape(list(self.unflattened_shape) + [-1])
+
+    @property
+    def unflattened(self):
+        return self.bool_unflattened, self.grid_unflattened
+
+    def __and__(self, other):
+        assert jnp.all(self.grid == other.grid), "The Sets have to be discretized on the same grid."
+        assert self.unflattened_shape == other.unflattened_shape, (
+            "The unflattened shape of the Sets must be the same.",
+        )
+
+        return DiscretizedSet(
+            grid=self.grid,
+            set_bool=jnp.logical_and(self.set_bool, other.set_bool),
+            unflattened_shape=self.unflattened_shape,
+        )

@@ -11,7 +11,7 @@ import jax_tqdm
 
 import exciting_environments as excenvs
 from dmpe.models.model_utils import simulate_ahead_with_env
-from dmpe.excitation.excitation_utils import soft_penalty
+from dmpe.utils.sets.shared import DiscretizedSet
 
 
 def loss_function(
@@ -98,7 +98,9 @@ def approximate_reachable_set(
     sequence_length: int,
     n_starts: int,
     n_opt_steps: int,
-) -> tuple[jax.Array, jax.Array, jax.Array]:
+    tolerance: float,
+    unflattened_shape: tuple[int],
+) -> tuple[DiscretizedSet, tuple[jax.Array]]:
     init_obs, _ = env.reset(env.env_properties)
 
     lr = optax.schedules.exponential_decay(
@@ -120,7 +122,14 @@ def approximate_reachable_set(
         optimize_actions_multistart, in_axes=(0, 0, None, None, None, None, None, None)
     )(proposed_actions, target_observations, init_obs, penalty_function, featurize, env, optimizer, n_opt_steps)
 
-    return chosen_actions, losses, proposed_actions
+    return (
+        DiscretizedSet(
+            grid=target_observations,
+            set_bool=jnp.abs(losses) < tolerance,
+            unflattened_shape=unflattened_shape,
+        ),
+        (chosen_actions, losses, proposed_actions),
+    )
 
 
 def save_results(filename: str, chosen_actions, losses, target_observations):
