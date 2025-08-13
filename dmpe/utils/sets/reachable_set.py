@@ -11,7 +11,7 @@ import jax_tqdm
 
 import exciting_environments as excenvs
 from dmpe.models.model_utils import simulate_ahead_with_env
-from dmpe.utils.density_estimation import build_grid
+from dmpe.excitation.excitation_utils import soft_penalty
 
 
 def loss_function(
@@ -123,13 +123,6 @@ def approximate_reachable_set(
     return chosen_actions, losses, proposed_actions
 
 
-def evaluate_reachability(obs: jax.Array, reach_set: jax.Array) -> jax.Array:
-    """"""
-    dist = jnp.linalg.norm(obs[None] - reach_set)
-
-    raise NotImplementedError
-
-
 def save_results(filename: str, chosen_actions, losses, target_observations):
     data = dict(
         chosen_actions_rs=chosen_actions.tolist(),
@@ -138,10 +131,3 @@ def save_results(filename: str, chosen_actions, losses, target_observations):
     )
     with open(filename, "w") as f:
         json.dump(data, f)
-
-
-def load_results(filename: str) -> dict[str, jax.Array]:
-    with open(filename, "r") as f:
-        data = json.load(f)
-    data = {key: jnp.array(entry) for key, entry in data.items()}
-    return data
