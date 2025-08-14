@@ -73,7 +73,7 @@ class DiscretizedSet(eqx.Module):
             unflattened_shape=self.unflattened_shape,
         )
 
-    def visualize(self, labels=None):
+    def visualize(self, labels: None | list[str] = None, use_contourf: bool = True):
         if self.grid.shape[-1] == 2:
             plt.contourf(
                 self.grid_unflattened[..., 0],
@@ -104,11 +104,15 @@ class DiscretizedSet(eqx.Module):
                     if i > j:
                         any_safe = jnp.transpose(any_safe)
 
-                    axs[j, i].contourf(
-                        self.grid_unflattened[..., 0, 0, 0],
-                        self.grid_unflattened[..., 0, 0, 1],
-                        any_safe,
-                    )
+                    if use_contourf:
+                        axs[j, i].contourf(
+                            self.grid_unflattened[..., 0, 0, 0],
+                            self.grid_unflattened[..., 0, 0, 1],
+                            any_safe,
+                        )
+                    else:
+                        axs[j, i].imshow(any_safe.T, origin="lower", extent=[-1, 1, -1, 1])
+                        axs[j, 0].set_ylabel(labels[j])
 
                 axs[-1, i].set_xlabel(labels[i])
             fig.tight_layout()
