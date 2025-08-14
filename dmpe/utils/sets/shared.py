@@ -101,7 +101,7 @@ class DiscretizedSet(eqx.Module):
 
                     any_safe = jnp.any(self.mask_unflattened, axis=tuple(reduction_indices))
 
-                    if i < j:
+                    if i > j:
                         any_safe = jnp.transpose(any_safe)
 
                     axs[j, i].contourf(
@@ -109,8 +109,6 @@ class DiscretizedSet(eqx.Module):
                         self.grid_unflattened[..., 0, 0, 1],
                         any_safe,
                     )
-
-                    axs[j, 0].set_ylabel(labels[j])
 
                 axs[-1, i].set_xlabel(labels[i])
             fig.tight_layout()
