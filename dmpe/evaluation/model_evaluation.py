@@ -1,6 +1,8 @@
 import abc
 from functools import partial
 
+import matplotlib.pyplot as plt
+
 import jax
 import jax.numpy as jnp
 import equinox as eqx
@@ -257,3 +259,43 @@ class ModelEvaluator:
                 obs_dim=obs_dim,
             ),
         }
+
+
+def visualize_model_prediction_performance(wrapped_model, model_evaluator: ModelEvaluator, labels: list[str]):
+    difference_map, _ = model_evaluator.default_metrics["pred_comp"](
+        wrapped_model,
+        model_evaluator.gt_model,
+    )
+
+    n_features = model_evaluator.obs_dim + model_evaluator.act_dim
+    reshaped_difference_map = difference_map.reshape([model_evaluator.validation_points_per_dim] * n_features + [-1])
+    # abs_map = jnp.mean(jnp.abs(reshaped_difference_map) ** 2, axis=-1)
+    abs_map = jnp.linalg.norm(reshaped_difference_map, axis=-1)
+
+    fig, axs = plt.subplots(nrows=n_features, ncols=n_features, figsize=(9, 9), sharex=True, sharey=True)
+
+    feature_indices = jnp.arange(0, n_features, 1).tolist()
+
+    for i in range(n_features):
+        for j in range(n_features):
+
+            axs[j, i].grid(True)
+            axs[j, i].set_xlim(-1.1, 1.1)
+            axs[j, i].set_ylim(-1.1, 1.1)
+
+            reduction_indices = [f_idx for f_idx in feature_indices if not (f_idx == i or f_idx == j)]
+            if len(reduction_indices) == n_features - 1:
+                continue
+
+            image = jnp.mean(jnp.abs(abs_map), axis=tuple(reduction_indices))
+
+            if i < j:
+                image = jnp.transpose(image)
+
+            axs[j, i].imshow(image, origin="lower", extent=[-1, 1, -1, 1])
+            axs[j, 0].set_ylabel(labels[j])
+
+        axs[-1, i].set_xlabel(labels[i])
+    fig.tight_layout()
+
+    return fig, axs
