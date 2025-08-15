@@ -96,6 +96,7 @@ def approximate_control_invariant_set(
         minval=-1,
         maxval=1,
     )
+
     chosen_actions, losses = eqx.filter_vmap(optimize_actions_multistart, in_axes=(0, 0, None, None, None, None))(
         proposed_actions, init_observations, penalty_function, env, optimizer, n_opt_steps
     )
@@ -120,11 +121,11 @@ def approximate_control_invariant_set_through_chunks(
     n_opt_steps: int,
     unflattened_shape: tuple[int],
 ) -> DiscretizedSet:
-    n_starts = init_observations.shape[0]
+    n_init_values = init_observations.shape[0]
     sets = []
 
-    for i in jnp.arange(0, n_starts, chunk_size):
-        init_obs = init_observations[i : min(i + chunk_size, n_starts)]
+    for i in jnp.arange(0, n_init_values, chunk_size):
+        init_obs = init_observations[i : min(i + chunk_size, n_init_values)]
 
         key, subkey = jax.random.split(key, 2)
 
