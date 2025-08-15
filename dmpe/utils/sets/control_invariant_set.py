@@ -109,6 +109,48 @@ def approximate_control_invariant_set(
     )
 
 
+def approximate_control_invariant_set_through_chunks(
+    env: excenvs.CoreEnvironment,
+    chunk_size: int,
+    init_observations: jax.Array,
+    penalty_function: Callable,
+    key: jax.random.PRNGKey,
+    sequence_length: int,
+    n_starts: int,
+    n_opt_steps: int,
+    unflattened_shape: tuple[int],
+) -> DiscretizedSet:
+    n_starts = init_observations.shape[0]
+    sets = []
+
+    for i in jnp.arange(0, n_starts, chunk_size):
+        init_obs = init_observations[i : min(i + chunk_size, n_starts)]
+
+        key, subkey = jax.random.split(key, 2)
+
+        C, _ = approximate_control_invariant_set(
+            env,
+            init_obs,
+            penalty_function,
+            key=subkey,
+            sequence_length=sequence_length,
+            n_starts=n_starts,
+            n_opt_steps=n_opt_steps,
+            unflattened_shape=unflattened_shape,
+        )
+        sets.append(C)
+
+    # construct full set from chunks
+    grid = jnp.concatenate([c.grid for c in sets])
+    mask = jnp.concatenate([c.mask for c in sets])
+
+    return DiscretizedSet(
+        grid,
+        mask,
+        unflattened_shape,
+    )
+
+
 def save_results(filename: str, chosen_actions, losses, init_observations):
     data = dict(
         chosen_actions_ci=chosen_actions.tolist(),

@@ -47,7 +47,7 @@ def optimize_actions(
 ):
     opt_state = optimizer.init(proposed_actions)
 
-    @jax_tqdm.loop_tqdm(n_opt_steps)
+    @jax_tqdm.loop_tqdm(n_opt_steps, print_rate=100)
     def body_fun(i, carry):
         proposed_actions, opt_state = carry
         grad = gradient_function(
@@ -129,6 +129,53 @@ def approximate_reachable_set(
             unflattened_shape=unflattened_shape,
         ),
         (chosen_actions, losses, proposed_actions),
+    )
+
+
+def approximate_reachable_set_through_chunks(
+    env: excenvs.CoreEnvironment,
+    chunk_size: int,
+    target_observations: jax.Array,
+    penalty_function: Callable,
+    featurize: Callable,
+    key: jax.random.PRNGKey,
+    sequence_length: int,
+    n_starts: int,
+    n_opt_steps: int,
+    tolerance: float,
+    unflattened_shape: tuple[int],
+) -> DiscretizedSet:
+    n_targets = target_observations.shape[0]
+    sets = []
+
+    for i in jnp.arange(0, n_targets, chunk_size):
+        target_obs = target_observations[i : min(i + chunk_size, n_targets)]
+
+        key, subkey = jax.random.split(key, 2)
+
+        R_s, _ = approximate_reachable_set(
+            env,
+            target_obs,
+            penalty_function,
+            featurize,
+            key=subkey,
+            sequence_length=sequence_length,
+            n_starts=n_starts,
+            n_opt_steps=n_opt_steps,
+            tolerance=tolerance,
+            unflattened_shape=unflattened_shape,  # the unflattened shape of the chunks is not true, but it is unused
+        )
+
+        sets.append(R_s)
+
+    # construct full set from chunks
+    grid = jnp.concatenate([rs.grid for rs in sets])
+    mask = jnp.concatenate([rs.mask for rs in sets])
+
+    return DiscretizedSet(
+        grid,
+        mask,
+        unflattened_shape,
     )
 
 

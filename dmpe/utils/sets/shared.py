@@ -129,3 +129,20 @@ class SlicedSet(eqx.Module):
             return jnp.all(check_list)
         else:
             return check_list
+
+
+def save_discretized_set(filename: str, set: DiscretizedSet):
+    data = dict(
+        grid=set.grid.tolist(),
+        mask=set.mask.tolist(),
+        unflattened_shape=set.unflattened_shape,
+    )
+    with open(filename, "w") as f:
+        json.dump(data, f)
+
+
+def load_discretized_set(filename: str) -> DiscretizedSet:
+    with open(filename, "r") as f:
+        data = json.load(f)
+    data = {key: jnp.array(entry) for key, entry in data.items()}
+    return DiscretizedSet(data["grid"], data["mask"], data["unflattened_shape"])
