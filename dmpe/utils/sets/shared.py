@@ -1,3 +1,4 @@
+from typing import Callable
 import json
 import matplotlib.pyplot as plt
 
@@ -63,25 +64,33 @@ class DiscretizedSet(eqx.Module):
 
     def __and__(self, other):
         assert jnp.all(self.grid == other.grid), "The Sets have to be discretized on the same grid."
-        assert self.unflattened_shape == other.unflattened_shape, (
-            "The unflattened shape of the Sets must be the same.",
-        )
+
+        if isinstance(self.unflattened_shape, list):
+            assert self.unflattened_shape == other.unflattened_shape, (
+                "The unflattened shape of the Sets must be the same.",
+            )
+        elif isinstance(self.unflattened_shape, jax.Array):
+            assert jnp.all(self.unflattened_shape == jnp.array(other.unflattened_shape)), (
+                "The unflattened shape of the Sets must be the same.",
+            )
 
         return DiscretizedSet(
             grid=self.grid,
             mask=jnp.logical_and(self.mask, other.mask),
-            unflattened_shape=self.unflattened_shape,
+            unflattened_shape=tuple(self.unflattened_shape.tolist()),
         )
 
-    def visualize(self, labels: None | list[str] = None, use_contourf: bool = True):
+    def visualize(
+        self, reduction_method: Callable = jnp.any, labels: None | list[str] = None, use_contourf: bool = True
+    ):
         if self.grid.shape[-1] == 2:
-            plt.contourf(
+            fig, axs = plt.subplots(1, 1, figsize=(9, 9))
+            axs.contourf(
                 self.grid_unflattened[..., 0],
                 self.grid_unflattened[..., 1],
                 self.mask_unflattened,
             )
-            plt.show()
-
+            return fig, axs
         elif self.grid.shape[-1] < 5:
             dim = self.grid.shape[-1]
             fig, axs = plt.subplots(nrows=dim, ncols=dim, figsize=(9, 9), sharex=True, sharey=True)
@@ -99,23 +108,24 @@ class DiscretizedSet(eqx.Module):
                     if len(reduction_indices) == dim - 1:
                         continue
 
-                    any_safe = jnp.any(self.mask_unflattened, axis=tuple(reduction_indices))
+                    reduced_safe = reduction_method(self.mask_unflattened, axis=tuple(reduction_indices))
 
                     if i > j:
-                        any_safe = jnp.transpose(any_safe)
+                        reduced_safe = jnp.transpose(reduced_safe)
 
                     if use_contourf:
                         axs[j, i].contourf(
                             self.grid_unflattened[..., 0, 0, 0],
                             self.grid_unflattened[..., 0, 0, 1],
-                            any_safe,
+                            reduced_safe,
                         )
                     else:
-                        axs[j, i].imshow(any_safe.T, origin="lower", extent=[-1, 1, -1, 1])
-                        axs[j, 0].set_ylabel(labels[j])
+                        axs[j, i].imshow(reduced_safe.T, origin="lower", extent=[-1, 1, -1, 1])
+                    axs[j, 0].set_ylabel(labels[j])
 
                 axs[-1, i].set_xlabel(labels[i])
             fig.tight_layout()
+            return fig, axs
         else:
             raise NotImplementedError()
 
