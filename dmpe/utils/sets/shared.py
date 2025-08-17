@@ -69,19 +69,15 @@ class DiscretizedSet(eqx.Module):
             assert self.unflattened_shape == other.unflattened_shape, (
                 "The unflattened shape of the Sets must be the same.",
             )
-        elif isinstance(self.unflattened_shape, jax.Array):
-            assert jnp.all(self.unflattened_shape == jnp.array(other.unflattened_shape)), (
-                "The unflattened shape of the Sets must be the same.",
-            )
 
         return DiscretizedSet(
             grid=self.grid,
             mask=jnp.logical_and(self.mask, other.mask),
-            unflattened_shape=tuple(self.unflattened_shape.tolist()),
+            unflattened_shape=self.unflattened_shape,
         )
 
     def visualize(
-        self, reduction_method: Callable = jnp.any, labels: None | list[str] = None, use_contourf: bool = True
+        self, reduction_method: Callable = jnp.sum, labels: None | list[str] = None, use_contourf: bool = True
     ):
         if self.grid.shape[-1] == 2:
             fig, axs = plt.subplots(1, 1, figsize=(9, 9))
@@ -91,7 +87,7 @@ class DiscretizedSet(eqx.Module):
                 self.mask_unflattened,
             )
             return fig, axs
-        elif self.grid.shape[-1] < 5:
+        elif self.grid.shape[-1]:
             dim = self.grid.shape[-1]
             fig, axs = plt.subplots(nrows=dim, ncols=dim, figsize=(9, 9), sharex=True, sharey=True)
             feature_indices = jnp.arange(0, dim, 1).tolist()
@@ -115,8 +111,8 @@ class DiscretizedSet(eqx.Module):
 
                     if use_contourf:
                         axs[j, i].contourf(
-                            self.grid_unflattened[..., 0, 0, 0],
-                            self.grid_unflattened[..., 0, 0, 1],
+                            self.grid_unflattened[..., *[0 for _ in range(dim - 2)], 0],
+                            self.grid_unflattened[..., *[0 for _ in range(dim - 2)], 1],
                             reduced_safe,
                         )
                     else:
@@ -154,5 +150,4 @@ def save_discretized_set(filename: str, set: DiscretizedSet):
 def load_discretized_set(filename: str) -> DiscretizedSet:
     with open(filename, "r") as f:
         data = json.load(f)
-    data = {key: jnp.array(entry) for key, entry in data.items()}
-    return DiscretizedSet(data["grid"], data["mask"], data["unflattened_shape"])
+    return DiscretizedSet(jnp.array(data["grid"]), jnp.array(data["mask"]), tuple(data["unflattened_shape"]))
