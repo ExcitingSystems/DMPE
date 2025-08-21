@@ -38,12 +38,11 @@ if sys_name == "fluid_tank":
     obs_dim = env.reset(env.env_properties)[0].shape[-1]
     sequence_length = 200
     n_starts = 10
-    n_opt_steps = 1_000
+    n_opt_steps = 50_000
     points_per_dim = 50
     chunk_size = 20_000
 
     xs = [
-        jnp.linspace(-1.0, 1.0, points_per_dim),
         jnp.linspace(-1.0, 1.0, points_per_dim),
     ]
     z_g = jnp.meshgrid(*xs, indexing="ij")
@@ -58,12 +57,11 @@ elif sys_name == "pendulum":
     obs_dim = env.reset(env.env_properties)[0].shape[-1]
     sequence_length = 200
     n_starts = 10
-    n_opt_steps = 1_000
+    n_opt_steps = 50_000
     points_per_dim = 50
     chunk_size = 20_000
 
     xs = [
-        jnp.linspace(-1.0, 1.0, points_per_dim),
         jnp.linspace(-1.0, 1.0, points_per_dim),
         jnp.linspace(-1.0, 1.0, points_per_dim),
     ]
@@ -107,7 +105,9 @@ C = approximate_control_invariant_set_through_chunks(
 )
 
 exp_id = str(uuid4())[:16]
+file_path = DataPaths().reach_ci_experiments / f"{sys_name}_C_{exp_id}.json"
+print(f"Set successfully computed. Storing set at {file_path}.")
 save_discretized_set(
-    DataPaths().reach_ci_experiments / f"{sys_name}_C_{exp_id}.json",
+    file_path,
     set=C,
 )

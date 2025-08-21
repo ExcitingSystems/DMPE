@@ -79,7 +79,10 @@ class DiscretizedSet(eqx.Module):
     def visualize(
         self, reduction_method: Callable = jnp.sum, labels: None | list[str] = None, use_contourf: bool = True
     ):
-        if self.grid.shape[-1] == 2:
+        if len(self.unflattened_shape) == 1:
+            fig, axs = plt.subplots(1, 1, figsize=(9, 9))
+            axs.plot(self.grid, self.mask)
+        elif len(self.unflattened_shape) == 2:
             fig, axs = plt.subplots(1, 1, figsize=(9, 9))
             axs.contourf(
                 self.grid_unflattened[..., 0],
@@ -87,7 +90,7 @@ class DiscretizedSet(eqx.Module):
                 self.mask_unflattened,
             )
             return fig, axs
-        elif self.grid.shape[-1]:
+        else:
             dim = self.grid.shape[-1]
             fig, axs = plt.subplots(nrows=dim, ncols=dim, figsize=(9, 9), sharex=True, sharey=True)
             feature_indices = jnp.arange(0, dim, 1).tolist()
@@ -122,8 +125,6 @@ class DiscretizedSet(eqx.Module):
                 axs[-1, i].set_xlabel(labels[i])
             fig.tight_layout()
             return fig, axs
-        else:
-            raise NotImplementedError()
 
 
 class SlicedSet(eqx.Module):
