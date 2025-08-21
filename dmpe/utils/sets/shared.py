@@ -82,13 +82,17 @@ class DiscretizedSet(eqx.Module):
         if len(self.unflattened_shape) == 1:
             fig, axs = plt.subplots(1, 1, figsize=(9, 9))
             axs.plot(self.grid, self.mask)
+            return fig, axs
         elif len(self.unflattened_shape) == 2:
             fig, axs = plt.subplots(1, 1, figsize=(9, 9))
-            axs.contourf(
-                self.grid_unflattened[..., 0],
-                self.grid_unflattened[..., 1],
-                self.mask_unflattened,
-            )
+            if use_contourf:
+                axs.contourf(
+                    self.grid_unflattened[..., 0],
+                    self.grid_unflattened[..., 1],
+                    self.mask_unflattened,
+                )
+            else:
+                axs.imshow(self.mask_unflattened.T, origin="lower", extent=[-1, 1, -1, 1])
             return fig, axs
         else:
             dim = self.grid.shape[-1]

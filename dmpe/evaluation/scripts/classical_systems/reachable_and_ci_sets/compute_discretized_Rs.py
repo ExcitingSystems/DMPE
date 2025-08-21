@@ -57,7 +57,7 @@ elif sys_name == "pendulum":
 
     obs_dim = env.reset(env.env_properties)[0].shape[-1]
     sequence_length = 200
-    n_starts = 100
+    n_starts = 400
     n_opt_steps = 50_000
     tolerance = 1e-4
     points_per_dim = 50
