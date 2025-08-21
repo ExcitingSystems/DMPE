@@ -26,7 +26,7 @@ class JensenShannonDivergence(eqx.Module):
     grid: jax.Array
     target_distribution: jax.Array
 
-    def __init__(self, grid, bandwidth=0.05, target_distribution=None):
+    def __init__(self, grid, bandwidth=0.08, target_distribution=None):
         self.bandwidth = bandwidth
         self.grid = grid
         if target_distribution is None:
