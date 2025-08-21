@@ -1,7 +1,7 @@
 from uuid import uuid4
+import argparse
 import os
 
-os.environ["CUDA_VISIBLE_DEVICES"] = "1"
 os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
 
 import jax
@@ -13,28 +13,49 @@ from dmpe.utils.sets.reachable_set import approximate_reachable_set_through_chun
 from dmpe.utils.sets.shared import save_discretized_set
 
 
-env, penalty_function, featurize, _ = setup_cart_pole_env()
-key = jax.random.PRNGKey(14)
+parser = argparse.ArgumentParser(description="Process 'sys_name' to choose the system to experiment on.")
+parser.add_argument(
+    "sys_name",
+    metavar="sys_name",
+    type=str,
+    help="The name of the environment. Options are ['pendulum', 'fluid_tank', 'cart_pole'].",
+)
+parser.add_argument("--gpu_id", type=int, default=0, help="GPU id to use.")
 
-obs_dim = env.reset(env.env_properties)[0].shape[-1]
-sequence_length = 200
-n_starts = 10
-n_opt_steps = 50_000
-tolerance = 1e-4
-points_per_dim = 25
-chunk_size = 20_000
+args = parser.parse_args()
+sys_name = args.sys_name
 
-xs = [
-    jnp.linspace(-1.0, 1.0, points_per_dim),
-    jnp.linspace(-1.0, 1.0, points_per_dim),
-    jnp.linspace(-1.0, 1.0, points_per_dim),
-    jnp.linspace(-1.0, 1.0, points_per_dim),
-]
-z_g = jnp.meshgrid(*xs, indexing="ij")
-z_g = jnp.stack([_x for _x in z_g], axis=-1)
-unflattened_shape = z_g.shape[:-1]
+gpus = jax.devices()
+gpu_id = args.gpu_id
+jax.config.update("jax_default_device", gpus[args.gpu_id])
 
-target_observations_rs = z_g.reshape(-1, obs_dim)
+if sys_name == "fluid_tank":
+    raise NotImplementedError()
+elif sys_name == "pendulum":
+    raise NotImplementedError()
+elif sys_name == "cart_pole":
+    env, penalty_function, featurize, _ = setup_cart_pole_env()
+    key = jax.random.PRNGKey(14)
+
+    obs_dim = env.reset(env.env_properties)[0].shape[-1]
+    sequence_length = 200
+    n_starts = 10
+    n_opt_steps = 50_000
+    tolerance = 1e-4
+    points_per_dim = 25
+    chunk_size = 20_000
+
+    xs = [
+        jnp.linspace(-1.0, 1.0, points_per_dim),
+        jnp.linspace(-1.0, 1.0, points_per_dim),
+        jnp.linspace(-1.0, 1.0, points_per_dim),
+        jnp.linspace(-1.0, 1.0, points_per_dim),
+    ]
+    z_g = jnp.meshgrid(*xs, indexing="ij")
+    z_g = jnp.stack([_x for _x in z_g], axis=-1)
+    unflattened_shape = z_g.shape[:-1]
+
+    target_observations_rs = z_g.reshape(-1, obs_dim)
 
 
 R_s = approximate_reachable_set_through_chunks(
@@ -54,6 +75,6 @@ R_s = approximate_reachable_set_through_chunks(
 
 exp_id = str(uuid4())[:16]
 save_discretized_set(
-    DataPaths().reach_ci_experiments / f"cart_pole_Rs_{exp_id}.json",
+    DataPaths().reach_ci_experiments / f"{sys_name}_Rs_{exp_id}.json",
     set=R_s,
 )
