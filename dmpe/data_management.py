@@ -17,3 +17,4 @@ class DataPaths:
     )
     pmsm_experiments = get_project_root() / "data" / "pmsm"
     reach_ci_experiments = get_project_root() / "data" / "classical_systems" / "reachable_and_control_invariant_set"
+    imperfect_pm_dmpe_experiments = get_project_root() / "data" / "classical_systems" / "imperfect_pm_dmpe"
