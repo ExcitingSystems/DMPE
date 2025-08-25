@@ -51,19 +51,16 @@ jax.config.update("jax_default_device", gpus[args.gpu_id])
 if sys_name == "fluid_tank":
     env, penalty_function, featurize, env_params = setup_fluid_tank_env()
     parameter_ranges = {}
-    raise NotImplementedError()
-
+    parameter_ranges = dict(
+        base_area=jnp.pi * jnp.arange(0.6, 1.41, 0.2),
+        orifice_area=jnp.pi * 0.1**2 * jnp.arange(0.6, 1.41, 0.2),
+    )
 elif sys_name == "pendulum":
     env, penalty_function, featurize, env_params = setup_pendulum_env()
     parameter_ranges = dict(
         m=jnp.arange(0.6, 1.41, 0.2),
         l=jnp.arange(0.6, 1.41, 0.2),
     )
-    parameter_combinations = jnp.meshgrid(*parameter_ranges.values(), indexing="ij")
-    n_parameters = len(parameter_combinations)
-    parameter_combinations = jnp.stack([_x for _x in parameter_combinations], axis=-1)
-    parameter_combinations = parameter_combinations.reshape(-1, n_parameters)
-
 elif sys_name == "cart_pole":
     env, penalty_function, featurize, env_params = setup_cart_pole_env()
     parameter_ranges = dict(
@@ -71,14 +68,13 @@ elif sys_name == "cart_pole":
         m_p=jnp.arange(0.1, 1.11, 0.2),
         l=jnp.arange(0.1, 1.11, 0.2),
     )
-    parameter_combinations = jnp.meshgrid(*parameter_ranges.values(), indexing="ij")
-    n_parameters = len(parameter_combinations)
-    parameter_combinations = jnp.stack([_x for _x in parameter_combinations], axis=-1)
-    parameter_combinations = parameter_combinations.reshape(-1, n_parameters)
-
 else:
     raise NotImplementedError(f"System '{sys_name}' is unknown. Choose from ['pendulum', 'fluid_tank', 'cart_pole'].")
 
+parameter_combinations = jnp.meshgrid(*parameter_ranges.values(), indexing="ij")
+n_parameters = len(parameter_combinations)
+parameter_combinations = jnp.stack([_x for _x in parameter_combinations], axis=-1)
+parameter_combinations = parameter_combinations.reshape(-1, n_parameters)
 
 seeds = [125]  ##, 156, 412]
 default_params = env.env_properties.static_params
@@ -90,7 +86,13 @@ for parameters in tqdm(parameter_combinations):
     print(parameters)
 
     if sys_name == "fluid_tank":
-        raise NotImplementedError()
+        A, A_o = tuple(parameters)
+        new_static_params = env.StaticParams(
+            base_area=A.item(),
+            orifice_area=A_o.item(),
+            c_d=default_params.c_d,
+            g=default_params.g,
+        )
     elif sys_name == "pendulum":
         m, l = tuple(parameters)
         new_static_params = env.StaticParams(
