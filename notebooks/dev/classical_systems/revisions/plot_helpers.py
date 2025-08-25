@@ -43,7 +43,7 @@ def plot_jsd_model_prediction_relation(
     print("# or results:", n_results)
     print(80 * "-")
 
-    for result_path in result_paths:
+    for result_path in tqdm(result_paths, total=len(result_paths)):
         result = ModelExpDataResult.from_file(
             filename=result_path,
             model_class=model_class,
