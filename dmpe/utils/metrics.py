@@ -183,4 +183,4 @@ def diced_fill(
 ) -> jax.Array:
     support_point_has_data_point = jnp.any(check_points_to_grid(support_points, data_points, support_spacing), axis=0)
     value = jnp.sum(support_point_has_data_point) / support_points.shape[0]
-    return value
+    return 1 - value

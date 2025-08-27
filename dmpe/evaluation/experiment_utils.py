@@ -12,7 +12,7 @@ import jax.numpy as jnp
 
 from dmpe.models.model_utils import load_model
 from dmpe.evaluation.plotting_utils import plot_sequence, plot_model_performance
-from dmpe.evaluation.metrics_utils import default_jsd, default_ae, default_mcudsa, default_ksfc
+from dmpe.evaluation.metrics_utils import default_jsd, default_ae, default_mcudsa, default_ksfc, default_df
 
 
 def get_experiment_ids(results_path: pathlib.Path):
