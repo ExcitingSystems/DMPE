@@ -12,6 +12,7 @@ from dmpe.utils.metrics import (
     kiss_space_filling_cost,
     blockwise_ksfc,
     blockwise_mcudsa,
+    diced_fill,
 )
 
 
@@ -109,3 +110,19 @@ def default_ksfc(observations, actions, points_per_dim=20, bounds=(-1, 1), varia
         return kiss_space_filling_cost(
             data_points=data_points, support_points=support_points, variances=jnp.ones([dim]) * variance, eps=eps
         )
+
+
+def default_df(observations, actions, points_per_dim, bounds=(-1, 1), ca=True):
+    if observations.shape[0] == actions.shape[0] + 1:
+        observations = observations[0:-1, :]
+
+    if ca:
+        data_points = jnp.concatenate([observations, actions], axis=-1)
+    else:
+        data_points = observations
+    dim = data_points.shape[-1]
+
+    support_points = build_grid(dim, low=bounds[0], high=bounds[1], points_per_dim=points_per_dim)
+    support_spacing = jnp.abs(support_points[0] - support_points[1])[-1] / 2
+
+    return diced_fill(data_points, support_points, support_spacing)
