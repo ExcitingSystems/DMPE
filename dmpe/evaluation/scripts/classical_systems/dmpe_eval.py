@@ -49,14 +49,7 @@ jax.config.update("jax_default_device", gpus[args.gpu_id])
 if sys_name == "pendulum":
     ## Start pendulum experiment parameters
 
-    def featurize_theta(obs):
-        """The angle itself is difficult to properly interpret in the loss as angles
-        such as 1.99 * pi and 0 are essentially the same. Therefore the angle is
-        transformed to sin(phi) and cos(phi) for comparison in the loss."""
-        feat_obs = jnp.stack([jnp.sin(obs[..., 0] * jnp.pi), jnp.cos(obs[..., 0] * jnp.pi), obs[..., 1]], axis=-1)
-        return feat_obs
-
-    env, penalty_function, env_params = setup_pendulum_env()
+    env, penalty_function, featurize, env_params = setup_pendulum_env()
     alg_params = dict(
         bandwidth=None,
         n_prediction_steps=20,
@@ -96,7 +89,7 @@ if sys_name == "pendulum":
         training_batch_size=128,
         n_train_steps=1,
         sequence_length=alg_params["n_prediction_steps"],
-        featurize=featurize_theta,
+        featurize=featurize,
         model_lr=1e-4,
     )
     model_params = dict(
@@ -122,7 +115,7 @@ if sys_name == "pendulum":
 elif sys_name == "fluid_tank":
     ## Start fluid_tank experiment parameters
 
-    env, penalty_function, env_params = setup_fluid_tank_env()
+    env, penalty_function, featurize, env_params = setup_fluid_tank_env()
 
     alg_params = dict(
         bandwidth=None,
@@ -164,7 +157,7 @@ elif sys_name == "fluid_tank":
         training_batch_size=128,
         n_train_steps=1,
         sequence_length=alg_params["n_prediction_steps"],
-        featurize=lambda x: x,
+        featurize=featurize,
         model_lr=1e-4,
     )
     model_params = dict(obs_dim=env.physical_state_dim, action_dim=env.action_dim, width_size=128, depth=3, key=None)
@@ -184,17 +177,7 @@ elif sys_name == "fluid_tank":
 elif sys_name == "cart_pole":
     ## Start cart_pole experiment parameters
 
-    def featurize_theta_cart_pole(obs):
-        """The angle itself is difficult to properly interpret in the loss as angles
-        such as 1.99 * pi and 0 are essentially the same. Therefore the angle is
-        transformed to sin(phi) and cos(phi) for comparison in the loss."""
-        feat_obs = jnp.stack(
-            [obs[..., 0], obs[..., 1], jnp.sin(obs[..., 2] * jnp.pi), jnp.cos(obs[..., 2] * jnp.pi), obs[..., 3]],
-            axis=-1,
-        )
-        return feat_obs
-
-    env, penalty_function, env_params = setup_cart_pole_env()
+    env, penalty_function, featurize, env_params = setup_cart_pole_env()
     alg_params = dict(
         bandwidth=0.12,
         n_prediction_steps=50,
@@ -235,7 +218,7 @@ elif sys_name == "cart_pole":
         training_batch_size=128,
         n_train_steps=10,
         sequence_length=alg_params["n_prediction_steps"],
-        featurize=featurize_theta_cart_pole,
+        featurize=featurize,
         model_lr=1e-4,
     )
     model_params = dict(obs_dim=env.physical_state_dim, action_dim=env.action_dim, width_size=128, depth=3, key=None)

@@ -42,13 +42,13 @@ jax.config.update("jax_default_device", gpus[args.gpu_id])
 ### Start experiment parameters #######################################################################################
 
 if sys_name == "pendulum":
-    env, penalty_function, env_params = setup_pendulum_env()
+    env, penalty_function, _, env_params = setup_pendulum_env()
 
 elif sys_name == "fluid_tank":
-    env, penalty_function, env_params = setup_fluid_tank_env()
+    env, penalty_function, _, env_params = setup_fluid_tank_env()
 
 elif sys_name == "cart_pole":
-    env, penalty_function, env_params = setup_cart_pole_env()
+    env, penalty_function, _, env_params = setup_cart_pole_env()
 
 exp_params = dict(
     seed=None,

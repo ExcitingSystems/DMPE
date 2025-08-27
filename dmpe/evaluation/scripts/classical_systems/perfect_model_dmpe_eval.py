@@ -47,7 +47,7 @@ jax.config.update("jax_default_device", gpus[args.gpu_id])
 if sys_name == "pendulum":
     ## Start pendulum experiment parameters
 
-    env, penalty_function, env_params = setup_pendulum_env()
+    env, penalty_function, _, env_params = setup_pendulum_env()
     alg_params = dict(
         bandwidth=None,
         n_prediction_steps=20,
@@ -98,7 +98,7 @@ if sys_name == "pendulum":
 elif sys_name == "fluid_tank":
     ## Start fluid_tank experiment parameters
 
-    env, penalty_function, env_params = setup_fluid_tank_env()
+    env, penalty_function, _, env_params = setup_fluid_tank_env()
 
     alg_params = dict(
         bandwidth=None,
@@ -150,7 +150,7 @@ elif sys_name == "fluid_tank":
 elif sys_name == "cart_pole":
     ## Start cart_pole experiment parameters
 
-    env, penalty_function, env_params = setup_cart_pole_env()
+    env, penalty_function, _, env_params = setup_cart_pole_env()
 
     alg_params = dict(
         bandwidth=0.12,
