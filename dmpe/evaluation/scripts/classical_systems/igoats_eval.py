@@ -142,7 +142,7 @@ for exp_idx, seed in enumerate(seeds):
     print("Running experiment", exp_idx, f"(seed: {seed}) on '{sys_name}'")
 
     # Check that the targeted data folder actually exist:
-    results_path = DataPaths().cs_experiments / pathlib.Path("igoats") / pathlib.Path(sys_name)
+    results_path = DataPaths().se_cs_experiments / pathlib.Path("igoats") / pathlib.Path(sys_name)
     print(f"Results will be written to: '{results_path}'.")
     assert results_path.exists(), (
         f"The expected results path '{results_path}' does not seem to exist. Please create the necessary file structure "
