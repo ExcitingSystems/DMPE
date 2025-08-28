@@ -175,9 +175,13 @@ def extract_metrics_over_timesteps(experiment_ids, results_path, lengths, metric
                 )
 
         else:
-            single_results = [
-                evaluate_experiment_metrics(observations[:N], actions[:N], metrics=metrics) for N in lengths
-            ]
+            single_results = []
+            for N in lengths:
+                test_actions = actions[:N]
+                test_observations = observations[:N]
+                value = evaluate_experiment_metrics(test_observations, test_actions, metrics=metrics)
+                single_results.append(value)
+
         metric_keys = single_results[0].keys()
 
         results_by_metric = {key: [] for key in metric_keys}
