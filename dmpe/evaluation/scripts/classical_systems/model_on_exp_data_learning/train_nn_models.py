@@ -75,12 +75,27 @@ def main(
             model_class=None,  # internal excitation model is unused anyways
         )
 
-        # TODO: reduce_dataset? start: start + n_datapoints
-        assert data_start + n_datapoints <= observations.shape[0]
-        assert data_start + n_datapoints <= actions.shape[0]
+        if data_start > 0:
+            assert data_start + n_datapoints <= observations.shape[0]
+            assert data_start + n_datapoints <= actions.shape[0]
 
-        observations = observations[data_start : data_start + n_datapoints]
-        actions = actions[data_start : data_start + n_datapoints]
+            observations = observations[data_start : data_start + n_datapoints]
+            actions = actions[data_start : data_start + n_datapoints]
+
+        else:
+            assert data_start == 0
+
+            if n_datapoints > observations.shape[0]:
+                print("Not enough observations for the requested number of datapoints. Skipping experiment")
+                continue
+            if n_datapoints > actions.shape[0]:
+                if n_datapoints == actions.shape[0] + 1:
+                    # special case where n_actions == n_datapoints - 1 (one too little actions. This is fine / negligible)
+                    observations = observations[:-1]
+                    actions = actions
+                else:
+                    print("Not enough observations for the requested number of datapoints. Skipping experiment")
+                    continue
 
         trained_models = []
         model_errors = []
