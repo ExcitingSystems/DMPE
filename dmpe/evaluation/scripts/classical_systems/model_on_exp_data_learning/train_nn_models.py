@@ -88,7 +88,7 @@ def main(
             if n_datapoints > observations.shape[0]:
                 print("Not enough observations for the requested number of datapoints. Skipping experiment")
                 continue
-            if n_datapoints > actions.shape[0]:
+            elif n_datapoints > actions.shape[0]:
                 if n_datapoints == actions.shape[0] + 1:
                     # special case where n_actions == n_datapoints - 1 (one too little actions. This is fine / negligible)
                     observations = observations[:-1]
@@ -96,6 +96,9 @@ def main(
                 else:
                     print("Not enough observations for the requested number of datapoints. Skipping experiment")
                     continue
+            else:
+                observations = observations[:n_datapoints]
+                actions = actions[:n_datapoints]
 
         trained_models = []
         model_errors = []
