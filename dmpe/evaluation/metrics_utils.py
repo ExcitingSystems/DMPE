@@ -121,7 +121,9 @@ def default_ksfc(
         )
 
 
-def default_df(observations, actions, points_per_dim, bounds=(-1, 1), ca=True):
+def default_df(
+    observations, actions, points_per_dim=11, bounds=(-1, 1), ca=True, support_points=None, support_spacing=None
+):
     if observations.shape[0] == actions.shape[0] + 1:
         observations = observations[0:-1, :]
 
@@ -131,7 +133,11 @@ def default_df(observations, actions, points_per_dim, bounds=(-1, 1), ca=True):
         data_points = observations
     dim = data_points.shape[-1]
 
-    support_points = build_grid(dim, low=bounds[0], high=bounds[1], points_per_dim=points_per_dim)
-    support_spacing = jnp.abs(support_points[0] - support_points[1])[-1] / 2
+    if support_points is None:
+        support_points = build_grid(dim, low=bounds[0], high=bounds[1], points_per_dim=points_per_dim)
+        support_spacing = jnp.abs(support_points[0] - support_points[1])[-1] / 2
+    else:
+        assert points_per_dim is None
+        assert support_spacing is not None
 
     return diced_fill(data_points, support_points, support_spacing)
