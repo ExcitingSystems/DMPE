@@ -77,7 +77,11 @@ class DiscretizedSet(eqx.Module):
         )
 
     def visualize(
-        self, reduction_method: Callable = jnp.sum, labels: None | list[str] = None, use_contourf: bool = True
+        self,
+        reduction_method: Callable = jnp.sum,
+        labels: None | list[str] = None,
+        use_contourf: bool = True,
+        grid_spacing: float = 0.0,
     ):
         if len(self.unflattened_shape) == 1:
             fig, axs = plt.subplots(1, 1, figsize=(9, 9))
@@ -92,7 +96,9 @@ class DiscretizedSet(eqx.Module):
                     self.mask_unflattened,
                 )
             else:
-                axs.imshow(self.mask_unflattened.T, origin="lower", extent=[-1, 1, -1, 1])
+                # how to change?! -> the extend is half a grid spacing longer in each direction!?
+                extent = 1 + grid_spacing
+                axs.imshow(self.mask_unflattened.T, origin="lower", extent=[-extent, extent, -extent, extent])
             return fig, axs
         else:
             dim = self.grid.shape[-1]
@@ -123,7 +129,8 @@ class DiscretizedSet(eqx.Module):
                             reduced_safe,
                         )
                     else:
-                        axs[j, i].imshow(reduced_safe.T, origin="lower", extent=[-1, 1, -1, 1])
+                        extent = 1 + grid_spacing
+                        axs[j, i].imshow(reduced_safe.T, origin="lower", extent=[-extent, extent, -extent, extent])
                     axs[j, 0].set_ylabel(labels[j])
 
                 axs[-1, i].set_xlabel(labels[i])
