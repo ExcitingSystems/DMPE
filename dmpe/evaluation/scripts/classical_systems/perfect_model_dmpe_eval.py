@@ -81,6 +81,8 @@ if sys_name == "pendulum":
         grid_extend=alg_params["grid_extend"],
         consider_action_distribution=alg_params["consider_action_distribution"],
         penalty_function=alg_params["penalty_function"],
+        act_dim=1,
+        obs_dim=2,
     )
 
     exp_params = dict(
@@ -122,6 +124,8 @@ elif sys_name == "fluid_tank":
             dim=env.physical_state_dim + env.action_dim,
             n_g=alg_params["points_per_dim"],
             percentage=0.3,
+            act_dim=1,
+            obs_dim=1,
         )
     )
 
@@ -185,6 +189,8 @@ elif sys_name == "cart_pole":
         grid_extend=alg_params["grid_extend"],
         consider_action_distribution=alg_params["consider_action_distribution"],
         penalty_function=alg_params["penalty_function"],
+        act_dim=1,
+        obs_dim=4,
     )
 
     exp_params = dict(

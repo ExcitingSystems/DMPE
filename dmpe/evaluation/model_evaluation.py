@@ -272,7 +272,7 @@ def visualize_model_prediction_performance(wrapped_model, model_evaluator: Model
     # abs_map = jnp.mean(jnp.abs(reshaped_difference_map) ** 2, axis=-1)
     abs_map = jnp.linalg.norm(reshaped_difference_map, axis=-1)
 
-    fig, axs = plt.subplots(nrows=n_features, ncols=n_features, figsize=(9, 9), sharex=True, sharey=True)
+    fig, axs = plt.subplots(nrows=n_features, ncols=n_features, figsize=(6, 6), sharex=True, sharey=True)
 
     feature_indices = jnp.arange(0, n_features, 1).tolist()
 
