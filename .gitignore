@@ -169,3 +169,4 @@ notebooks/dev/classical_systems/revisions/unmaintained
 .vscode/
 *.pdf
 *.png
+*.svg
