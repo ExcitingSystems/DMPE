@@ -55,6 +55,8 @@ def simulate_ahead_with_env(
         observations (jax.Array): The simulated observations. The shape of this is given as
             (n_actions + 1, obs_dim). That is because the first observation is already given
             through the initial observation
+        last_state (excenvs.CoreEnvironment.State): The last environment state of the simulation
+            so that the simulation may be continued from this point
     """
 
     def body_fun(carry, action):

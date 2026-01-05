@@ -257,7 +257,7 @@ def build_grid(dim: int, low: float, high: float, points_per_dim: int) -> jax.Ar
     """
     xs = [jnp.linspace(low, high, points_per_dim) for _ in range(dim)]
 
-    z_g = jnp.meshgrid(*xs)
+    z_g = jnp.meshgrid(*xs, indexing="ij")
     z_g = jnp.stack([_x for _x in z_g], axis=-1)
     z_g = z_g.reshape(-1, dim)
 
@@ -265,7 +265,7 @@ def build_grid(dim: int, low: float, high: float, points_per_dim: int) -> jax.Ar
     return z_g
 
 
-def build_grid_2d(low: float, high: float, points_per_dim: int):
+def build_grid_2d(low: float, high: float, points_per_dim: int) -> jax.Array:
     """Shorthand for a uniform 2d grid.
 
     Args:
@@ -280,7 +280,7 @@ def build_grid_2d(low: float, high: float, points_per_dim: int):
     return build_grid(2, low, high, points_per_dim)
 
 
-def build_grid_3d(low: float, high: float, points_per_dim: int):
+def build_grid_3d(low: float, high: float, points_per_dim: int) -> jax.Array:
     """Shorthand for a uniform 3d grid.
 
     Args:
@@ -302,6 +302,8 @@ def get_uniform_target_distribution(
     grid_extend: float,
     consider_action_distribution: bool,
     penalty_function: Callable,
+    obs_dim: int,
+    act_dim: int,
 ) -> jax.Array:
     """Get a uniform target distribution for the DMPE algorithm based on the grid parameters
     and a penalty function. Only values that are not penalized by the penalty function
@@ -325,9 +327,9 @@ def get_uniform_target_distribution(
     z_g = build_grid(dim, low=-grid_extend, high=grid_extend, points_per_dim=points_per_dim)
 
     if consider_action_distribution:
-        constr_func = lambda z_g: penalty_function(z_g[..., None, :2], z_g[..., None, 2:])
+        constr_func = lambda z_g: penalty_function(z_g[..., None, :obs_dim], z_g[..., None, -act_dim:])
     else:
-        constr_func = lambda z_g: penalty_function(z_g[..., None, :2], None)
+        constr_func = lambda z_g: penalty_function(z_g[..., None, :obs_dim], None)
 
     valid_grid_point = jax.vmap(constr_func, in_axes=0)(z_g) == 0
     constrained_data_points = z_g[jnp.where(valid_grid_point == True)]

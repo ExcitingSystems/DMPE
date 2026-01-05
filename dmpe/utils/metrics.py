@@ -1,6 +1,8 @@
 import jax
 import jax.numpy as jnp
 
+import equinox as eqx
+
 
 @jax.jit
 def KLDLoss(p: jax.Array, q: jax.Array) -> jax.Array:
@@ -157,3 +159,28 @@ def blockwise_ksfc(
         )
 
     return value
+
+
+def check_point_to_point(grid_point, point, grid_spacing):
+    lower = grid_point - grid_spacing
+    upper = grid_point + grid_spacing
+
+    return jnp.logical_and(jnp.all(lower < point), jnp.all(upper > point))
+
+
+def check_point_to_grid(grid, point, grid_spacing):
+    return eqx.filter_vmap(check_point_to_point, in_axes=(0, None, None))(grid, point, grid_spacing)
+
+
+def check_points_to_grid(grid, points, grid_spacing):
+    return eqx.filter_vmap(check_point_to_grid, in_axes=(None, 0, None))(grid, points, grid_spacing)
+
+
+def diced_fill(
+    data_points: jax.Array,
+    support_points: jax.Array,
+    support_spacing: jax.Array,
+) -> jax.Array:
+    support_point_has_data_point = jnp.any(check_points_to_grid(support_points, data_points, support_spacing), axis=0)
+    value = jnp.sum(support_point_has_data_point) / support_points.shape[0]
+    return 1 - value

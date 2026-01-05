@@ -113,16 +113,19 @@ def load_single_batch(
         batched_observations (jax.Array): A batch of observations with shape (batch_size, sequence_length, obs_dim)
         batched_actions (jax.Array): A batch of actions with shape (batch_size, sequence_length-1, action_dim)
     """
+    obs_dim = observations_array.shape[-1]
+    act_dim = actions_array.shape[-1]
 
-    slice = jnp.linspace(
-        start=starting_points, stop=starting_points + sequence_length, num=sequence_length, dtype=int
-    ).T
-
-    batched_observations = observations_array[slice]
-    batched_actions = actions_array[slice]
-
-    batched_observations = batched_observations[:, :, :]
-    batched_actions = batched_actions[:, :-1, :]
+    batched_observations = eqx.filter_vmap(jax.lax.dynamic_slice, in_axes=(None, 0, None))(
+        observations_array,
+        starting_points,
+        (sequence_length, obs_dim),
+    )
+    batched_actions = eqx.filter_vmap(jax.lax.dynamic_slice, in_axes=(None, 0, None))(
+        actions_array,
+        starting_points,
+        (sequence_length - 1, act_dim),
+    )
     return batched_observations, batched_actions
 
 
@@ -149,7 +152,7 @@ def precompute_starting_points(
         loader_key (jax.random.PRNGKey): Random key for sampling.
 
     Returns:
-        starting_points (jax.Array): The starting points for all batches with shape (n_train_steps, training_batch_size)
+        starting_points (jax.Array): The starting points for all batches with shape (n_train_steps, training_batch_size, 2)
         next_loader_key (jax.random.PRNGKey): The updated random key.
     """
     next_loader_key, momentary_loader_key = jax.random.split(loader_key, 2)
@@ -158,7 +161,9 @@ def precompute_starting_points(
         k + 1 - sequence_length
     )
     starting_points = index_normalized.astype(jnp.int32)
-
+    starting_points = jnp.concatenate(
+        [starting_points[..., None], jnp.zeros(starting_points.shape, dtype=jnp.int32)[..., None]], axis=-1
+    )
     return starting_points, next_loader_key
 
 

@@ -12,7 +12,7 @@ import jax.numpy as jnp
 
 from dmpe.models.model_utils import load_model
 from dmpe.evaluation.plotting_utils import plot_sequence, plot_model_performance
-from dmpe.evaluation.metrics_utils import default_jsd, default_ae, default_mcudsa, default_ksfc
+from dmpe.evaluation.metrics_utils import default_jsd, default_ae, default_mcudsa, default_ksfc, default_df
 
 
 def get_experiment_ids(results_path: pathlib.Path):
@@ -92,6 +92,24 @@ def load_experiment_results(exp_id: str, results_path: pathlib.Path, model_class
         return params, observations, actions, None
 
 
+def load_all_experiment_results(results_path: pathlib.Path, model_class=None, to_array=True):
+    experiment_results = []
+
+    for exp_id in get_experiment_ids(results_path):
+        params, observations, actions, model = load_experiment_results(exp_id, results_path, model_class, to_array)
+
+        experiment_results.append(
+            dict(
+                exp_id=exp_id,
+                params=params,
+                observations=observations,
+                actions=actions,
+                model=model,
+            )
+        )
+    return experiment_results
+
+
 def evaluate_experiment_metrics(observations, actions, metrics, featurize=None):
     """Evaluate the given observations and actions using the specified metrics."""
     results = {}
@@ -157,9 +175,13 @@ def extract_metrics_over_timesteps(experiment_ids, results_path, lengths, metric
                 )
 
         else:
-            single_results = [
-                evaluate_experiment_metrics(observations[:N], actions[:N], metrics=metrics) for N in lengths
-            ]
+            single_results = []
+            for N in lengths:
+                test_actions = actions[:N]
+                test_observations = observations[:N]
+                value = evaluate_experiment_metrics(test_observations, test_actions, metrics=metrics)
+                single_results.append(value)
+
         metric_keys = single_results[0].keys()
 
         results_by_metric = {key: [] for key in metric_keys}

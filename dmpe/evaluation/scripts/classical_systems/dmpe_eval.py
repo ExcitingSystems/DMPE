@@ -10,23 +10,18 @@ import jax.numpy as jnp
 
 os.environ["XLA_PYTHON_CLIENT_PREALLOCATE"] = "false"
 
-import diffrax
 import optax
 from haiku import PRNGSequence
 
-import exciting_environments as excenvs
-
+from dmpe.data_management import DataPaths
 from dmpe.utils.signals import aprbs
 from dmpe.utils.density_estimation import select_bandwidth, get_uniform_target_distribution
-from dmpe.excitation.excitation_utils import soft_penalty
 from dmpe.algorithms.algorithms import excite_with_dmpe
 from dmpe.models.models import NeuralEulerODEPendulum, NeuralEulerODE, NeuralEulerODECartpole
 from dmpe.models.model_utils import save_model
-
-
-# file path setup
-REPO_ROOT_PATH = pathlib.Path(__file__).parent.parent.parent.parent.parent
-TARGETED_DATA_PATH = REPO_ROOT_PATH / pathlib.Path("data") / pathlib.Path("classical_systems")
+from dmpe.utils.env_utils.fluid_tank_utils import setup_env as setup_fluid_tank_env
+from dmpe.utils.env_utils.pendulum_utils import setup_env as setup_pendulum_env
+from dmpe.utils.env_utils.cart_pole_utils import setup_env as setup_cart_pole_env
 
 
 def safe_json_dump(obj, fp):
@@ -54,24 +49,7 @@ jax.config.update("jax_default_device", gpus[args.gpu_id])
 if sys_name == "pendulum":
     ## Start pendulum experiment parameters
 
-    def featurize_theta(obs):
-        """The angle itself is difficult to properly interpret in the loss as angles
-        such as 1.99 * pi and 0 are essentially the same. Therefore the angle is
-        transformed to sin(phi) and cos(phi) for comparison in the loss."""
-        feat_obs = jnp.stack([jnp.sin(obs[..., 0] * jnp.pi), jnp.cos(obs[..., 0] * jnp.pi), obs[..., 1]], axis=-1)
-        return feat_obs
-
-    env_params = dict(batch_size=1, tau=2e-2, max_torque=5, g=9.81, l=1, m=1, env_solver=diffrax.Tsit5())
-    env = excenvs.make(
-        env_id="Pendulum-v0",
-        batch_size=env_params["batch_size"],
-        action_normalizations={
-            "torque": excenvs.utils.MinMaxNormalization(min=-env_params["max_torque"], max=env_params["max_torque"])
-        },
-        static_params={"g": env_params["g"], "l": env_params["l"], "m": env_params["m"]},
-        solver=env_params["env_solver"],
-        tau=env_params["tau"],
-    )
+    env, penalty_function, featurize, env_params = setup_pendulum_env()
     alg_params = dict(
         bandwidth=None,
         n_prediction_steps=20,
@@ -81,7 +59,7 @@ if sys_name == "pendulum":
         n_opt_steps=10,
         start_optimizing=5,
         consider_action_distribution=True,
-        penalty_function=None,
+        penalty_function=penalty_function,
         target_distribution=None,
         clip_action=True,
         n_starts=5,
@@ -97,10 +75,6 @@ if sys_name == "pendulum":
         )
     )
 
-    # overwrite penalty function and target distribution
-    alg_params["penalty_function"] = lambda x, u: soft_penalty(a=x, a_max=1, penalty_order=2) + soft_penalty(
-        a=u, a_max=1, penalty_order=2
-    )
     alg_params["target_distribution"] = get_uniform_target_distribution(
         dim=3 if alg_params["consider_action_distribution"] else 2,
         points_per_dim=alg_params["points_per_dim"],
@@ -108,6 +82,8 @@ if sys_name == "pendulum":
         grid_extend=alg_params["grid_extend"],
         consider_action_distribution=alg_params["consider_action_distribution"],
         penalty_function=alg_params["penalty_function"],
+        act_dim=1,
+        obs_dim=2,
     )
 
     model_trainer_params = dict(
@@ -115,10 +91,16 @@ if sys_name == "pendulum":
         training_batch_size=128,
         n_train_steps=1,
         sequence_length=alg_params["n_prediction_steps"],
-        featurize=featurize_theta,
+        featurize=featurize,
         model_lr=1e-4,
     )
-    model_params = dict(obs_dim=env.physical_state_dim, action_dim=env.action_dim, width_size=128, depth=3, key=None)
+    model_params = dict(
+        obs_dim=env.physical_state_dim,
+        action_dim=env.action_dim,
+        width_size=128,
+        depth=3,
+        key=None,
+    )
 
     exp_params = dict(
         seed=None,
@@ -135,30 +117,7 @@ if sys_name == "pendulum":
 elif sys_name == "fluid_tank":
     ## Start fluid_tank experiment parameters
 
-    env_params = dict(
-        batch_size=1,
-        tau=5,
-        max_height=3,
-        max_inflow=0.2,
-        base_area=jnp.pi,
-        orifice_area=jnp.pi * 0.1**2,
-        c_d=0.6,
-        g=9.81,
-        env_solver=diffrax.Tsit5(),
-    )
-    env = excenvs.make(
-        "FluidTank-v0",
-        physical_normalizations=dict(height=excenvs.utils.MinMaxNormalization(min=0, max=env_params["max_height"])),
-        action_normalizations=dict(inflow=excenvs.utils.MinMaxNormalization(min=0, max=env_params["max_inflow"])),
-        static_params=dict(
-            base_area=env_params["base_area"],
-            orifice_area=env_params["orifice_area"],
-            c_d=env_params["c_d"],
-            g=env_params["g"],
-        ),
-        tau=env_params["tau"],
-        solver=env_params["env_solver"],
-    )
+    env, penalty_function, featurize, env_params = setup_fluid_tank_env()
 
     alg_params = dict(
         bandwidth=None,
@@ -169,7 +128,7 @@ elif sys_name == "fluid_tank":
         n_opt_steps=10,
         start_optimizing=5,
         consider_action_distribution=True,
-        penalty_function=None,
+        penalty_function=penalty_function,
         target_distribution=None,
         clip_action=True,
         n_starts=5,
@@ -186,9 +145,6 @@ elif sys_name == "fluid_tank":
     )
 
     # overwrite penalty function and target distribution
-    alg_params["penalty_function"] = lambda x, u: soft_penalty(a=x, a_max=1, penalty_order=2) + soft_penalty(
-        a=u, a_max=1, penalty_order=2
-    )
     alg_params["target_distribution"] = get_uniform_target_distribution(
         dim=2 if alg_params["consider_action_distribution"] else 1,
         points_per_dim=alg_params["points_per_dim"],
@@ -196,6 +152,8 @@ elif sys_name == "fluid_tank":
         grid_extend=alg_params["grid_extend"],
         consider_action_distribution=alg_params["consider_action_distribution"],
         penalty_function=alg_params["penalty_function"],
+        act_dim=1,
+        obs_dim=1,
     )
 
     model_trainer_params = dict(
@@ -203,7 +161,7 @@ elif sys_name == "fluid_tank":
         training_batch_size=128,
         n_train_steps=1,
         sequence_length=alg_params["n_prediction_steps"],
-        featurize=lambda x: x,
+        featurize=featurize,
         model_lr=1e-4,
     )
     model_params = dict(obs_dim=env.physical_state_dim, action_dim=env.action_dim, width_size=128, depth=3, key=None)
@@ -223,48 +181,7 @@ elif sys_name == "fluid_tank":
 elif sys_name == "cart_pole":
     ## Start cart_pole experiment parameters
 
-    def featurize_theta_cart_pole(obs):
-        """The angle itself is difficult to properly interpret in the loss as angles
-        such as 1.99 * pi and 0 are essentially the same. Therefore the angle is
-        transformed to sin(phi) and cos(phi) for comparison in the loss."""
-        feat_obs = jnp.stack(
-            [obs[..., 0], obs[..., 1], jnp.sin(obs[..., 2] * jnp.pi), jnp.cos(obs[..., 2] * jnp.pi), obs[..., 3]],
-            axis=-1,
-        )
-        return feat_obs
-
-    env_params = dict(
-        batch_size=1,
-        tau=2e-2,
-        max_force=10,
-        static_params={
-            "mu_p": 0.002,
-            "mu_c": 0.5,
-            "l": 0.5,
-            "m_p": 0.1,
-            "m_c": 1,
-            "g": 9.81,
-        },
-        physical_normalizations={
-            "deflection": excenvs.utils.MinMaxNormalization(min=-2.4, max=2.4),
-            "velocity": excenvs.utils.MinMaxNormalization(min=-8, max=8),
-            "theta": excenvs.utils.MinMaxNormalization(min=-jnp.pi, max=jnp.pi),
-            "omega": excenvs.utils.MinMaxNormalization(min=-8, max=8),
-        },
-        env_solver=diffrax.Tsit5(),
-    )
-    env = excenvs.make(
-        env_id="CartPole-v0",
-        batch_size=env_params["batch_size"],
-        action_normalizations={
-            "force": excenvs.utils.MinMaxNormalization(min=-env_params["max_force"], max=env_params["max_force"])
-        },
-        physical_normalizations=env_params["physical_normalizations"],
-        static_params=env_params["static_params"],
-        solver=env_params["env_solver"],
-        tau=env_params["tau"],
-    )
-
+    env, penalty_function, featurize, env_params = setup_cart_pole_env()
     alg_params = dict(
         bandwidth=0.12,
         n_prediction_steps=50,
@@ -274,7 +191,7 @@ elif sys_name == "cart_pole":
         n_opt_steps=5,
         start_optimizing=5,
         consider_action_distribution=True,
-        penalty_function=None,
+        penalty_function=penalty_function,
         target_distribution=None,
         clip_action=True,
         n_starts=5,
@@ -291,9 +208,6 @@ elif sys_name == "cart_pole":
     # )
 
     # overwrite penalty function and target distribution
-    alg_params["penalty_function"] = lambda x, u: soft_penalty(a=x, a_max=1, penalty_order=2) + soft_penalty(
-        a=u, a_max=1, penalty_order=2
-    )
     alg_params["target_distribution"] = get_uniform_target_distribution(
         dim=5 if alg_params["consider_action_distribution"] else 4,
         points_per_dim=alg_params["points_per_dim"],
@@ -301,6 +215,8 @@ elif sys_name == "cart_pole":
         grid_extend=alg_params["grid_extend"],
         consider_action_distribution=alg_params["consider_action_distribution"],
         penalty_function=alg_params["penalty_function"],
+        act_dim=1,
+        obs_dim=4,
     )
 
     model_trainer_params = dict(
@@ -308,7 +224,7 @@ elif sys_name == "cart_pole":
         training_batch_size=128,
         n_train_steps=10,
         sequence_length=alg_params["n_prediction_steps"],
-        featurize=featurize_theta_cart_pole,
+        featurize=featurize,
         model_lr=1e-4,
     )
     model_params = dict(obs_dim=env.physical_state_dim, action_dim=env.action_dim, width_size=128, depth=3, key=None)
@@ -336,7 +252,7 @@ for exp_idx, seed in enumerate(seeds):
     exp_params["seed"] = int(seed)
 
     # Check that the targeted data folder actually exist:
-    results_path = TARGETED_DATA_PATH / pathlib.Path("dmpe") / pathlib.Path(sys_name)
+    results_path = DataPaths().se_cs_experiments / pathlib.Path("dmpe") / pathlib.Path(sys_name)
     print(f"Results will be written to: '{results_path}'.")
     assert results_path.exists(), (
         f"The expected results path '{results_path}' does not seem to exist. Please create the necessary file structure "
