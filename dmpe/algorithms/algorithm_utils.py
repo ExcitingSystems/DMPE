@@ -168,6 +168,8 @@ def default_dmpe_parameterization(
         grid_extend=alg_params["grid_extend"],
         consider_action_distribution=alg_params["consider_action_distribution"],
         penalty_function=alg_params["penalty_function"],
+        obs_dim=env.physical_state_dim,
+        act_dim=env.action_dim,
     )
 
     model_trainer_params = dict(
