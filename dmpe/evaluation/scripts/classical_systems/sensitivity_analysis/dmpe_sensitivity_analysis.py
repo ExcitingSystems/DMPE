@@ -47,16 +47,17 @@ jax.config.update("jax_default_device", gpus[args.gpu_id])
 
 
 if sys_name == "fluid_tank":
-    a_range = np.arange(0.0025, 0.4, 0.0025)
+    h_range = np.arange(0.005, 0.1001, 0.001)
 elif sys_name == "pendulum":
-    a_range = np.arange(1e-8, 0.4, 1e-5)
+    h_range = np.arange(0.005, 0.2001, 0.005)
 elif sys_name == "cart_pole":
-    a_range = np.arange(1e-8, 0.4, 1e-5)
+    # h_range = np.arange(0.005, 0.2001, 0.005)
+    h_range = np.arange(0.2005, 0.4001, 0.005)
 
 
-for a in a_range:
+for h in h_range:
 
-    print(f"Starting experiments for {sys_name} with a={a}")
+    print(f"Starting experiments for {sys_name} with h={h}")
 
     ### Start experiment parameters #######################################################################################
     if sys_name == "pendulum":
@@ -64,7 +65,7 @@ for a in a_range:
 
         env, penalty_function, featurize, env_params = setup_pendulum_env()
         alg_params = dict(
-            bandwidth=None,
+            bandwidth=h,
             n_prediction_steps=20,
             points_per_dim=21,
             grid_extend=1.05,
@@ -77,17 +78,17 @@ for a in a_range:
             clip_action=True,
             n_starts=5,
             reuse_proposed_actions=True,
-            a=a,
+            a=None,
         )
 
-        alg_params["bandwidth"] = float(
-            select_bandwidth(
-                delta_z=2 * alg_params["grid_extend"],
-                dim=env.physical_state_dim + env.action_dim,
-                n_g=alg_params["points_per_dim"],
-                percentage=a,
-            )
-        )
+        # alg_params["bandwidth"] = float(
+        #     select_bandwidth(
+        #         delta_z=2 * alg_params["grid_extend"],
+        #         dim=env.physical_state_dim + env.action_dim,
+        #         n_g=alg_params["points_per_dim"],
+        #         percentage=a,
+        #     )
+        # )
 
         alg_params["target_distribution"] = get_uniform_target_distribution(
             dim=3 if alg_params["consider_action_distribution"] else 2,
@@ -134,7 +135,7 @@ for a in a_range:
         env, penalty_function, featurize, env_params = setup_fluid_tank_env()
 
         alg_params = dict(
-            bandwidth=None,
+            bandwidth=h,
             n_prediction_steps=10,
             points_per_dim=50,
             grid_extend=1.05,
@@ -147,16 +148,17 @@ for a in a_range:
             clip_action=True,
             n_starts=5,
             reuse_proposed_actions=True,
+            a=None,
         )
 
-        alg_params["bandwidth"] = float(
-            select_bandwidth(
-                delta_z=2,
-                dim=env.physical_state_dim + env.action_dim,
-                n_g=alg_params["points_per_dim"],
-                percentage=a,
-            )
-        )
+        # alg_params["bandwidth"] = float(
+        #     select_bandwidth(
+        #         delta_z=2 * alg_params["grid_extend"],
+        #         dim=env.physical_state_dim + env.action_dim,
+        #         n_g=alg_params["points_per_dim"],
+        #         percentage=a,
+        #     )
+        # )
 
         # overwrite penalty function and target distribution
         alg_params["target_distribution"] = get_uniform_target_distribution(
@@ -199,7 +201,7 @@ for a in a_range:
 
         env, penalty_function, featurize, env_params = setup_cart_pole_env()
         alg_params = dict(
-            bandwidth=None,
+            bandwidth=h,
             n_prediction_steps=50,
             points_per_dim=10,
             grid_extend=1.05,
@@ -212,16 +214,17 @@ for a in a_range:
             clip_action=True,
             n_starts=5,
             reuse_proposed_actions=True,
+            a=None,
         )
 
-        alg_params["bandwidth"] = float(
-            select_bandwidth(
-                delta_z=2,
-                dim=env.physical_state_dim + env.action_dim,
-                n_g=alg_params["points_per_dim"],
-                percentage=a,
-            )
-        )
+        # alg_params["bandwidth"] = float(
+        #     select_bandwidth(
+        #         delta_z=2 * alg_params["grid_extend"],
+        #         dim=env.physical_state_dim + env.action_dim,
+        #         n_g=alg_params["points_per_dim"],
+        #         percentage=a,
+        #     )
+        # )
 
         # overwrite penalty function and target distribution
         alg_params["target_distribution"] = get_uniform_target_distribution(
