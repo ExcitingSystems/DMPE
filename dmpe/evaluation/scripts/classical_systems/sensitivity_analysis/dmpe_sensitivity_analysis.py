@@ -51,8 +51,7 @@ if sys_name == "fluid_tank":
 elif sys_name == "pendulum":
     h_range = np.arange(0.005, 0.2001, 0.005)
 elif sys_name == "cart_pole":
-    # h_range = np.arange(0.005, 0.2001, 0.005)
-    h_range = np.arange(0.2005, 0.4001, 0.005)
+    h_range = np.arange(0.005, 0.4001, 0.005)
 
 
 for h in h_range:
