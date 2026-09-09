@@ -1,16 +1,16 @@
 [build-system]
-requires = ["setuptools"]
-build-backend = "setuptools.build_meta"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [project]
 name = "dmpe"
-version = "0.2.4"
+version = "0.3.1"
 authors = [
   { name="Hendrik Vater", email="vater@lea.uni-paderborn.de" },
 ]
 description = "Excitation of exciting systems through differentiable model predictive excitation"
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = ">=3.12"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: GNU General Public License (GPL)",
@@ -18,31 +18,36 @@ classifiers = [
     "Operating System :: POSIX :: Linux",
 ]
 dependencies = [
-    "numpy==1.26.4",
-    "scipy==1.13.1",
-    "matplotlib==3.9.0",
-    'tqdm==4.66.4',
-    "jax[cuda12]==0.4.28; sys_platform == 'linux'",
-    "jax==0.4.28; sys_platform == 'win32'",
-    "jaxlib==0.4.28",
-    'equinox==0.11.4',
-    "diffrax==0.5.1",
-    'optax==0.2.3',
-    'dm-haiku==0.0.12',
-    'pymoo==0.6.1.1',
-    'exciting-environments==0.2.4',
+    "jax",
+    "equinox",
+    "diffrax",
+    "numpy>=2.5.3",
+    "scipy>=1.18.1",
+    "tqdm>=4.70.0",
+    "optax>=0.2.8",
+    "dm-haiku>=0.0.17",
+    "pymoo>=0.6.2",
+    "exciting-environments>=0.3.1",
 ]
+
+[project.optional-dependencies]
+cuda12 = ["exciting_environments[cuda12]"]
+cuda13 = ["exciting_environments[cuda13]"]
+dev = [
+    "pytest>=7.0.0",
+    "pytest-cov>=5.0.0",
+]
+
+[tool.uv.sources]
+exciting_environments = { workspace = true }
 
 [project.urls]
 Homepage = "https://github.com/ExcitingSystems/DMPE"
 Issues = "https://github.com/ExcitingSystems/DMPE/issues"
 
-[tool.setuptools]
-include-package-data = true
+[tool.hatch.build.targets.wheel]
+packages = ["dmpe"]
 
-[tool.setuptools.packages.find]
-where = ["."]  # list of folders that contain the packages (["."] by default)
-include = ["dmpe*"]  # package names should match these glob patterns (["*"] by default)
 
 [tool.pytest.ini_options]
 pythonpath = [
