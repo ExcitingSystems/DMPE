@@ -104,7 +104,7 @@ def interact_and_observe(
     """
 
     # apply u_k and go to x_{k+1} and observe y_{k+1}
-    obs, state = env.step(state, action, env.env_properties)
+    obs, state = env.step(state, action)
 
     actions = actions.at[k].set(action)  # store u_k
     observations = observations.at[k + 1].set(obs)  # store y_{k+1}
@@ -157,6 +157,7 @@ def default_dmpe_parameterization(
     )
 
     dim = env.physical_state_dim + env.action_dim
+    obs_dim = env.reset()[0].shape[0]
 
     alg_params["penalty_function"] = lambda x, u: soft_penalty(a=x, a_max=1, penalty_order=2) + soft_penalty(
         a=u, a_max=1, penalty_order=2
@@ -168,6 +169,8 @@ def default_dmpe_parameterization(
         grid_extend=alg_params["grid_extend"],
         consider_action_distribution=alg_params["consider_action_distribution"],
         penalty_function=alg_params["penalty_function"],
+        obs_dim=obs_dim,
+        act_dim=env.action_dim,
     )
 
     model_trainer_params = dict(
@@ -179,9 +182,7 @@ def default_dmpe_parameterization(
         model_lr=1e-4,
     )
 
-    model_params = dict(
-        obs_dim=env.reset(env.env_properties)[0].shape[0], action_dim=env.action_dim, width_size=128, depth=3, key=None
-    )
+    model_params = dict(obs_dim=obs_dim, action_dim=env.action_dim, width_size=128, depth=3, key=None)
 
     exp_params = dict(
         seed=seed,
@@ -202,7 +203,7 @@ def default_dmpe_parameterization(
     # initial guess
     proposed_actions = jnp.hstack(
         [
-            aprbs(alg_params["n_prediction_steps"], env.batch_size, 1, 10, next(data_rng))[0]
+            aprbs(alg_params["n_prediction_steps"], batch_size=1, t_min=1, t_max=10, key=next(data_rng))[0]
             for _ in range(env.action_dim)
         ]
     )

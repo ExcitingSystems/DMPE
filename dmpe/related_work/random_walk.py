@@ -53,7 +53,7 @@ def excite_with_random_walk(env, exp_params, key):
     penalty_function = exp_params["alg_params"]["penalty_function"]
     n_tries = exp_params["alg_params"]["n_tries"]
 
-    obs, state = env.reset(env.env_properties)
+    obs, state = env.reset()
     dim_obs_space = obs.shape[0]
     dim_action_space = env.action_dim
 

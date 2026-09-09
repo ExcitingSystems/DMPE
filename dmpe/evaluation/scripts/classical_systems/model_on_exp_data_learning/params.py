@@ -11,7 +11,7 @@ def get_experiment_params(
 
     if setup_name == "2step_minimal":
         model_params = dict(
-            obs_dim=env.reset(env.env_properties)[0].shape[0],
+            obs_dim=env.reset()[0].shape[0],
             action_dim=env.action_dim,
             width_size=4,
             depth=2,
@@ -30,7 +30,7 @@ def get_experiment_params(
 
     elif setup_name == "2step":
         model_params = dict(
-            obs_dim=env.reset(env.env_properties)[0].shape[0],
+            obs_dim=env.reset()[0].shape[0],
             action_dim=env.action_dim,
             width_size=64,
             depth=2,
@@ -50,7 +50,7 @@ def get_experiment_params(
     elif setup_name == "10step_small":
 
         model_params = dict(
-            obs_dim=env.reset(env.env_properties)[0].shape[0],
+            obs_dim=env.reset()[0].shape[0],
             action_dim=env.action_dim,
             width_size=64,
             depth=2,
@@ -70,7 +70,7 @@ def get_experiment_params(
     elif setup_name == "10step_large":
 
         model_params = dict(
-            obs_dim=env.reset(env.env_properties)[0].shape[0],
+            obs_dim=env.reset()[0].shape[0],
             action_dim=env.action_dim,
             width_size=128,
             depth=4,
@@ -90,7 +90,7 @@ def get_experiment_params(
     elif setup_name == "50step_large":
 
         model_params = dict(
-            obs_dim=env.reset(env.env_properties)[0].shape[0],
+            obs_dim=env.reset()[0].shape[0],
             action_dim=env.action_dim,
             width_size=128,
             depth=4,

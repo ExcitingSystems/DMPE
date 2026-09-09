@@ -101,7 +101,7 @@ def approximate_reachable_set(
     tolerance: float,
     unflattened_shape: tuple[int],
 ) -> tuple[DiscretizedSet, tuple[jax.Array]]:
-    init_obs, _ = env.reset(env.env_properties)
+    init_obs, _ = env.reset()
 
     lr = optax.schedules.exponential_decay(
         init_value=1e-1,

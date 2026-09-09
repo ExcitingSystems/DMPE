@@ -144,7 +144,7 @@ def run_experiment(rpm):
 
     references = setup_references(env, rpm, points_per_dim, penalty_function)
 
-    init_obs, init_state = env.reset(env.env_properties)
+    init_obs, init_state = env.reset()
     init_pi_state = pi.reset(1)
 
     start = time.time()

@@ -62,7 +62,7 @@ def simulate_ahead_with_env(
     def body_fun(carry, action):
         obs, state = carry
 
-        obs, state = env.step(state, action, env.env_properties)
+        obs, state = env.step(state, action)
         return (obs, state), obs
 
     (_, last_state), observations = jax.lax.scan(body_fun, (init_obs, init_state), actions)

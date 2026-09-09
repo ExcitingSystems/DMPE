@@ -182,7 +182,7 @@ def excite_with_dmpe(
         the history of observations, the history of actions, the updated model, the updated density estimate,
         the prediction losses, the proposed actions, and the callback output.
     """
-    obs, state = env.reset(env.env_properties)
+    obs, state = env.reset()
 
     dim_obs_space = obs.shape[0]
     dim_action_space = env.action_dim

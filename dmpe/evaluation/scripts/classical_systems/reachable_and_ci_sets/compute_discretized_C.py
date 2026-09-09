@@ -35,7 +35,7 @@ if sys_name == "fluid_tank":
     env, penalty_function, featurize, _ = setup_fluid_tank_env()
     key = jax.random.PRNGKey(14)
 
-    obs_dim = env.reset(env.env_properties)[0].shape[-1]
+    obs_dim = env.reset()[0].shape[-1]
     sequence_length = 200
     n_starts = 10
     n_opt_steps = 50_000
@@ -54,7 +54,7 @@ elif sys_name == "pendulum":
     env, penalty_function, featurize, _ = setup_pendulum_env()
     key = jax.random.PRNGKey(14)
 
-    obs_dim = env.reset(env.env_properties)[0].shape[-1]
+    obs_dim = env.reset()[0].shape[-1]
     sequence_length = 200
     n_starts = 10
     n_opt_steps = 50_000
@@ -74,7 +74,7 @@ elif sys_name == "cart_pole":
     env, penalty_function, featurize, _ = setup_cart_pole_env()
     key = jax.random.PRNGKey(14)
 
-    obs_dim = env.reset(env.env_properties)[0].shape[-1]
+    obs_dim = env.reset()[0].shape[-1]
     sequence_length = 200
     n_starts = 10
     n_opt_steps = 50_000

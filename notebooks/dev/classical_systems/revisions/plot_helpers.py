@@ -144,7 +144,7 @@ def plot_model_rollouts(
         init_obs, wrapped_model, wrapped_env, key=rollout_key
     )
 
-    feat_obs_dim = featurize(env.reset(env.env_properties)[0]).shape[-1]
+    feat_obs_dim = featurize(env.reset()[0]).shape[-1]
 
     print(metric)
 

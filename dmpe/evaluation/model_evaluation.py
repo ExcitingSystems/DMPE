@@ -183,7 +183,7 @@ class RolloutComparison(eqx.Module):
     ):
 
         action_dim = env.action_dim
-        obs_dim = env.reset(env.env_properties)[0].shape[0]
+        obs_dim = env.reset()[0].shape[0]
 
         init_state = env.generate_state_from_observation(init_obs, env.env_properties)
         observations = jnp.zeros((sequence_length, obs_dim))
@@ -195,7 +195,7 @@ class RolloutComparison(eqx.Module):
         def body_fun(i, carry):
             last_action, state, observations, actions, key = carry
             action, key = control_law(env, penalty_function, last_action, state, key)
-            obs, state = env.step(state, action, env.env_properties)
+            obs, state = env.step(state, action)
 
             observations = observations.at[i].set(obs)
             actions = actions.at[i].set(action)

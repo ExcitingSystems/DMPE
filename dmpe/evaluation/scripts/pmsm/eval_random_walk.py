@@ -59,7 +59,7 @@ def run_experiment(rpm, seed):
     n_tries = 5_000
 
     env, penalty_function = setup_env(rpm)
-    obs, state = env.reset(env.env_properties)
+    obs, state = env.reset()
     dim_obs_space = obs.shape[0]
     dim_action_space = env.action_dim
 
