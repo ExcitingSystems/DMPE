@@ -24,6 +24,7 @@ dependencies = [
     "numpy>=2.5.3",
     "scipy>=1.18.1",
     "tqdm>=4.70.0",
+    "jax-tqdm>=0.4.0",
     "optax>=0.2.8",
     "dm-haiku>=0.0.17",
     "pymoo>=0.6.2",
