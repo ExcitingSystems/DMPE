@@ -28,7 +28,7 @@ def run_pi_experiment(env, pi, references_norm, init_obs, init_state, init_pi_st
 
         action, next_pi_state = pi(pi_obs, pi_state)
 
-        next_obs, next_state = env.step(state, jnp.squeeze(action), env.env_properties)
+        next_obs, next_state = env.step(state, jnp.squeeze(action))
         return (next_obs, next_state, next_pi_state), jnp.array([jnp.squeeze(obs), jnp.squeeze(action)])
 
     (_, _, _), data = jax.lax.scan(body_fun, (init_obs, init_state, init_pi_state), references_norm)

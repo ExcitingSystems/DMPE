@@ -127,7 +127,7 @@ def plot_model_rollouts(
 
     key, init_obs_key, rollout_key = jax.random.split(key, 3)
     init_obs_keys = jax.random.split(init_obs_key, batch_size)
-    init_obs, state = eqx.filter_vmap(env.reset, in_axes=(None, 0))(env.env_properties, init_obs_keys)
+    init_obs, state = eqx.filter_vmap(env.reset, in_axes=(None, 0))(init_obs_keys)
 
     wrapped_model = NodeModelWrapper(model, featurize)
     wrapped_env = EnvWrapper(env, featurize)
@@ -183,7 +183,7 @@ def evaluate_model_rollout(
     key, init_obs_key, rollout_key = jax.random.split(key, 3)
     init_obs_keys = jax.random.split(init_obs_key, batch_size)
 
-    init_obs, state = eqx.filter_vmap(env.reset, in_axes=(None, 0))(env.env_properties, init_obs_keys)
+    init_obs, state = eqx.filter_vmap(env.reset, in_axes=(None, 0))(init_obs_keys)
     (env_observations, pred_gt, pred, key), metric = rollout_comparison(
         init_obs, wrapped_model, wrapped_env, key=rollout_key
     )

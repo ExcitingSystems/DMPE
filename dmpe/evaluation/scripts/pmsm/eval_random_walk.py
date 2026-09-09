@@ -20,7 +20,7 @@ def choose_action(env, penalty_function, proposed_actions, state, choice_key):
     This is a heuristic implementation that uses an oracle to ensure compliance with the bounds, but chooses
     mostly randomly among the actions.
     """
-    test_obs, _ = jax.vmap(env.step, in_axes=(None, 0, None))(state, proposed_actions, env.env_properties)
+    test_obs, _ = jax.vmap(env.step, in_axes=(None, 0))(state, proposed_actions)
 
     penalty_values = jax.vmap(penalty_function, in_axes=(0, 0))(test_obs, proposed_actions)
 

@@ -22,7 +22,7 @@ def loss_function(
     featurize: Callable,
     env: excenvs.CoreEnvironment,
 ):
-    init_state = env.generate_state_from_observation(init_obs, env.env_properties)
+    init_state = env.generate_state_from_observation(init_obs)
     observations, _ = simulate_ahead_with_env(env, init_obs, init_state, actions)
     sq_distances = jnp.sum((featurize(observations) - featurize(target[None])) ** 2, axis=-1)
     loss = jnp.min(sq_distances)

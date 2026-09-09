@@ -15,7 +15,7 @@ def choose_action(env, penalty_function, proposed_actions, state, choice_key):
     This is a heursitic implmentation that uses an oracle to ensure compliance with the bounds, but chooses
     mostly randomly among the actions.
     """
-    test_obs, test_state = jax.vmap(env.step, in_axes=(None, 0, None))(state, proposed_actions, env.env_properties)
+    test_obs, test_state = jax.vmap(env.step, in_axes=(None, 0))(state, proposed_actions)
     penalty_values = jax.vmap(penalty_function, in_axes=(0, 0))(test_obs[:, None, :], proposed_actions[:, None, :])
 
     def true_fun(key, data_array, penalty_values):

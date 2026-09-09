@@ -15,7 +15,7 @@ from dmpe.utils.sets.shared import DiscretizedSet
 
 
 def loss_function(actions: jax.Array, init_obs: jax.Array, penalty_function: Callable, env: excenvs.CoreEnvironment):
-    init_state = env.generate_state_from_observation(init_obs, env.env_properties)
+    init_state = env.generate_state_from_observation(init_obs)
     observations, _ = simulate_ahead_with_env(env, init_obs, init_state, actions)
     return penalty_function(observations, actions)
 

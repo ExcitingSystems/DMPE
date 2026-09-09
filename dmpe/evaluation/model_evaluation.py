@@ -185,7 +185,7 @@ class RolloutComparison(eqx.Module):
         action_dim = env.action_dim
         obs_dim = env.reset()[0].shape[0]
 
-        init_state = env.generate_state_from_observation(init_obs, env.env_properties)
+        init_state = env.generate_state_from_observation(init_obs)
         observations = jnp.zeros((sequence_length, obs_dim))
         actions = jnp.zeros((sequence_length, action_dim))
 
