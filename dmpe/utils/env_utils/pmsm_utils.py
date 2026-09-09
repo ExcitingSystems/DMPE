@@ -1,10 +1,12 @@
 """Smaller utils specifically for the experiments with the pmsm environment."""
 
+from functools import partial
 import matplotlib.pyplot as plt
 import numpy as np
 
 import jax
 import jax.numpy as jnp
+import diffrax
 
 from exciting_environments.pmsm.pmsm_env import PMSM
 from dmpe.excitation.excitation_utils import soft_penalty
@@ -12,13 +14,14 @@ from dmpe.evaluation.plotting_utils import plot_sequence
 
 
 class ExcitingPMSM(PMSM):
+    initial_rpm: float
 
     def __init__(self, initial_rpm, *args, **kwargs):
         self.initial_rpm = initial_rpm
         super().__init__(*args, **kwargs)
 
-    def generate_observation(self, system_state, env_properties):
-        physical_normalizations = env_properties.physical_normalizations
+    def generate_observation(self, system_state):
+        physical_normalizations = self.env_properties.physical_normalizations
 
         obs = jnp.hstack(
             (
@@ -28,19 +31,40 @@ class ExcitingPMSM(PMSM):
         )
         return obs
 
-    def init_state(self, env_properties, rng=None, vmap_helper=None):
+    def init_state(self, rng=None, vmap_helper=None):
         """Returns default initial state for all batches."""
+        env_properties = self.env_properties
         phys = self.PhysicalState(
-            u_d_buffer=0.0,
-            u_q_buffer=0.0,
-            epsilon=0.0,
-            i_d=-env_properties.physical_normalizations.i_d.max / 2,
-            i_q=0.0,
-            torque=0.0,
+            u_d_buffer=jnp.array(0.0),
+            u_q_buffer=jnp.array(0.0),
+            epsilon=jnp.array(0.0),
+            i_d=(env_properties.physical_normalizations.i_d.min + env_properties.physical_normalizations.i_d.max) / 2,
+            i_q=jnp.array(0.0),
+            torque=jnp.array(0.0),
             omega_el=2 * jnp.pi * 3 * self.initial_rpm / 60,
         )
         subkey = jnp.nan
-        additions = None
+
+        def voltage(t):
+            return jnp.array([0, 0])
+
+        args = (env_properties.static_params, phys.omega_el)
+        if env_properties.saturated:
+            vector_field = partial(self.nonlinear_ode, action=voltage)
+        else:
+            vector_field = partial(self.linear_ode, action=voltage)
+
+        term = diffrax.ODETerm(vector_field)
+        t0 = 0
+        t1 = self.tau
+        y0 = tuple([phys.i_d, phys.i_q, phys.epsilon])
+
+        solver_state = self._solver.init(term, t0, t1, y0, args)
+        dummy_solver_state = jax.tree.map(
+            lambda x: jnp.full_like(x, jnp.nan) if jnp.issubdtype(x.dtype, jnp.floating) else x, solver_state
+        )
+
+        additions = self.Additions(solver_state=dummy_solver_state, active_solver_state=False)
         ref = self.PhysicalState(
             u_d_buffer=jnp.nan,
             u_q_buffer=jnp.nan,
@@ -50,7 +74,7 @@ class ExcitingPMSM(PMSM):
             torque=jnp.nan,
             omega_el=jnp.nan,
         )
-        return self.State(physical_state=phys, PRNGKey=subkey, additions=additions, reference=ref)
+        return self.State(physical_state=phys, prng_key=subkey, additions=additions, reference=ref)
 
 
 def PMSM_penalty(env, observations, actions, penalty_order=2):
