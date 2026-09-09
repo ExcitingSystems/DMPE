@@ -1,9 +1,20 @@
 # Differentiable Model Predictive Excitation (DMPE):
 
 This repository implements an algorithm for the excitation of systems with unknown (usually non-linear) dynamics.
-The inner workings and lines of thought are outlined within the corresponding publication.
+The inner workings and lines of thought are outlined within the [corresponding publication](https://www.techrxiv.org/users/839244/articles/1230076-differentiable-model-predictive-excitation-generating-optimal-data-sets-for-learning-of-dynamical-system-models).
 If you found this repository useful for your research, please cite the current preprint version as:
 
+
+```
+@Article{Vater2025,
+  author      = {Vater, Hendrik and Wallscheid, Oliver},
+  title       = {Differentiable Model Predictive Excitation: Generating Optimal Data Sets for Learning of Dynamical System Models},
+  journal     = {TechRxiv preprint},
+  year        = {2025},
+  doi         = {10.36227/techrxiv.172840381.16440835/v2},
+}
+```
+The previous version of the preprint is:
 ```
 @Article{Vater2024,
   author      = {Vater, Hendrik and Wallscheid, Oliver},
@@ -16,9 +27,9 @@ If you found this repository useful for your research, please cite the current p
 
 ## Installation:
 
-> If you are specifically interested in reproducing the results from the `Vater2024` publication, you are kindly referred to: https://pypi.org/project/dmpe/0.1.3/
+> If you are specifically interested in reproducing the results from the [first (v1) preprint publication ](https://www.techrxiv.org/doi/full/10.36227/techrxiv.172840381.16440835/v1), you are kindly referred to: https://pypi.org/project/dmpe/0.1.3/
 
-> Else, if you are specifically interested in reproducing the results from the `TBD` related publication, you are kindly referred to: https://pypi.org/project/dmpe/0.2.4/
+> Else, if you are specifically interested in reproducing the results from the [permanent magnet synchronous motor specific publication](https://ieeexplore.ieee.org/stamp/stamp.jsp?arnumber=11061126), you are kindly referred to: https://pypi.org/project/dmpe/0.2.4/
 
 Otherwise, the simplest way is using `Python >= 3.11`:
 

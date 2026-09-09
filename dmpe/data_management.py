@@ -1,6 +1,7 @@
 import pathlib
 from enum import Enum
 from dataclasses import dataclass
+import equinox as eqx
 
 
 def get_project_root() -> pathlib.Path:
