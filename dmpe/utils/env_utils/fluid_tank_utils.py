@@ -20,7 +20,7 @@ def setup_env() -> tuple[excenvs.CartPole, Callable, Callable, dict]:
         env_params (dict): The parameters used to initialize the environment
     """
     env_params = dict(
-        batch_size=1,
+        batch_size=None,
         tau=5,
         max_height=3,
         max_inflow=0.2,
@@ -30,8 +30,7 @@ def setup_env() -> tuple[excenvs.CartPole, Callable, Callable, dict]:
         g=9.81,
         env_solver=diffrax.Tsit5(),
     )
-    env = excenvs.make(
-        "FluidTank-v0",
+    env = excenvs.EnvironmentRegistry.FLUID_TANK.make(
         physical_normalizations=dict(height=excenvs.utils.MinMaxNormalization(min=0, max=env_params["max_height"])),
         action_normalizations=dict(inflow=excenvs.utils.MinMaxNormalization(min=0, max=env_params["max_inflow"])),
         static_params=dict(

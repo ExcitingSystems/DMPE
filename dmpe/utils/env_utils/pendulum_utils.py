@@ -19,9 +19,8 @@ def setup_env() -> tuple[excenvs.CartPole, Callable, Callable, dict]:
         featurize (Callable): The featurize function mainly used for wrapping angles
         env_params (dict): The parameters used to initialize the environment
     """
-    env_params = dict(batch_size=1, tau=2e-2, max_torque=5, g=9.81, l=1, m=1, env_solver=diffrax.Tsit5())
-    env = excenvs.make(
-        env_id="Pendulum-v0",
+    env_params = dict(batch_size=None, tau=2e-2, max_torque=5, g=9.81, l=1, m=1, env_solver=diffrax.Tsit5())
+    env = excenvs.EnvironmentRegistry.PENDULUM.make(
         batch_size=env_params["batch_size"],
         action_normalizations={
             "torque": excenvs.utils.MinMaxNormalization(min=-env_params["max_torque"], max=env_params["max_torque"])

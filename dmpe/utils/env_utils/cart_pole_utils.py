@@ -20,7 +20,7 @@ def setup_env() -> tuple[excenvs.CartPole, Callable, Callable, dict]:
         env_params (dict): The parameters used to initialize the environment
     """
     env_params = dict(
-        batch_size=1,
+        batch_size=None,
         tau=2e-2,
         max_force=10,
         static_params={
@@ -39,8 +39,7 @@ def setup_env() -> tuple[excenvs.CartPole, Callable, Callable, dict]:
         },
         env_solver=diffrax.Tsit5(),
     )
-    env = excenvs.make(
-        env_id="CartPole-v0",
+    env = excenvs.EnvironmentRegistry.CART_POLE.make(
         batch_size=env_params["batch_size"],
         action_normalizations={
             "force": excenvs.utils.MinMaxNormalization(min=-env_params["max_force"], max=env_params["max_force"])
