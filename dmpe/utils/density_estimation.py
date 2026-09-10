@@ -242,7 +242,7 @@ def update_density_estimate_multiple_observations(
     )
 
 
-def build_grid(dim: int, low: float, high: float, points_per_dim: int) -> jax.Array:
+def build_grid(dim: int, low: list | float, high: list | float, points_per_dim: int) -> jax.Array:
     """Build a uniform grid of points in the given dimension.
 
     Args:
@@ -255,7 +255,13 @@ def build_grid(dim: int, low: float, high: float, points_per_dim: int) -> jax.Ar
     Returns:
         The flattened grid as a jax.Array with shape (points_per_dim**dim, dim)
     """
-    xs = [jnp.linspace(low, high, points_per_dim) for _ in range(dim)]
+    if isinstance(low, list) and isinstance(high, list):
+        assert len(low) == len(high)
+        assert len(low) == dim
+        xs = [jnp.linspace(low[i], high[i], points_per_dim) for i in range(dim)]
+
+    elif isinstance(low, float) and isinstance(high, float):
+        xs = [jnp.linspace(low, high, points_per_dim) for _ in range(dim)]
 
     z_g = jnp.meshgrid(*xs, indexing="ij")
     z_g = jnp.stack([_x for _x in z_g], axis=-1)
