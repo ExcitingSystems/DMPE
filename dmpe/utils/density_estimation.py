@@ -1,5 +1,7 @@
 from typing import Callable
 
+import matplotlib.pyplot as plt
+
 import jax
 import jax.numpy as jnp
 
@@ -182,6 +184,119 @@ class DensityEstimate(eqx.Module):
             data_points,
         )
         return density_estimate
+
+    @property
+    def dim(self) -> int:
+        return self.z_g.shape[-1]
+
+    @property
+    def points_per_dim(self) -> int:
+        n, d = self.z_g.shape[0], self.dim
+        ppd = round(n ** (1 / d))
+        if ppd**d != n:
+            raise ValueError(
+                f"z_g with {n} points doesn't look like a regular grid in "
+                f"{d} dims (round(n**(1/d))={ppd} != n). This property "
+                "assumes a regular meshgrid, as produced by build_grid."
+            )
+        return ppd
+
+    @property
+    def unflattened_shape(self) -> tuple[int, ...]:
+        return (self.points_per_dim,) * self.dim
+
+    @property
+    def p_unflattened(self):
+        return self.p.reshape(self.unflattened_shape)
+
+    @property
+    def z_g_unflattened(self):
+        return self.z_g.reshape(list(self.unflattened_shape) + [-1])
+
+    @property
+    def unflattened(self):
+        return self.p_unflattened, self.z_g_unflattened
+
+    def visualize(
+        self,
+        reduction_method: Callable | None = None,
+        labels: None | list[str] = None,
+        use_contourf: bool = True,
+        grid_spacing: float = 0.0,
+    ):
+        dim = self.dim
+
+        if reduction_method is None:
+            axis_coords = [jnp.unique(self.z_g[:, d]) for d in range(dim)]
+            cell_widths = [jnp.diff(c).mean() for c in axis_coords]
+
+            def reduction_method(arr, axis):
+                dz = 1.0
+                for a in axis:
+                    dz = dz * cell_widths[a]
+                return jnp.sum(arr, axis=axis) * dz
+
+        if dim == 1:
+            fig, axs = plt.subplots(1, 1, figsize=(9, 9))
+            axs.plot(self.z_g, self.p)
+            axs.set_xlabel(labels[0] if labels else "z")
+            axs.set_ylabel("density")
+            return fig, axs
+
+        elif dim == 2:
+            fig, axs = plt.subplots(1, 1, figsize=(9, 9))
+            if use_contourf:
+                axs.contourf(
+                    self.z_g_unflattened[..., 0],
+                    self.z_g_unflattened[..., 1],
+                    self.p_unflattened,
+                )
+            else:
+                extent = 1 + grid_spacing
+                axs.imshow(
+                    self.p_unflattened.T,
+                    origin="lower",
+                    extent=[-extent, extent, -extent, extent],
+                )
+            if labels is not None:
+                axs.set_xlabel(labels[0])
+                axs.set_ylabel(labels[1])
+            return fig, axs
+
+        else:
+            fig, axs = plt.subplots(nrows=dim, ncols=dim, figsize=(9, 9), sharex=True, sharey=True)
+            feature_indices = list(range(dim))
+
+            if labels is None:
+                labels = feature_indices
+
+            for i in range(dim):
+                for j in range(dim):
+                    axs[j, i].grid(True)
+
+                    reduction_indices = [f_idx for f_idx in feature_indices if not (f_idx == i or f_idx == j)]
+                    if len(reduction_indices) == dim - 1:
+                        continue
+
+                    reduced_p = reduction_method(self.p_unflattened, axis=tuple(reduction_indices))
+
+                    if i > j:
+                        reduced_p = jnp.transpose(reduced_p)
+
+                    if use_contourf:
+                        axs[j, i].contourf(
+                            self.z_g_unflattened[..., *[0 for _ in range(dim - 2)], 0],
+                            self.z_g_unflattened[..., *[0 for _ in range(dim - 2)], 1],
+                            reduced_p,
+                        )
+                    else:
+                        extent = 1 + grid_spacing
+                        axs[j, i].imshow(reduced_p.T, origin="lower", extent=[-extent, extent, -extent, extent])
+                    axs[j, 0].set_ylabel(labels[j])
+
+                axs[-1, i].set_xlabel(labels[i])
+            fig.tight_layout()
+            return fig, axs
 
 
 @jax.jit
