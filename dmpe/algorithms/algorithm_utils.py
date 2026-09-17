@@ -118,6 +118,7 @@ def default_dmpe_parameterization(
     n_time_steps=5_000,
     featurize: Callable | None = None,
     model_class: eqx.Module | None = None,
+    points_per_dim: int = 21,
 ):
     """Returns a default parameterization for the DMPE algorithm.
 
@@ -143,7 +144,7 @@ def default_dmpe_parameterization(
     alg_params = dict(
         bandwidth=0.08,
         n_prediction_steps=10,
-        points_per_dim=21,
+        points_per_dim=points_per_dim,
         grid_extend=1.05,
         excitation_optimizer=optax.adabelief(1e-2),
         n_opt_steps=50,
@@ -163,7 +164,7 @@ def default_dmpe_parameterization(
         a=u, a_max=1, penalty_order=2
     )
     alg_params["target_distribution"] = get_uniform_target_distribution(
-        dim=3 if alg_params["consider_action_distribution"] else 2,
+        dim=obs_dim + env.action_dim if alg_params["consider_action_distribution"] else obs_dim,
         points_per_dim=alg_params["points_per_dim"],
         bandwidth=alg_params["bandwidth"],
         grid_extend=alg_params["grid_extend"],
