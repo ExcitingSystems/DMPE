@@ -5,6 +5,7 @@ from typing import Callable
 from tqdm import tqdm
 import matplotlib.pyplot as plt
 import numpy as np
+import jax
 from pymoo.core.mixed import MixedVariableGA, MixedVariableDuplicateElimination
 
 from dmpe.related_work.excitation_utils import (
@@ -34,6 +35,7 @@ def excite_with_GOATS(
     compression_dist_th: float,
     compression_feat_dim: int,
     verbose: bool = True,
+    process_noise_key: jax.random.PRNGKey = None,
 ):
     """System excitation using the GOATs algorithm from [Smits2024].
 
@@ -58,7 +60,7 @@ def excite_with_GOATS(
         actions: The actions applied to the system
     """
 
-    obs, env_state = env.reset()
+    obs, env_state = env.reset(rng=process_noise_key, deterministic_state=True)
 
     opt_algorithm = MixedVariableGA(
         pop_size=population_size,
@@ -144,6 +146,7 @@ def excite_with_sGOATS(
     compression_feat_dim: int,
     verbose: bool = True,
     plot_every_subsequence: bool = True,
+    process_noise_key: jax.random.PRNGKey = None,
 ):
     """System excitation using the sGOATs algorithm from [Smits2024].
 
@@ -188,7 +191,7 @@ def excite_with_sGOATS(
         mating=MixedVariableMating(eliminate_duplicates=MixedVariableDuplicateElimination()),
     )
 
-    obs, env_state = env.reset()
+    obs, env_state = env.reset(rng=process_noise_key, deterministic_state=True)
 
     amplitude_groups = generate_amplitude_groups(
         n_amplitudes=n_amplitudes, n_amplitude_groups=n_amplitude_groups, rng=rng
@@ -265,11 +268,12 @@ def excite_with_iGOATS(
     compression_dist_th,
     penalty_function,
     plot_subsequences=False,
+    process_noise_key=None,
 ):
     """System excitation using the iGOATs algorithm from [Smits2024]."""
 
     assert application_horizon <= prediction_horizon
-    obs, env_state = env.reset()
+    obs, env_state = env.reset(rng=process_noise_key, deterministic_state=True)
 
     all_actions = []
     all_observations = []

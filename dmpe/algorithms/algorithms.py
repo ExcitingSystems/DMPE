@@ -160,6 +160,7 @@ def excite_with_dmpe(
     proposed_actions: jax.Array,
     loader_key: jax.random.PRNGKey,
     expl_key: jax.random.PRNGKey,
+    process_noise_key: jax.random.PRNGKey | None = None,
     callback_every: int | None = None,
     callback: Callable | None = None,
 ):
@@ -172,6 +173,7 @@ def excite_with_dmpe(
         proposed_actions (jax.Array): The initial proposed actions to apply.
         loader_key (jax.random.PRNGKey): The key used for loading data.
         expl_key (jax.random.PRNGKey): The key used for random action generation.
+        process_noise_key (jax.random.PRNGKey | None): The key used for random process noise.
         callback_every (int | None): The frequency of steps at which to run the callback function.
             If it is 'None' no callback is done.
         callback (Callable): Callback function to monitor the excitation process.
@@ -182,7 +184,8 @@ def excite_with_dmpe(
         the history of observations, the history of actions, the updated model, the updated density estimate,
         the prediction losses, the proposed actions, and the callback output.
     """
-    obs, state = env.reset()
+
+    obs, state = env.reset(rng=process_noise_key, deterministic_state=True)
 
     dim_obs_space = obs.shape[0]
     dim_action_space = env.action_dim

@@ -158,7 +158,7 @@ def default_dmpe_parameterization(
     )
 
     dim = env.physical_state_dim + env.action_dim
-    obs_dim = env.reset()[0].shape[0]
+    obs_dim = env.obs_dim
 
     alg_params["penalty_function"] = lambda x, u: soft_penalty(a=x, a_max=1, penalty_order=2) + soft_penalty(
         a=u, a_max=1, penalty_order=2
@@ -196,7 +196,7 @@ def default_dmpe_parameterization(
     )
 
     key = jax.random.PRNGKey(seed=exp_params["seed"])
-    data_key, model_key, loader_key, expl_key, key = jax.random.split(key, 5)
+    data_key, model_key, loader_key, expl_key, process_noise_key, key = jax.random.split(key, 6)
 
     data_rng = PRNGSequence(data_key)
     exp_params["model_params"]["key"] = model_key
@@ -209,4 +209,4 @@ def default_dmpe_parameterization(
         ]
     )
 
-    return exp_params, proposed_actions, loader_key, expl_key
+    return exp_params, proposed_actions, loader_key, expl_key, process_noise_key
