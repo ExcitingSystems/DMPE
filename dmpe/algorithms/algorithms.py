@@ -85,6 +85,7 @@ def excite_and_fit(
             model=model,
             density_estimate=density_estimate,
             proposed_actions=proposed_actions,
+            last_action=actions[k - 1] if k > 0 else jnp.zeros(env.action_dim),
             expl_key=expl_key,
         )
 

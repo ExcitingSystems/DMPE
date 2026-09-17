@@ -21,6 +21,7 @@ def consult_exciter(
     model: eqx.Module,
     density_estimate: DensityEstimate,
     proposed_actions: jax.Array,
+    last_action: jax.Array,
     expl_key: jax.random.PRNGKey,
 ):
     """Use the exciter to choose the next action or simply apply the proposed actions depending on
@@ -44,6 +45,7 @@ def consult_exciter(
         model (eqx.Module): The model used for predictions.
         density_estimate (DensityEstimate): The density estimate object from time step k-1.
         proposed_actions (jax.Array): The proposed actions for the current time step.
+        last_action (jax.Array): The action that was applied in the last step.
         expl_key (jax.random.PRNGKey): The random key for drawing new proposed actions.
 
     Returns:
@@ -60,6 +62,7 @@ def consult_exciter(
             model=model,
             density_estimate=density_estimate,
             proposed_actions=proposed_actions,
+            last_action=last_action,
             expl_key=expl_key,
         )
     else:

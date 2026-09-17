@@ -17,6 +17,18 @@ from dmpe.utils.density_estimation import (
 from dmpe.utils.metrics import JSDLoss
 
 
+# def control_move_penalty(u: jax.Array, u_prev: jax.Array):
+#     u_ext = jnp.concatenate([u_prev[None, :], u], axis=0)
+#     return jnp.sum(jnp.diff(u_ext, axis=0) ** 2)
+
+
+def control_move_penalty(u: jax.Array, u_prev: jax.Array, penalty_order=2):
+    u_ext = jnp.concatenate([u_prev[None, :], u], axis=0)
+    penalties = jnp.diff(u_ext, axis=0)
+    penalty = jnp.sum(penalties**penalty_order)
+    return penalty
+
+
 def soft_penalty(a: jax.Array, a_max: float = 1.0, penalty_order: int = 2):
     """Computes penalty for the given input. Assumes symmetry in all dimensions.
 
@@ -41,6 +53,7 @@ def loss_function(
     init_obs: jax.Array,
     init_state: excenvs.CoreEnvironment.State,
     actions: jax.Array,
+    last_action: jax.Array,
     density_estimate: DensityEstimate,
     tau: float,
     consider_action_distribution: bool,
@@ -83,7 +96,7 @@ def loss_function(
         p=predicted_density_estimate.p / jnp.sum(predicted_density_estimate.p),
         q=target_distribution / jnp.sum(target_distribution),
     )
-    penalty_terms = penalty_function(observations, actions)
+    penalty_terms = penalty_function(observations, actions, last_action)
     return loss + penalty_terms
 
 
@@ -96,6 +109,7 @@ def optimize_actions(
     optimizer: optax.GradientTransformation | optax.GradientTransformationExtraArgs,
     init_obs: jax.Array,
     init_state: excenvs.CoreEnvironment.State,
+    last_action: jax.Array,
     density_estimate: DensityEstimate,
     n_opt_steps: int,
     tau: float,
@@ -138,6 +152,7 @@ def optimize_actions(
             init_obs,
             init_state,
             proposed_actions,
+            last_action,
             density_estimate,
             tau,
             consider_action_distribution,
@@ -152,6 +167,7 @@ def optimize_actions(
                 init_obs,
                 init_state,
                 proposed_actions,
+                last_action,
                 density_estimate,
                 tau,
                 consider_action_distribution,
@@ -177,6 +193,7 @@ def optimize_actions(
         init_obs,
         init_state,
         proposed_actions,
+        last_action,
         density_estimate,
         tau,
         consider_action_distribution,
@@ -195,6 +212,7 @@ def optimize_actions_multistart(
     optimizer: optax.GradientTransformation | optax.GradientTransformationExtraArgs,
     init_obs: jax.Array,
     init_state: excenvs.CoreEnvironment.State,
+    last_action: jax.Array,
     density_estimate: DensityEstimate,
     n_opt_steps: int,
     tau: float,
@@ -239,7 +257,7 @@ def optimize_actions_multistart(
 
     all_optimized_actions, all_losses = jax.vmap(
         optimize_actions,
-        in_axes=(None, None, 0, None, None, None, None, None, None, None, None, None, None),
+        in_axes=(None, None, 0, None, None, None, None, None, None, None, None, None, None, None),
     )(
         loss_function,
         grad_loss_function,
@@ -248,6 +266,7 @@ def optimize_actions_multistart(
         optimizer,
         init_obs,
         init_state,
+        last_action,
         density_estimate,
         n_opt_steps,
         tau,
@@ -306,6 +325,7 @@ class Exciter(eqx.Module):
         model: eqx.Module,
         density_estimate: DensityEstimate,
         proposed_actions: jax.Array,
+        last_action: jax.Array,
         expl_key: jax.random.PRNGKey,
     ) -> tuple[jax.Array, jax.Array, DensityEstimate]:
         """Chooses the next action to take, updates the density estimate and
@@ -351,6 +371,7 @@ class Exciter(eqx.Module):
             optimizer=self.excitation_optimizer,
             init_obs=obs,
             init_state=state,
+            last_action=last_action,
             density_estimate=density_estimate,
             n_opt_steps=self.n_opt_steps,
             tau=self.tau,
