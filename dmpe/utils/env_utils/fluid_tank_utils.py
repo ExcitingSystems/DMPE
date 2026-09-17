@@ -41,6 +41,7 @@ def setup_env() -> tuple[excenvs.CartPole, Callable, Callable, dict]:
         ),
         tau=env_params["tau"],
         solver=env_params["env_solver"],
+        process_noise_variance=0.01,
     )
     penalty_function = lambda x, u: soft_penalty(a=x, a_max=1, penalty_order=2) + soft_penalty(
         a=u, a_max=1, penalty_order=2
