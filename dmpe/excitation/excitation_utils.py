@@ -45,6 +45,7 @@ def loss_function(
     tau: float,
     consider_action_distribution: bool,
     target_distribution: jax.Array,
+    target_support_points: jax.Array | None,
     penalty_function: Callable,
 ) -> jax.Array:
     """Predicts a trajectory based on the given actions and the model and computes the
@@ -67,7 +68,7 @@ def loss_function(
             and actions. This is done to penalize overstepping of the physical constraints of the
             system
     """
-    if isinstance(model, eqx.Module):
+    if not isinstance(model, excenvs.CoreEnvironment):
         observations = simulate_ahead(model=model, init_obs=init_obs, actions=actions, tau=tau)
     else:
         observations, _ = simulate_ahead_with_env(env=model, init_obs=init_obs, init_state=init_state, actions=actions)
