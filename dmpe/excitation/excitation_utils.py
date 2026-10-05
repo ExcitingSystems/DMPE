@@ -101,6 +101,7 @@ def optimize_actions(
     tau: float,
     consider_action_distribution: bool,
     target_distribution: jax.Array,
+    target_support_points: jax.Array | None,
     penalty_function: Callable,
 ):
     """Uses the model to compute the effect of actions onto the observation trajectory to
@@ -142,6 +143,7 @@ def optimize_actions(
             tau,
             consider_action_distribution,
             target_distribution,
+            target_support_points,
             penalty_function,
         )
 
@@ -156,6 +158,7 @@ def optimize_actions(
                 tau,
                 consider_action_distribution,
                 target_distribution,
+                target_support_points,
                 penalty_function,
             )
 
@@ -181,6 +184,7 @@ def optimize_actions(
         tau,
         consider_action_distribution,
         target_distribution,
+        target_support_points,
         penalty_function,
     )
 
@@ -200,6 +204,7 @@ def optimize_actions_multistart(
     tau: float,
     consider_action_distribution: bool,
     target_distribution: jax.Array,
+    target_support_points: jax.Array | None,
     penalty_function: Callable,
 ):
     """Parallelizes the action optimization function w.r.t. the proposed actions. Thereby,
@@ -239,7 +244,7 @@ def optimize_actions_multistart(
 
     all_optimized_actions, all_losses = jax.vmap(
         optimize_actions,
-        in_axes=(None, None, 0, None, None, None, None, None, None, None, None, None, None),
+        in_axes=(None, None, 0, None, None, None, None, None, None, None, None, None, None, None),
     )(
         loss_function,
         grad_loss_function,
@@ -253,6 +258,7 @@ def optimize_actions_multistart(
         tau,
         consider_action_distribution,
         target_distribution,
+        target_support_points,
         penalty_function,
     )
 
@@ -356,6 +362,7 @@ class Exciter(eqx.Module):
             tau=self.tau,
             consider_action_distribution=self.consider_action_distribution,
             target_distribution=self.target_distribution,
+            target_support_points=None,
             penalty_function=self.penalty_function,
         )
 

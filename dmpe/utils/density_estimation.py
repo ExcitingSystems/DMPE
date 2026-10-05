@@ -378,9 +378,7 @@ def build_grid(dim: int, low: list | float, high: list | float, points_per_dim: 
     elif isinstance(low, float) and isinstance(high, float):
         xs = [jnp.linspace(low, high, points_per_dim) for _ in range(dim)]
     else:
-        raise TypeError(
-            f"`low` and `high` must be either `float` or `list[float]`. They are {type(low)} and {type(high)}"
-        )
+        xs = [jnp.linspace(low, high, points_per_dim) for _ in range(dim)]
 
     z_g = jnp.meshgrid(*xs, indexing="ij")
     z_g = jnp.stack([_x for _x in z_g], axis=-1)
