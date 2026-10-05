@@ -31,6 +31,7 @@ def setup_env() -> tuple[excenvs.CartPole, Callable, Callable, dict]:
         env_solver=diffrax.Tsit5(),
     )
     env = excenvs.EnvironmentRegistry.FLUID_TANK.make(
+        batch_size=env_params["batch_size"],
         physical_normalizations=dict(height=excenvs.utils.MinMaxNormalization(min=0, max=env_params["max_height"])),
         action_normalizations=dict(inflow=excenvs.utils.MinMaxNormalization(min=0, max=env_params["max_inflow"])),
         static_params=dict(
