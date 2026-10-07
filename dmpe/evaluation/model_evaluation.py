@@ -15,7 +15,7 @@ import exciting_environments as excenvs
 class ModelWrapper(abc.ABC):
     """
     A base class for wrapping models, providing an interface for step-wise predictions,
-    gradient computations, and simulation rollouts.
+    derivative computations, and simulation rollouts.
     """
 
     model: eqx.Module
@@ -41,16 +41,16 @@ class ModelWrapper(abc.ABC):
         return
 
     @abc.abstractmethod
-    def gradient(self, obs, action):
+    def derivative(self, obs, action):
         """
-        Compute the gradient of the state with respect to time.
+        Compute the derivative of the state with respect to time.
 
         Args:
             obs: The current state or observation x(t).
             action: The action u(t) applied at the current state.
 
         Returns:
-            The gradient dx(t)/dt = f(x(t), u(t)).
+            The derivative dx(t)/dt = f(x(t), u(t)).
         """
         return
 
@@ -79,7 +79,7 @@ class NodeModelWrapper(ModelWrapper):
     def step(self, obs, action, tau):
         return self.featurize(self.model.step(obs, action, tau))
 
-    def gradient(self, obs, action):
+    def derivative(self, obs, action):
         return self.model.func(obs, action)
 
     def rollout(self, init_obs, actions, tau):
@@ -104,7 +104,7 @@ class EnvWrapper(ModelWrapper):
         return self.featurize(next_obs)
 
     @eqx.filter_jit
-    def gradient(self, obs, action):
+    def derivative(self, obs, action):
         raise NotImplementedError
 
     @eqx.filter_jit
@@ -142,7 +142,7 @@ class PredictionComparison(eqx.Module):
         return (pred - pred_gt), jnp.mean((pred - pred_gt) ** 2)
 
 
-class GradientComparison(eqx.Module):
+class DerivativeComparison(eqx.Module):
     grid: jax.Array
     action_dim: float
     obs_dim: float
@@ -157,8 +157,8 @@ class GradientComparison(eqx.Module):
 
     @eqx.filter_jit
     def __call__(self, model, model_gt):
-        pred = jax.vmap(model.gradient, in_axes=(0, 0))(self.grid[:, : self.obs_dim], self.grid[:, self.obs_dim :])
-        pred_gt = jax.vmap(model_gt.gradient, in_axes=(0, 0))(
+        pred = jax.vmap(model.derivative, in_axes=(0, 0))(self.grid[:, : self.obs_dim], self.grid[:, self.obs_dim :])
+        pred_gt = jax.vmap(model_gt.derivative, in_axes=(0, 0))(
             self.grid[:, : self.obs_dim], self.grid[:, self.obs_dim :]
         )
 
@@ -253,7 +253,7 @@ class ModelEvaluator:
                 obs_dim=obs_dim,
                 tau=tau,
             ),
-            "gradient_comp": GradientComparison(
+            "derivative_comp": DerivativeComparison(
                 grid=self.constraint_data_space_grid,
                 action_dim=act_dim,
                 obs_dim=obs_dim,
