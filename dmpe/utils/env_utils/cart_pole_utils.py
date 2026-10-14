@@ -31,6 +31,7 @@ def setup_env() -> tuple[excenvs.CartPole, Callable, Callable, dict]:
             "m_c": 1,
             "g": 9.81,
         },
+        process_noise_variance=1e-6,
         physical_normalizations={
             "deflection": excenvs.utils.MinMaxNormalization(min=-2.4, max=2.4),
             "velocity": excenvs.utils.MinMaxNormalization(min=-8, max=8),
@@ -48,7 +49,7 @@ def setup_env() -> tuple[excenvs.CartPole, Callable, Callable, dict]:
         static_params=env_params["static_params"],
         solver=env_params["env_solver"],
         tau=env_params["tau"],
-        process_noise_variance=1e-6,
+        process_noise_variance=env_params["process_noise_variance"],
     )
 
     penalty_function = lambda x, u: soft_penalty(a=x, a_max=1, penalty_order=2) + soft_penalty(
