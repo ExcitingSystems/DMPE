@@ -223,8 +223,27 @@ class DensityEstimate(eqx.Module):
         labels: None | list[str] = None,
         use_contourf: bool = True,
         grid_spacing: float = 0.0,
+        *,
+        fig=None,
+        axs=None,
     ):
+        if (fig is None) != (axs is None):
+            raise ValueError("Pass fig and axs together, or omit both.")
+
+        owns_axes = axs is None
         dim = self.dim
+
+        if owns_axes:
+            if dim <= 2:
+                fig, axs = plt.subplots(1, 1, figsize=(9, 9))
+            else:
+                fig, axs = plt.subplots(
+                    nrows=dim,
+                    ncols=dim,
+                    figsize=(9, 9),
+                    sharex=True,
+                    sharey=True,
+                )
 
         if reduction_method is None:
             axis_coords = [jnp.unique(self.z_g[:, d]) for d in range(dim)]
@@ -237,14 +256,12 @@ class DensityEstimate(eqx.Module):
                 return jnp.sum(arr, axis=axis) * dz
 
         if dim == 1:
-            fig, axs = plt.subplots(1, 1, figsize=(9, 9))
             axs.plot(self.z_g, self.p)
             axs.set_xlabel(labels[0] if labels else "z")
             axs.set_ylabel("density")
             return fig, axs
 
         elif dim == 2:
-            fig, axs = plt.subplots(1, 1, figsize=(9, 9))
             if use_contourf:
                 axs.contourf(
                     self.z_g_unflattened[..., 0],
@@ -264,7 +281,6 @@ class DensityEstimate(eqx.Module):
             return fig, axs
 
         else:
-            fig, axs = plt.subplots(nrows=dim, ncols=dim, figsize=(9, 9), sharex=True, sharey=True)
             feature_indices = list(range(dim))
 
             if labels is None:
@@ -272,6 +288,8 @@ class DensityEstimate(eqx.Module):
 
             for i in range(dim):
                 for j in range(dim):
+                    if axs[j, i] is None:
+                        continue
                     axs[j, i].grid(True)
 
                     reduction_indices = [f_idx for f_idx in feature_indices if not (f_idx == i or f_idx == j)]
@@ -292,10 +310,13 @@ class DensityEstimate(eqx.Module):
                     else:
                         extent = 1 + grid_spacing
                         axs[j, i].imshow(reduced_p.T, origin="lower", extent=[-extent, extent, -extent, extent])
-                    axs[j, 0].set_ylabel(labels[j])
+                    if owns_axes:
+                        axs[j, 0].set_ylabel(labels[j])
 
-                axs[-1, i].set_xlabel(labels[i])
-            fig.tight_layout()
+                if owns_axes:
+                    axs[-1, i].set_xlabel(labels[i])
+            if owns_axes:
+                fig.tight_layout()
             return fig, axs
 
 

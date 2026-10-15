@@ -323,17 +323,20 @@ def plot_metrics_by_sequence_length_for_all_algos(data_per_algo, lengths, algo_n
     return fig
 
 
-def plot_feature_combinations(data, labels, mode="plot", points_per_dim=100, bandwidth=0.05):
+def plot_feature_combinations(data, labels, mode="plot", points_per_dim=100, bandwidth=0.05, *, fig=None, axs=None):
     """Plot all combinations of the data set."""
     assert data.shape[-1] == len(labels)
     assert data.ndim == 2
 
     n_features = data.shape[-1]
-
-    fig, axs = plt.subplots(nrows=n_features, ncols=n_features, figsize=(9, 9), sharex=True, sharey=True)
+    owns_axes = axs is None
+    if owns_axes:
+        fig, axs = plt.subplots(nrows=n_features, ncols=n_features, figsize=(9, 9), sharex=True, sharey=True)
 
     for i in range(n_features):
         for j in range(n_features):
+            if axs[j, i] is None:
+                continue
             if mode == "plot":
                 axs[j, i].scatter(data[..., i], data[..., j], s=1)
             elif mode == "contourf":
@@ -358,13 +361,15 @@ def plot_feature_combinations(data, labels, mode="plot", points_per_dim=100, ban
                     alpha=0.9,
                     cmap=plt.cm.coolwarm,
                 )
-
-            axs[j, 0].set_ylabel(labels[j])
+            if owns_axes:
+                axs[j, 0].set_ylabel(labels[j])
 
             axs[j, i].grid(True)
             axs[j, i].set_xlim(-1.1, 1.1)
             axs[j, i].set_ylim(-1.1, 1.1)
-        axs[-1, i].set_xlabel(labels[i])
-    fig.tight_layout()
+        if owns_axes:
+            axs[-1, i].set_xlabel(labels[i])
+    if owns_axes:
+        fig.tight_layout()
 
     return fig
