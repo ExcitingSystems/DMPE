@@ -1,3 +1,4 @@
+from collections.abc import Mapping
 from typing import Callable
 
 import matplotlib.pyplot as plt
@@ -231,13 +232,23 @@ class DensityEstimate(eqx.Module):
         """Plot feature planes, optionally with shared contour boundaries.
 
         Pass an explicit sequence of levels to use the same contour intervals
-        and color scale across density plots. None keeps automatic levels.
+        and color scale across density plots. A mapping from (i, j), with i < j,
+        to level sequences gives each feature pair its own scale. None keeps
+        automatic levels.
         """
         if (fig is None) != (axs is None):
             raise ValueError("Pass fig and axs together, or omit both.")
 
         owns_axes = axs is None
         dim = self.dim
+
+        def levels_for_pair(i, j):
+            if not isinstance(levels, Mapping):
+                return levels
+            pair = (min(i, j), max(i, j))
+            if pair not in levels:
+                raise ValueError(f"Missing contour levels for feature pair {pair}.")
+            return levels[pair]
 
         if owns_axes:
             if dim <= 2:
@@ -269,12 +280,13 @@ class DensityEstimate(eqx.Module):
 
         elif dim == 2:
             if use_contourf:
+                plane_levels = levels_for_pair(0, 1)
                 axs.contourf(
                     self.z_g_unflattened[..., 0],
                     self.z_g_unflattened[..., 1],
                     self.p_unflattened,
-                    levels=levels,
-                    extend="max" if levels is not None else "neither",
+                    levels=plane_levels,
+                    extend="max" if plane_levels is not None else "neither",
                 )
             else:
                 extent = 1 + grid_spacing
@@ -310,12 +322,13 @@ class DensityEstimate(eqx.Module):
                         reduced_p = jnp.transpose(reduced_p)
 
                     if use_contourf:
+                        plane_levels = levels_for_pair(i, j)
                         axs[j, i].contourf(
                             self.z_g_unflattened[..., *[0 for _ in range(dim - 2)], 0],
                             self.z_g_unflattened[..., *[0 for _ in range(dim - 2)], 1],
                             reduced_p,
-                            levels=levels,
-                            extend="max" if levels is not None else "neither",
+                            levels=plane_levels,
+                            extend="max" if plane_levels is not None else "neither",
                         )
                     else:
                         extent = 1 + grid_spacing
