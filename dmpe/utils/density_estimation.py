@@ -226,7 +226,13 @@ class DensityEstimate(eqx.Module):
         *,
         fig=None,
         axs=None,
+        levels=None,
     ):
+        """Plot feature planes, optionally with shared contour boundaries.
+
+        Pass an explicit sequence of levels to use the same contour intervals
+        and color scale across density plots. None keeps automatic levels.
+        """
         if (fig is None) != (axs is None):
             raise ValueError("Pass fig and axs together, or omit both.")
 
@@ -267,6 +273,8 @@ class DensityEstimate(eqx.Module):
                     self.z_g_unflattened[..., 0],
                     self.z_g_unflattened[..., 1],
                     self.p_unflattened,
+                    levels=levels,
+                    extend="max" if levels is not None else "neither",
                 )
             else:
                 extent = 1 + grid_spacing
@@ -306,6 +314,8 @@ class DensityEstimate(eqx.Module):
                             self.z_g_unflattened[..., *[0 for _ in range(dim - 2)], 0],
                             self.z_g_unflattened[..., *[0 for _ in range(dim - 2)], 1],
                             reduced_p,
+                            levels=levels,
+                            extend="max" if levels is not None else "neither",
                         )
                     else:
                         extent = 1 + grid_spacing
