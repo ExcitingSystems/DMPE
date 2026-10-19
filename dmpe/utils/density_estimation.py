@@ -52,7 +52,7 @@ def gaussian_kernel(z: jax.Array, bandwidth: float) -> jax.Array:
     """
     data_dim = z.shape[-1]
     factor = bandwidth**data_dim * jnp.power(2 * jnp.pi, data_dim / 2)
-    return 1 / factor * jnp.exp(-jnp.linalg.norm(z, axis=-1) ** 2 / (2 * bandwidth**2))
+    return 1 / factor * jnp.exp(-jnp.sum(z**2, axis=-1) / (2 * bandwidth**2))
 
 
 class DensityEstimate(eqx.Module):
