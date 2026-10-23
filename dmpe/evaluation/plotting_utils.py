@@ -323,12 +323,19 @@ def plot_metrics_by_sequence_length_for_all_algos(data_per_algo, lengths, algo_n
     return fig
 
 
-def plot_feature_combinations(data, labels, mode="plot", points_per_dim=100, bandwidth=0.05, *, fig=None, axs=None):
+def plot_feature_combinations(
+    data, labels=None, mode="plot", points_per_dim=100, bandwidth=0.05, *, fig=None, axs=None
+):
     """Plot all combinations of the data set."""
-    assert data.shape[-1] == len(labels)
-    assert data.ndim == 2
 
     n_features = data.shape[-1]
+
+    if labels is None:
+        labels = [str(i) for i in range(n_features)]
+
+    assert n_features == len(labels)
+    assert data.ndim == 2
+
     owns_axes = axs is None
     if owns_axes:
         fig, axs = plt.subplots(nrows=n_features, ncols=n_features, figsize=(9, 9), sharex=True, sharey=True)
