@@ -151,7 +151,12 @@ def excite_and_fit(
         density_estimate = next_density_estimate
         expl_key = next_expl_key
 
-    return observations, actions, model, density_estimate, prediction_losses, proposed_actions, callback_out
+    losses = {
+        "prediction_losses": prediction_losses,
+        "data_losses": data_losses,
+    }
+
+    return observations, actions, model, density_estimate, losses, proposed_actions, callback_out
 
 
 def excite_with_dmpe(
