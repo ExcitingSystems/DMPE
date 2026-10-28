@@ -53,7 +53,7 @@ def train_model_on_experiment_data(
     model_errors_log = []
 
     for iteration in tqdm(range(n_iters)):
-        model, opt_state_model, loader_key = model_trainer.fit(
+        model, opt_state_model, average_loss, loader_key = model_trainer.fit(
             model=model,
             k=jnp.array([observations.shape[0]]),
             observations=observations,

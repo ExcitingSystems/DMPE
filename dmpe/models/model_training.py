@@ -9,7 +9,7 @@ from dmpe.models.model_utils import simulate_ahead
 
 
 @eqx.filter_jit
-@eqx.filter_grad
+@eqx.filter_value_and_grad
 def grad_loss(
     model: eqx.Module,
     true_obs: jax.Array,
@@ -83,10 +83,10 @@ def make_step(
         model (eqx.Module): The updated model
         opt_state (optax.OptState): The updated state of the model optimizer
     """
-    grads = grad_loss(model, observations, actions, tau, featurize)
+    loss, grads = grad_loss(model, observations, actions, tau, featurize)
     updates, opt_state = optim.update(grads, opt_state)
     model = eqx.apply_updates(model, updates)
-    return model, opt_state
+    return model, opt_state, loss
 
 
 @eqx.filter_jit
@@ -211,29 +211,33 @@ def fit(
         opt_state (optax.OptState): The updated state of the model optimizer
     """
 
+    loss_sum = 0.0
+
     dynamic_init_model_state, static_model_state = eqx.partition(model, eqx.is_array)
-    init_carry = (dynamic_init_model_state, init_opt_state)
+    init_carry = (dynamic_init_model_state, init_opt_state, loss_sum)
 
     def body_fun(i, carry):
-        dynamic_model_state, opt_state = carry
+        dynamic_model_state, opt_state, loss_sum = carry
         model_state = eqx.combine(static_model_state, dynamic_model_state)
 
         batched_observations, batched_actions = load_single_batch(
             observations, actions, starting_points[i, ...], sequence_length
         )
-        new_model_state, new_opt_state = make_step(
+        new_model_state, new_opt_state, loss_value = make_step(
             model_state, batched_observations, batched_actions, tau, opt_state, featurize, optim
         )
 
+        loss_sum += loss_value
+
         new_dynamic_model_state, new_static_model_state = eqx.partition(new_model_state, eqx.is_array)
         assert eqx.tree_equal(static_model_state, new_static_model_state) is True
-        return (new_dynamic_model_state, new_opt_state)
+        return (new_dynamic_model_state, new_opt_state, loss_sum)
 
-    final_dynamic_model_state, final_opt_state = jax.lax.fori_loop(
+    final_dynamic_model_state, final_opt_state, final_loss_sum = jax.lax.fori_loop(
         lower=0, upper=n_train_steps, body_fun=body_fun, init_val=init_carry
     )
     final_model = eqx.combine(static_model_state, final_dynamic_model_state)
-    return final_model, final_opt_state
+    return final_model, final_opt_state, final_loss_sum / n_train_steps
 
 
 class ModelTrainer(eqx.Module):
@@ -286,6 +290,7 @@ class ModelTrainer(eqx.Module):
         Returns:
             final_model (eqx.Module): The updated model
             final_opt_state (optax.OptState): The updated state of the model optimizer
+            average_loss (float): The training loss averaged over train steps
             next_loader_key (jax.random.PRNGKey): The updated random key.
         """
         starting_points, loader_key = precompute_starting_points(
@@ -296,7 +301,7 @@ class ModelTrainer(eqx.Module):
             loader_key=loader_key,
         )
 
-        final_model, final_opt_state = fit(
+        final_model, final_opt_state, average_loss = fit(
             model=model,
             n_train_steps=self.n_train_steps,
             starting_points=starting_points,
@@ -308,4 +313,4 @@ class ModelTrainer(eqx.Module):
             optim=self.model_optimizer,
             init_opt_state=opt_state,
         )
-        return final_model, final_opt_state, loader_key
+        return final_model, final_opt_state, average_loss, loader_key
