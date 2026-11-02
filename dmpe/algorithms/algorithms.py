@@ -88,7 +88,7 @@ def excite_and_fit(
             expl_key=expl_key,
         )
 
-        prediction_losses.append(prediction_loss)  # predicted loss for the last excitation optimization
+        prediction_losses.append(float(prediction_loss))  # predicted loss for the last excitation optimization
 
         next_obs, next_state, actions, observations = interact_and_observe(
             env=env, k=jnp.array([k]), action=action, state=state, actions=actions, observations=observations
@@ -117,7 +117,7 @@ def excite_and_fit(
             next_density_estimate.p / jnp.sum(next_density_estimate.p),
             exciter.target_distribution / jnp.sum(exciter.target_distribution),
         )
-        data_losses.append(data_loss)
+        data_losses.append(float(data_loss))
 
         # callback
         if k % callback_every == 0 and k > 0:
