@@ -153,6 +153,8 @@ class DensityEstimate(eqx.Module):
         z_min: float = -1,
         z_max: float = 1,
         bandwidth: float = 0.05,
+        *,
+        grid_batch_size: int = 128,
     ) -> "DensityEstimate":
         """Create a fresh density estimate from gathered in the form of a sequence of feature vectors.
 
@@ -168,23 +170,31 @@ class DensityEstimate(eqx.Module):
             The resulting density estimate (DensityEstimate)
         """
         dim = data_points.shape[-1]
+        z_g = build_grid(dim, z_min, z_max, points_per_dim)
+        bandwidth_array = jnp.array([bandwidth])
 
-        n_grid_points = points_per_dim**dim
-        density_estimate = cls(
-            p=jnp.zeros([1, n_grid_points, 1]),
-            z_g=build_grid(dim, z_min, z_max, points_per_dim),
-            bandwidth=jnp.array([bandwidth]),
-            n_observations=jnp.array([0]),
+        def density_at_grid_point(z):
+            # Shape: (n_datasets, n_observations).
+            kernel_values = gaussian_kernel(
+                z - data_points,
+                bandwidth_array,
+            )
+            return kernel_values.mean(axis=-1)
+
+        # Reduce observations inside the map, stacking only density values.
+        # Output shape: (n_grid_points, n_datasets).
+        p = jax.lax.map(
+            density_at_grid_point,
+            z_g,
+            batch_size=grid_batch_size,
         )
-        density_estimate = jax.vmap(
-            update_density_estimate_multiple_observations,
-            in_axes=(DensityEstimate(0, None, None, None), 0),
-            out_axes=(DensityEstimate(0, None, None, None)),
-        )(
-            density_estimate,
-            data_points,
+
+        return cls(
+            p=jnp.swapaxes(p, 0, 1)[..., None],
+            z_g=z_g,
+            bandwidth=bandwidth_array,
+            n_observations=jnp.array([data_points.shape[1]]),
         )
-        return density_estimate
 
     @property
     def dim(self) -> int:
