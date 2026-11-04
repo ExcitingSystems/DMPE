@@ -212,7 +212,7 @@ def excite_with_dmpe(
         loss_function=loss_function,
         grad_loss_function=jax.value_and_grad(loss_function, argnums=(3)),
         excitation_optimizer=exp_params["alg_params"]["excitation_optimizer"],
-        tau=env.tau,
+        tau=1.0,  # TODO: to be removed
         n_opt_steps=exp_params["alg_params"]["n_opt_steps"],
         consider_action_distribution=exp_params["alg_params"]["consider_action_distribution"],
         target_distribution=exp_params["alg_params"]["target_distribution"],
@@ -238,7 +238,7 @@ def excite_with_dmpe(
             sequence_length=exp_params["model_trainer_params"]["sequence_length"],
             featurize=exp_params["model_trainer_params"]["featurize"],
             model_optimizer=optax.adabelief(exp_params["model_trainer_params"]["model_lr"]),
-            tau=env.tau,
+            tau=1.0,  # TODO: to be removed
         )
         model = exp_params["model_class"](**exp_params["model_params"])
         opt_state_model = model_trainer.model_optimizer.init(eqx.filter(model, eqx.is_inexact_array))
