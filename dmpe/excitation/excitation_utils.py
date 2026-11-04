@@ -1,5 +1,4 @@
 from typing import Callable
-from functools import partial
 
 import jax
 import jax.numpy as jnp
@@ -133,8 +132,11 @@ def optimize_actions(
     """
     opt_state = optimizer.init(proposed_actions)
 
+    best_actions = proposed_actions
+    best_loss = jnp.inf
+
     def body_fun(i, carry):
-        proposed_actions, opt_state = carry
+        proposed_actions, opt_state, best_actions, best_loss = carry
         value, grad = grad_loss_function(
             model,
             init_obs,
@@ -147,6 +149,10 @@ def optimize_actions(
             target_support_points,
             penalty_function,
         )
+
+        improved = jnp.isfinite(value) & (value < best_loss)
+        best_actions = jnp.where(improved, proposed_actions, best_actions)
+        best_loss = jnp.where(improved, value, best_loss)
 
         if isinstance(optimizer, optax._src.base.GradientTransformationExtraArgs):
 
@@ -172,11 +178,13 @@ def optimize_actions(
 
         # proposed_actions = proposed_actions - lr * grad
 
-        return (proposed_actions, opt_state)
+        return (proposed_actions, opt_state, best_actions, best_loss)
 
-    proposed_actions, _ = jax.lax.fori_loop(0, n_opt_steps, body_fun, (proposed_actions, opt_state))
+    proposed_actions, _, best_actions, best_loss = jax.lax.fori_loop(
+        0, n_opt_steps, body_fun, (proposed_actions, opt_state, best_actions, best_loss)
+    )
 
-    loss = loss_function(
+    value = loss_function(
         model,
         init_obs,
         init_state,
@@ -188,8 +196,11 @@ def optimize_actions(
         target_support_points,
         penalty_function,
     )
+    improved = jnp.isfinite(value) & (value < best_loss)
+    best_actions = jnp.where(improved, proposed_actions, best_actions)
+    best_loss = jnp.where(improved, value, best_loss)
 
-    return proposed_actions, loss
+    return best_actions, best_loss
 
 
 def optimize_actions_multistart(
