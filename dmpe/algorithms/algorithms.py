@@ -169,6 +169,8 @@ def excite_with_dmpe(
     process_noise_key: jax.random.PRNGKey | None = None,
     callback_every: int | None = None,
     callback: Callable | None = None,
+    *,
+    planning_model: eqx.Module | None = None,
 ):
     """
     Excite the system using the Differentiable Model Predictive Excitation (DMPE) algorithm.
@@ -225,7 +227,7 @@ def excite_with_dmpe(
 
     if exp_params["model_trainer_params"] is None and exp_params["model_params"] is None:
         model_trainer = None
-        model = env
+        model = env if planning_model is None else planning_model
         opt_state_model = None
     elif exp_params["model_trainer_params"] is None and exp_params["model_params"] is not None:
         model_trainer = None

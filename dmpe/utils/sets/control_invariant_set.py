@@ -34,7 +34,7 @@ def optimize_actions(
 ):
     opt_state = optimizer.init(proposed_actions)
 
-    @jax_tqdm.loop_tqdm(n_opt_steps)
+    @jax_tqdm.loop_tqdm(n_opt_steps, print_rate=100)
     def body_fun(i, carry):
         proposed_actions, opt_state = carry
         grad = gradient_function(
