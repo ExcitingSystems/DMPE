@@ -8,13 +8,15 @@ import equinox as eqx
 import exciting_environments as excenvs
 from dmpe.models.models import NeuralEulerODE
 
+MODEL_TAU = 1.0
+
 
 @eqx.filter_jit
 def simulate_ahead(
     model: NeuralEulerODE,
     init_obs: jax.Array,
     actions: jax.Array,
-    tau: float,
+    tau: float = MODEL_TAU,
 ) -> jax.Array:
     """Uses the given model to look ahead and simulate future observations.
 
@@ -29,8 +31,10 @@ def simulate_ahead(
         observations (jax.Array): The predicted observations. The shape of this is given as
             (n_actions + 1, obs_dim). That is because the first observation is
             already given through the initial observation
+
+    NOTE: tau is retained for API compatibility; model time is always unit time.
     """
-    return model(init_obs, actions, tau)
+    return model(init_obs, actions, MODEL_TAU)
 
 
 @eqx.filter_jit
