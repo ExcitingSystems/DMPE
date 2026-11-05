@@ -30,6 +30,7 @@ def setup_env() -> tuple[excenvs.CartPole, Callable, Callable, dict]:
         g=9.81,
         env_solver=diffrax.Tsit5(),
         process_noise_variance=1e-6,
+        outflow_smoothing_height=1e-4,
     )
     env = excenvs.EnvironmentRegistry.FLUID_TANK.make(
         batch_size=env_params["batch_size"],
@@ -44,6 +45,7 @@ def setup_env() -> tuple[excenvs.CartPole, Callable, Callable, dict]:
         tau=env_params["tau"],
         solver=env_params["env_solver"],
         process_noise_variance=env_params["process_noise_variance"],
+        outflow_smoothing_height=env_params["outflow_smoothing_height"],
     )
     penalty_function = lambda x, u: soft_penalty(a=x, a_max=1, penalty_order=2) + soft_penalty(
         a=u, a_max=1, penalty_order=2
